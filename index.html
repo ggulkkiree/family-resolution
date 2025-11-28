@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>우리 가족 사랑방 (V26_HabitStats)</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* [변수] */
+        :root {
+            --primary: #2196F3; --red: #ff5252; --edit: #4CAF50; --stats: #9C27B0; --bible: #00796b; --chat: #FF9800;
+            --bg: #F4F5F7; --card-bg: #FFFFFF; --text: #333; --sub-text: #666;
+            --border: #E0E0E0; --shadow: rgba(0,0,0,0.05);
+            --msg-bg: #E9ECEF; --msg-text: #333; --my-msg-bg: #2196F3; --my-msg-text: #fff;
+            --sidebar-width: 280px;
+        }
+        body.dark-mode {
+            --bg: #121212; --card-bg: #1e1e1e; --text: #e0e0e0; --sub-text: #aaaaaa;
+            --border: #333333; --shadow: rgba(0,0,0,0.5);
+            --msg-bg: #2C2C2C; --msg-text: #E0E0E0; --my-msg-bg: #1565C0;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: var(--bg); color: var(--text); margin: 0; 
+            display: flex; justify-content: center; min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        /* [레이아웃] */
+        .app-container {
+            width: 100%; max-width: 600px; background: var(--card-bg); 
+            min-height: 100vh; display: flex; flex-direction: column;
+            box-shadow: 0 0 20px var(--shadow); position: relative;
+            transition: all 0.3s;
+        }
+        .sidebar-area { width: 100%; display: contents; }
+        header { padding: 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); }
+        .content-area { background: var(--bg); padding: 20px; padding-bottom: 80px; flex: 1; overflow-y: auto; }
+        
+        /* [태블릿] */
+        @media (min-width: 768px) {
+            body { padding: 40px; box-sizing: border-box; align-items: center; }
+            .app-container {
+                max-width: 1200px; height: 85vh; min-height: 600px;
+                border-radius: 24px; flex-direction: row; overflow: hidden; border: 1px solid var(--border);
+            }
+            .sidebar-area {
+                width: var(--sidebar-width); border-right: 1px solid var(--border); background: var(--card-bg);
+                padding: 30px 20px; display: flex; flex-direction: column; overflow-y: auto; z-index: 10;
+            }
+            .sidebar-area header { padding: 0 !important; border: none !important; }
+            .content-area { flex: 1; background: var(--bg); padding: 40px !important; overflow-y: auto; }
+            .tabs {
+                flex-direction: column !important; position: static !important; box-shadow: none !important;
+                background: transparent !important; margin-top: 20px;
+            }
+            .tab {
+                text-align: left !important; padding: 15px 20px !important; border-bottom: none !important;
+                border-left: 4px solid transparent; font-size: 16px !important; border-radius: 0 10px 10px 0; margin-bottom: 5px;
+            }
+            .tab:hover { background: var(--shadow); }
+            .tab.active { background: var(--bg); border-left-color: currentColor; font-weight: 800 !important; }
+            ul#list-resolution { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+            .rank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        }
+
+        /* [UI 컴포넌트] */
+        .login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; transition: transform 0.3s ease-in-out; }
+        .login-screen.hidden { transform: translateY(-100%); }
+        .member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 80%; max-width: 300px; }
+        .login-btn { background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); color: white; padding: 20px; border-radius: 16px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        
+        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
+        .user-name { font-size: 20px; font-weight: 800; margin: 0; color: var(--primary); }
+        .header-btns { display: flex; gap: 8px; }
+        .icon-btn { font-size: 18px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 15px; background: var(--bg); color: var(--text); cursor: pointer; }
+
+        .verse-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center; box-shadow: 0 4px 10px rgba(118, 75, 162, 0.3); }
+        .verse-text { font-size: 14px; font-weight: 500; line-height: 1.5; font-style: italic; }
+        .verse-ref { font-size: 12px; margin-top: 8px; opacity: 0.9; font-weight: bold; }
+
+        .year-selector { display: flex; justify-content: center; align-items: center; gap: 15px; background: var(--bg); padding: 8px; border-radius: 12px; font-weight: bold; margin-bottom: 10px; }
+        .year-btn { border: none; background: none; font-size: 18px; cursor: pointer; color: var(--sub-text); }
+        .current-year { font-size: 16px; color: var(--text); }
+
+        .tabs { display: flex; background: var(--card-bg); position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 10px var(--shadow); transition: 0.3s;}
+        .tab { flex: 1; padding: 15px 5px; text-align: center; color: var(--sub-text); cursor: pointer; border-bottom: 3px solid transparent; font-size: 13px; font-weight: 600;}
+        .tab[data-target="resolution"].active { color: var(--primary); }
+        .tab[data-target="bible"].active { color: var(--bible); }
+        .tab[data-target="stats"].active { color: var(--stats); }
+        .tab[data-target="cheers"].active { color: var(--chat); }
+        
+        .page { display: none; animation: fadeIn 0.3s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--text); font-size: 16px; outline: none; }
+        .add-btn { width: 50px; border: none; background: var(--primary); color: white; border-radius: 12px; font-size: 24px; cursor: pointer; }
+        
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { background: var(--card-bg); border: 1px solid var(--border); margin-bottom: 12px; padding: 15px; border-radius: 16px; box-shadow: 0 2px 8px var(--shadow); height: 100%; box-sizing: border-box; display: flex; flex-direction: column;}
+        .li-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; font-weight: bold; font-size: 16px; width: 100%;}
+        .li-text { flex: 1; word-break: break-all; line-height: 1.4; margin-right: 10px;}
+        .action-btns { display: flex; gap: 5px; flex-shrink: 0;}
+        .del-btn, .edit-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border:1px solid var(--border);}
+        .del-btn { color: var(--red); } .edit-btn { color: var(--edit); }
+        .steps { display: flex; gap: 5px; flex-wrap: wrap; margin-top: auto; width: 100%;}
+        .step { flex-grow: 1; padding: 10px; background: var(--bg); border-radius: 8px; text-align: center; font-size: 13px; color: var(--sub-text); cursor: pointer; min-width: 50px; transition: 0.2s; }
+        .step.done { background: var(--primary); color: white; font-weight: bold; transform: scale(0.98); }
+
+        .bible-stats-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        .stat-card { flex: 1; background: var(--bible); color: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0, 121, 107, 0.3); }
+        .stat-val { font-size: 24px; font-weight: 900; } .stat-desc { font-size: 10px; opacity: 0.8; }
+        .testament-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .testament-btn { padding: 30px; font-size: 18px; font-weight: bold; background: var(--card-bg); color: var(--bible); border: 1px solid var(--bible); border-radius: 12px; cursor: pointer; }
+        .bible-nav-header { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
+        .bible-back-btn { background: var(--bible); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+        .book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
+        .book-btn { padding: 15px 5px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; text-align: center; color: var(--text); }
+        .book-btn.completed { background: var(--bible); color: white; border-color: var(--bible); }
+        .book-btn.in-progress { border-color: var(--bible); background: rgba(0, 121, 107, 0.1); }
+        .chapter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; }
+        .chapter-item label { width: 100%; padding: 12px 0; text-align: center; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--text); display:block; transition: 0.1s; }
+        .chapter-item input { display: none; }
+        .chapter-item input:checked + label { background: var(--bible); color: white; border-color: var(--bible); }
+        .hidden-view { display: none !important; }
+
+        .chat-container { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; margin-bottom: 15px; }
+        .msg-card { padding: 12px 16px; border-radius: 18px; border-top-left-radius: 2px; background: var(--msg-bg); color: var(--msg-text); align-self: flex-start; max-width: 75%; font-size: 15px; position: relative; line-height: 1.4; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .msg-card.mine { background: var(--my-msg-bg); color: var(--my-msg-text); align-self: flex-end; border-top-left-radius: 18px; border-top-right-radius: 2px; }
+        .msg-sender { font-size: 11px; margin-bottom: 4px; opacity: 0.8; font-weight: bold; display: block;}
+        .msg-time { font-size: 10px; opacity: 0.6; text-align: right; margin-top: 5px; display: block;}
+        .msg-delete { position: absolute; top: -8px; right: -8px; background: #ef5350; color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .msg-card:hover .msg-delete { display: flex; }
+
+        .period-box { background: var(--card-bg); padding: 15px; border-radius: 15px; border: 2px solid var(--stats); margin-bottom: 20px; text-align: center; }
+        .rank-card { display: flex; align-items: center; padding: 15px; margin-bottom: 10px; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); }
+        .rank-num { font-size: 20px; margin-right: 10px; width: 30px; text-align: center; }
+        .rank-name { flex: 1; font-weight: bold; margin-left: 5px; } .rank-score { font-weight: 900; color: var(--primary); }
+        .rank-unit { font-size: 12px; color: var(--sub-text); font-weight: normal; margin-left: 2px; }
+        
+        .analysis-box { margin-top:30px; background:var(--card-bg); padding:20px; border-radius:16px; border:1px solid var(--border); }
+        .habit-bar-item { display: flex; align-items: center; margin-bottom: 12px; }
+        .habit-bar-name { width: 40%; font-size: 13px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .habit-bar-graph { flex: 1; background: var(--bg); height: 10px; border-radius: 5px; overflow: hidden; margin: 0 10px; }
+        .habit-bar-fill { height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s; }
+        .habit-bar-count { font-size: 12px; font-weight: bold; width: 30px; text-align: right; color: var(--primary); }
+
+        #serverStatus { position: fixed; bottom: 10px; right: 10px; font-size: 10px; opacity: 0.5; color: var(--text); z-index: 9999; }
+    </style>
+</head>
+<body>
+
+<div id="loginScreen" class="login-screen">
+    <h2 style="margin-bottom:30px;">👋 가족 구성원을 선택하세요</h2>
+    <div class="member-grid" id="loginGrid"></div>
+</div>
+
+<div class="app-container">
+    <aside class="sidebar-area">
+        <header>
+            <div class="top-row">
+                <div><span style="font-size:12px; opacity:0.7;">우리 가족 사랑방</span><h1 class="user-name" id="userNameDisplay">사용자</h1></div>
+                <div class="header-btns">
+                    <button class="icon-btn" onclick="window.toggleTheme()">🌙</button>
+                    <button class="icon-btn" onclick="window.logoutAction()">🚪</button>
+                </div>
+            </div>
+            <div class="verse-box" id="dailyVerseBox">
+                <div class="verse-text" id="verseText">로딩 중...</div>
+                <div class="verse-ref" id="verseRef"></div>
+            </div>
+            <div class="year-selector">
+                <button class="year-btn" onclick="window.changeYear(-1)">◀</button>
+                <span class="current-year" id="displayYear">2025</span>
+                <button class="year-btn" onclick="window.changeYear(1)">▶</button>
+            </div>
+            <div style="text-align:center; font-size:11px; color:var(--sub-text); margin-bottom:10px;">▲ 성경 읽기 기록 연도</div>
+        </header>
+        <div class="tabs">
+            <div class="tab active" data-target="resolution" onclick="window.goTab('resolution', this)">🔥 결단서</div>
+            <div class="tab" data-target="bible" onclick="window.goTab('bible', this)" style="color:var(--bible)">📖 성경</div>
+            <div class="tab" data-target="stats" onclick="window.goTab('stats', this)" style="color:var(--stats)">📊 통계</div>
+            <div class="tab" data-target="cheers" onclick="window.goTab('cheers', this)" style="color:var(--chat)">🗣️ 소통</div>
+        </div>
+    </aside>
+
+    <main class="content-area">
+        <div id="resolution" class="page active">
+            <div class="input-group">
+                <input type="text" id="input-resolution" placeholder="예: 말씀 1장 읽기 / 완료" onkeypress="if(event.key==='Enter') window.addItem('resolution')">
+                <button class="add-btn" onclick="window.addItem('resolution')">+</button>
+            </div>
+            <ul id="list-resolution"></ul>
+        </div>
+
+        <div id="bible" class="page">
+            <div class="bible-stats-box">
+                <div class="stat-card">
+                    <div style="font-size:12px;" id="weekLabel">이번 주 (토~금)</div>
+                    <div class="stat-val" id="myWeeklyBible">0</div>
+                </div>
+                <div class="stat-card" style="background:#004d40;">
+                    <div style="font-size:12px;" id="yearTotalLabel">2025년 누적</div>
+                    <div class="stat-val" id="myYearlyBible">0</div>
+                </div>
+            </div>
+            <div id="bible-main-view">
+                <div class="testament-grid">
+                    <button class="testament-btn" onclick="window.showBibleBooks('old')">구약 성경</button>
+                    <button class="testament-btn" onclick="window.showBibleBooks('new')">신약 성경</button>
+                </div>
+            </div>
+            <div id="bible-books-view" class="hidden-view">
+                <div class="bible-nav-header">
+                    <button class="bible-back-btn" onclick="window.showBibleMain()">◀ 뒤로</button>
+                    <span style="font-size:18px; font-weight:bold; color:var(--bible);" id="bible-testament-title">구약</span>
+                </div>
+                <div class="book-grid" id="book-grid-container"></div>
+            </div>
+            <div id="bible-chapters-view" class="hidden-view">
+                <div class="bible-nav-header">
+                    <button class="bible-back-btn" onclick="window.backToBooks()">◀ 뒤로</button>
+                    <span style="font-size:18px; font-weight:bold; color:var(--bible);" id="bible-book-title">창세기</span>
+                </div>
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <button style="flex:1; padding:10px; background:#00796b; color:white; border:none; border-radius:8px;" onclick="window.controlAllChapters(true)">전체 선택</button>
+                    <button style="flex:1; padding:10px; background:#757575; color:white; border:none; border-radius:8px;" onclick="window.controlAllChapters(false)">전체 해제</button>
+                </div>
+                <div class="chapter-grid" id="chapter-grid-container"></div>
+            </div>
+        </div>
+
+        <div id="stats" class="page">
+            <div class="rank-grid">
+                <div>
+                    <div class="period-box">
+                        <div style="font-weight:bold; color:var(--stats);">📅 결단서 시즌 기간 설정</div>
+                        <div style="display:flex; gap:5px; justify-content:center; margin-top:10px;">
+                            <input type="date" id="startDateInput" style="width:40%;"> ~ <input type="date" id="endDateInput" style="width:40%;">
+                        </div>
+                        <button class="save-period-btn" onclick="window.savePeriod()" style="margin-top:10px; padding:8px 20px; border:none; background:var(--stats); color:white; border-radius:10px;">적용</button>
+                    </div>
+                    <h4 style="color:var(--primary); margin-bottom:10px;">🔥 결단서 랭킹 <span style="font-size:11px; font-weight:normal; color:#666;" id="rankPeriodLabel"></span></h4>
+                    <div id="resolutionRankList" style="margin-bottom:20px;"></div>
+                </div>
+                <div>
+                    <h4 style="color:var(--bible); margin-bottom:10px;">📖 성경 다독왕 <span style="font-size:11px; font-weight:normal; color:#666;" id="bibleYearLabel"></span></h4>
+                    <div id="bibleRankList"></div>
+                </div>
+            </div>
+            <div class="analysis-box">
+                <h4 style="margin:0 0 15px 0; color:#333;">📋 나의 습관 분석 <span style="font-size:11px; font-weight:normal; color:#888;">(이번 버전부터 누적됨)</span></h4>
+                <div id="habitStatsList">
+                    <div style="text-align:center; color:#999; font-size:12px;">아직 데이터가 충분하지 않습니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="cheers" class="page">
+            <div style="text-align:center; color:var(--sub-text); font-size:13px; margin-bottom:10px;">가족들에게 응원의 한마디를 남겨주세요! 💖</div>
+            <div class="chat-container" id="chatList"></div>
+            <div class="input-group">
+                <input type="text" id="input-msg" placeholder="메시지 입력..." onkeypress="if(event.key==='Enter') window.sendMsg()">
+                <button class="add-btn" onclick="window.sendMsg()" style="background:var(--chat);">💌</button>
+            </div>
+        </div>
+    </main>
+    
+    <div id="serverStatus">연결 대기중...</div>
+</div>
+
+<script type="module">
+    const BIBLE_DATA = {
+        "books": [
+            { "name": "창세기", "chapters": 50, "testament": "old" }, { "name": "출애굽기", "chapters": 40, "testament": "old" },
+            { "name": "레위기", "chapters": 27, "testament": "old" }, { "name": "민수기", "chapters": 36, "testament": "old" },
+            { "name": "신명기", "chapters": 34, "testament": "old" }, { "name": "여호수아", "chapters": 24, "testament": "old" },
+            { "name": "사사기", "chapters": 21, "testament": "old" }, { "name": "룻기", "chapters": 4, "testament": "old" },
+            { "name": "사무엘상", "chapters": 31, "testament": "old" }, { "name": "사무엘하", "chapters": 24, "testament": "old" },
+            { "name": "열왕기상", "chapters": 22, "testament": "old" }, { "name": "열왕기하", "chapters": 25, "testament": "old" },
+            { "name": "역대상", "chapters": 29, "testament": "old" }, { "name": "역대하", "chapters": 36, "testament": "old" },
+            { "name": "에스라", "chapters": 10, "testament": "old" }, { "name": "느헤미야", "chapters": 13, "testament": "old" },
+            { "name": "에스더", "chapters": 10, "testament": "old" }, { "name": "욥기", "chapters": 42, "testament": "old" },
+            { "name": "시편", "chapters": 150, "testament": "old" }, { "name": "잠언", "chapters": 31, "testament": "old" },
+            { "name": "전도서", "chapters": 12, "testament": "old" }, { "name": "아가", "chapters": 8, "testament": "old" },
+            { "name": "이사야", "chapters": 66, "testament": "old" }, { "name": "예레미야", "chapters": 52, "testament": "old" },
+            { "name": "예레미야애가", "chapters": 5, "testament": "old" }, { "name": "에스겔", "chapters": 48, "testament": "old" },
+            { "name": "다니엘", "chapters": 12, "testament": "old" }, { "name": "호세아", "chapters": 14, "testament": "old" },
+            { "name": "요엘", "chapters": 3, "testament": "old" }, { "name": "아모스", "chapters": 9, "testament": "old" },
+            { "name": "오바댜", "chapters": 1, "testament": "old" }, { "name": "요나", "chapters": 4, "testament": "old" },
+            { "name": "미가", "chapters": 7, "testament": "old" }, { "name": "나훔", "chapters": 3, "testament": "old" },
+            { "name": "하박국", "chapters": 3, "testament": "old" }, { "name": "스바냐", "chapters": 3, "testament": "old" },
+            { "name": "학개", "chapters": 2, "testament": "old" }, { "name": "스가랴", "chapters": 14, "testament": "old" },
+            { "name": "말라기", "chapters": 4, "testament": "old" }, { "name": "마태복음", "chapters": 28, "testament": "new" },
+            { "name": "마가복음", "chapters": 16, "testament": "new" }, { "name": "누가복음", "chapters": 24, "testament": "new" },
+            { "name": "요한복음", "chapters": 21, "testament": "new" }, { "name": "사도행전", "chapters": 28, "testament": "new" },
+            { "name": "로마서", "chapters": 16, "testament": "new" }, { "name": "고린도전서", "chapters": 16, "testament": "new" },
+            { "name": "고린도후서", "chapters": 13, "testament": "new" }, { "name": "갈라디아서", "chapters": 6, "testament": "new" },
+            { "name": "에베소서", "chapters": 6, "testament": "new" }, { "name": "빌립보서", "chapters": 4, "testament": "new" },
+            { "name": "골로새서", "chapters": 4, "testament": "new" }, { "name": "데살로니가전서", "chapters": 5, "testament": "new" },
+            { "name": "데살로니가후서", "chapters": 3, "testament": "new" }, { "name": "디모데전서", "chapters": 6, "testament": "new" },
+            { "name": "디모데후서", "chapters": 4, "testament": "new" }, { "name": "디도서", "chapters": 3, "testament": "new" },
+            { "name": "빌레몬서", "chapters": 1, "testament": "new" }, { "name": "히브리서", "chapters": 13, "testament": "new" },
+            { "name": "야고보서", "chapters": 5, "testament": "new" }, { "name": "베드로전서", "chapters": 5, "testament": "new" },
+            { "name": "베드로후서", "chapters": 3, "testament": "new" }, { "name": "요한1서", "chapters": 5, "testament": "new" },
+            { "name": "요한2서", "chapters": 1, "testament": "new" }, { "name": "요한3서", "chapters": 1, "testament": "new" },
+            { "name": "유다서", "chapters": 1, "testament": "new" }, { "name": "요한계시록", "chapters": 22, "testament": "new" }
+        ]
+    };
+    const DAILY_VERSES = [
+        { t: "내게 능력 주시는 자 안에서 내가 모든 것을 할 수 있느니라", r: "빌립보서 4:13" },
+        { t: "여호와는 나의 목자시니 내게 부족함이 없으리로다", r: "시편 23:1" },
+        { t: "두려워하지 말라 내가 너와 함께 함이라", r: "이사야 41:10" },
+        { t: "항상 기뻐하라 쉬지 말고 기도하라 범사에 감사하라", r: "살전 5:16-18" },
+        { t: "너의 행사를 여호와께 맡기라 그리하면 네가 경영하는 것이 이루어지리라", r: "잠언 16:3" }
+    ];
+    const FAMILY_MEMBERS = ["아빠", "엄마", "첫째", "둘째", "셋째", "넷째"];
+    
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
+      authDomain: "family-resolution.firebaseapp.com",
+      projectId: "family-resolution",
+      storageBucket: "family-resolution.firebasestorage.app",
+      messagingSenderId: "711396068080",
+      appId: "1:711396068080:web:861c41a8259f0b6dca9035",
+      measurementId: "G-RH6E87B4H0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const docRef = doc(db, "appData", "familyDataV12_UltimatePlus");
+
+    let myName = localStorage.getItem('myName');
+    let appData = {};
+    let bibleState = { currentTestament: null, currentBook: null };
+    let currentViewYear = new Date().getFullYear();
+
+    // Init
+    if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+    const verse = DAILY_VERSES[Math.floor(Math.random() * DAILY_VERSES.length)];
+    document.getElementById('verseText').textContent = verse.t;
+    document.getElementById('verseRef').textContent = verse.r;
+
+    window.login = function(name) {
+        myName = name;
+        localStorage.setItem('myName', name);
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('userNameDisplay').textContent = name;
+        if(!appData[name]) appData[name] = { resolution: [], bible: {}, history: {} };
+        updateUI();
+    }
+    
+    window.logoutAction = function() {
+        if(confirm("로그아웃 하시겠습니까?")) {
+            localStorage.removeItem('myName');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            myName = null;
+        }
+    }
+
+    window.toggleTheme = function() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    }
+    window.changeYear = function(delta) {
+        currentViewYear += delta;
+        refreshYearDisplay();
+        updateUI(); 
+    }
+    window.goTab = function(t, element) {
+        document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
+        element.classList.add('active');
+        document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
+        document.getElementById(t).classList.add('active');
+        if(t==='stats'||t==='bible') updateUI();
+    }
+
+    // Resolution
+    window.addItem = function(cat) {
+        if(!myName) return;
+        const input = document.getElementById(`input-resolution`);
+        const v = input.value.trim();
+        if (!v) return;
+        const p = v.split('/');
+        if(!appData[myName].resolution) appData[myName].resolution = [];
+        // [New] Init counts with 0
+        const steps = p[1]?p.slice(1).map(s=>s.trim()):["완료"];
+        appData[myName].resolution.push({ 
+            text: p[0].trim(), 
+            steps: steps, 
+            done: Array(steps.length).fill(false),
+            counts: Array(steps.length).fill(0) 
+        });
+        input.value = "";
+        
+        renderMyList(); 
+        saveToServer();
+    }
+    window.deleteResolution = function(i) {
+        if(confirm("삭제하시겠습니까?")) {
+            appData[myName].resolution.splice(i, 1);
+            updateDailyHistory(myName);
+            renderMyList(); 
+            saveToServer();
+        }
+    }
+    window.editResolution = function(i) {
+        const item = appData[myName].resolution[i];
+        let currentText = item.text;
+        if(item.steps.length > 1 || item.steps[0] !== "완료") currentText += " / " + item.steps.join(" / ");
+        const newText = prompt("내용 수정:", currentText);
+        if(newText && newText.trim()) {
+            const p = newText.split('/');
+            const newSteps = p.length > 1 ? p.slice(1).map(s=>s.trim()) : ["완료"];
+            item.text = p[0].trim();
+            // Resizing counts logic
+            if(item.steps.length !== newSteps.length) {
+                item.steps = newSteps;
+                item.done = Array(newSteps.length).fill(false);
+                item.counts = Array(newSteps.length).fill(0); // Reset counts if steps change significantly
+            } else {
+                item.steps = newSteps;
+            }
+            renderMyList(); 
+            saveToServer();
+        }
+    }
+    window.toggleResolution = function(i, si) {
+        const item = appData[myName].resolution[i];
+        const isNowDone = !item.done[si];
+        item.done[si] = isNowDone;
+        
+        // [New] Accumulate Counts
+        if(!item.counts) item.counts = new Array(item.steps.length).fill(0);
+        if(isNowDone) item.counts[si]++;
+        else item.counts[si] = Math.max(0, item.counts[si] - 1);
+
+        if(item.done.every(Boolean) && isNowDone) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        updateDailyHistory(myName);
+        
+        const stepsDiv = document.querySelectorAll('#list-resolution li')[i].querySelector('.steps');
+        const stepDiv = stepsDiv.children[si];
+        if(isNowDone) stepDiv.classList.add('done'); else stepDiv.classList.remove('done');
+        
+        saveToServer();
+    }
+
+    // Bible & Stats (Same as before)
+    window.showBibleBooks = function(testament) {
+        bibleState.currentTestament = testament;
+        document.getElementById('bible-main-view').classList.add('hidden-view');
+        document.getElementById('bible-books-view').classList.remove('hidden-view');
+        document.getElementById('bible-testament-title').textContent = testament === 'old' ? '구약 성경' : '신약 성경';
+        renderBibleBooks();
+    }
+    window.showBibleMain = function() {
+        document.getElementById('bible-books-view').classList.add('hidden-view');
+        document.getElementById('bible-main-view').classList.remove('hidden-view');
+    }
+    window.showChapters = function(bookName) {
+        bibleState.currentBook = bookName;
+        document.getElementById('bible-books-view').classList.add('hidden-view');
+        document.getElementById('bible-chapters-view').classList.remove('hidden-view');
+        document.getElementById('bible-book-title').textContent = bookName;
+        renderBibleChapters();
+    }
+    window.backToBooks = function() {
+        document.getElementById('bible-chapters-view').classList.add('hidden-view');
+        document.getElementById('bible-books-view').classList.remove('hidden-view');
+        renderBibleBooks(); 
+    }
+    window.controlAllChapters = function(selectAll) {
+        const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
+        if(!book) return;
+        if(!appData[myName].bible) appData[myName].bible = {};
+        const today = getTodayStr();
+        for(let i=1; i<=book.chapters; i++) {
+            const key = `${book.name}-${i}`;
+            if(selectAll) { if(!appData[myName].bible[key]) appData[myName].bible[key] = today; }
+            else { if(isInViewYear(appData[myName].bible[key])) delete appData[myName].bible[key]; }
+        }
+        if(selectAll) confetti({ particleCount: 80, spread: 60, colors: ['#00796b', '#FFEB3B'] });
+        renderBibleChapters(); 
+        updateMyStats();
+        saveToServer();
+    }
+    window.toggleChapter = function(key, isChecked) {
+        if(!appData[myName].bible) appData[myName].bible = {};
+        if(isChecked) appData[myName].bible[key] = getTodayStr();
+        else delete appData[myName].bible[key];
+        
+        updateMyStats(); 
+        saveToServer();
+    }
+
+    window.savePeriod = function() {
+        const s = document.getElementById('startDateInput').value;
+        const e = document.getElementById('endDateInput').value;
+        if(!s || !e) return alert("시작일과 종료일을 모두 입력해주세요.");
+        appData.period = { start: s, end: e };
+        renderAllRankings();
+        saveToServer().then(() => alert("📅 시즌 기간 설정 완료!"));
+    }
+    window.sendMsg = function() {
+        const input = document.getElementById('input-msg');
+        const text = input.value.trim();
+        if(!text) return;
+        if(!appData.messages) appData.messages = [];
+        appData.messages.push({ sender: myName, text: text, ts: new Date().toISOString() });
+        if(appData.messages.length > 50) appData.messages.shift();
+        input.value = "";
+        
+        renderMessages(); 
+        saveToServer();
+    }
+    window.deleteMsg = function(idx) {
+        if(confirm("메시지 삭제?")) {
+            appData.messages.splice(idx, 1);
+            renderMessages();
+            saveToServer();
+        }
+    }
+
+    // Logic
+    function getTodayStr() {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function getWeekRangeStrings() {
+        const now = new Date();
+        const day = now.getDay(); 
+        const diffToSat = (day + 1) % 7; 
+        const start = new Date(now);
+        start.setDate(now.getDate() - diffToSat);
+        const end = new Date(start);
+        end.setDate(start.getDate() + 6);
+        const fmt = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const da = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${da}`;
+        };
+        return { startStr: fmt(start), endStr: fmt(end) };
+    }
+
+    function refreshYearDisplay() {
+        document.getElementById('displayYear').textContent = currentViewYear;
+        document.getElementById('yearTotalLabel').textContent = `${currentViewYear}년 누적`;
+    }
+    refreshYearDisplay();
+
+    const loginGrid = document.getElementById('loginGrid');
+    FAMILY_MEMBERS.forEach(member => {
+        const btn = document.createElement('div');
+        btn.className = 'login-btn';
+        btn.textContent = member;
+        btn.onclick = () => window.login(member);
+        loginGrid.appendChild(btn);
+    });
+    if (myName && FAMILY_MEMBERS.includes(myName)) window.login(myName);
+
+    const statusDiv = document.getElementById('serverStatus');
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            appData = data.appData || {};
+            let needSave = false;
+            if(!appData.period) { appData.period = {start:"", end:""}; needSave = true; }
+            if(!appData.messages) { appData.messages = []; needSave = true; }
+            FAMILY_MEMBERS.forEach(m => {
+                if (!appData[m]) { appData[m] = { resolution: [], bible: {}, history: {} }; needSave = true; }
+            });
+
+            if (data.lastDate !== new Date().toDateString()) {
+                resetDailyCheckboxes();
+            } else {
+                if(needSave) saveToServer();
+                updateUI();
+            }
+            statusDiv.textContent = "🟢 실시간 연동됨";
+        } else {
+            initData();
+        }
+    });
+
+    async function initData() {
+        appData = { period: {start:"", end:""}, messages: [] };
+        FAMILY_MEMBERS.forEach(m => appData[m] = { resolution: [], bible: {}, history: {} });
+        await saveToServer();
+    }
+    async function saveToServer() {
+        statusDiv.textContent = "🟡 저장 중...";
+        try {
+            await setDoc(docRef, { appData: appData, lastDate: new Date().toDateString() });
+            statusDiv.textContent = "🟢 저장 완료";
+        } catch(e) {
+            console.error(e);
+            statusDiv.textContent = "🔴 저장 실패 (네트워크 확인)";
+        }
+    }
+    async function resetDailyCheckboxes() {
+        for (let m in appData) {
+            if(appData[m] && appData[m].resolution) {
+                appData[m].resolution.forEach(item => item.done.fill(false));
+                // Note: We do NOT reset 'counts' here. That's the whole point!
+            }
+        }
+        await saveToServer();
+        updateUI();
+    }
+
+    function updateUI() {
+        if (myName) {
+            if(document.activeElement.tagName !== 'INPUT') {
+                 renderMyList();
+                 renderMessages();
+            }
+            renderBibleUI();
+            updateMyStats(); 
+        }
+        renderAllRankings();
+        renderHabitAnalysis(); // [New]
+        const p = appData.period || {};
+        if(p.start && p.end) {
+            document.getElementById('startDateInput').value = p.start;
+            document.getElementById('endDateInput').value = p.end;
+            document.getElementById('rankPeriodLabel').textContent = `(${p.start} ~ ${p.end})`;
+        } else {
+            document.getElementById('rankPeriodLabel').textContent = "(기간 미설정)";
+        }
+    }
+
+    function isInViewYear(dateStr) {
+        if(!dateStr) return false;
+        const parts = dateStr.split('-');
+        if(parts.length < 1) return false;
+        return parseInt(parts[0]) === currentViewYear;
+    }
+
+    function renderMyList() {
+        const listEl = document.getElementById(`list-resolution`);
+        listEl.innerHTML = "";
+        if(!appData[myName] || !appData[myName].resolution) return;
+        
+        (appData[myName].resolution || []).forEach((item, idx) => {
+            const li = document.createElement('li');
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'action-btns';
+            const editBtn = document.createElement('button');
+            editBtn.className = 'edit-btn';
+            editBtn.textContent = '✎';
+            editBtn.onclick = () => window.editResolution(idx);
+            const delBtn = document.createElement('button');
+            delBtn.className = 'del-btn';
+            delBtn.textContent = '×';
+            delBtn.onclick = () => window.deleteResolution(idx);
+            btnContainer.appendChild(editBtn);
+            btnContainer.appendChild(delBtn);
+            const topDiv = document.createElement('div');
+            topDiv.className = 'li-top';
+            const span = document.createElement('span');
+            span.className = 'li-text';
+            span.textContent = item.text;
+            topDiv.appendChild(span);
+            topDiv.appendChild(btnContainer);
+            const stepsDiv = document.createElement('div');
+            stepsDiv.className = 'steps';
+            item.steps.forEach((s, si) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = `step ${item.done[si] ? 'done' : ''}`;
+                stepDiv.textContent = s;
+                stepDiv.onclick = () => window.toggleResolution(idx, si);
+                stepsDiv.appendChild(stepDiv);
+            });
+            li.appendChild(topDiv);
+            li.appendChild(stepsDiv);
+            listEl.appendChild(li);
+        });
+    }
+    function updateDailyHistory(m) {
+        const d = getTodayStr();
+        if(!appData[m]) return;
+        let s = (appData[m].resolution||[]).reduce((acc, cur) => acc + cur.done.filter(Boolean).length, 0);
+        if (!appData[m].history) appData[m].history = {};
+        appData[m].history[d] = s;
+    }
+
+    function renderBibleUI() {
+        if(!document.getElementById('bible-books-view').classList.contains('hidden-view')) renderBibleBooks();
+        if(!document.getElementById('bible-chapters-view').classList.contains('hidden-view')) renderBibleChapters();
+    }
+    function renderBibleBooks() {
+        const container = document.getElementById('book-grid-container');
+        container.innerHTML = '';
+        const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
+        BIBLE_DATA.books.filter(b => b.testament === bibleState.currentTestament).forEach(book => {
+            const btn = document.createElement('div');
+            btn.className = 'book-btn';
+            btn.textContent = book.name;
+            let readCount = 0;
+            for(let i=1; i<=book.chapters; i++) {
+                if(isInViewYear(myBible[`${book.name}-${i}`])) readCount++;
+            }
+            if(readCount === book.chapters) { btn.classList.add('completed'); btn.textContent = `✔️ ${book.name}`; }
+            else if (readCount > 0) { btn.classList.add('in-progress'); }
+            btn.onclick = () => window.showChapters(book.name);
+            container.appendChild(btn);
+        });
+    }
+    function renderBibleChapters() {
+        const container = document.getElementById('chapter-grid-container');
+        container.innerHTML = '';
+        const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
+        if(!book) return;
+        const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
+        for(let i=1; i<=book.chapters; i++) {
+            const chapterKey = `${book.name}-${i}`;
+            const div = document.createElement('div');
+            div.className = 'chapter-item';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `ch-${chapterKey}`;
+            if(isInViewYear(myBible[chapterKey])) checkbox.checked = true;
+            checkbox.onchange = (e) => window.toggleChapter(chapterKey, e.target.checked);
+            const label = document.createElement('label');
+            label.htmlFor = `ch-${chapterKey}`;
+            label.textContent = i;
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            container.appendChild(div);
+        }
+    }
+
+    function updateMyStats() {
+        if(!appData[myName]) return;
+        const bible = appData[myName].bible || {};
+        let weeklyCount = 0;
+        let yearlyCount = 0;
+        const { startStr, endStr } = getWeekRangeStrings();
+        for (const [key, dateStr] of Object.entries(bible)) {
+            if (isInViewYear(dateStr)) yearlyCount++;
+            if (dateStr >= startStr && dateStr <= endStr) weeklyCount++;
+        }
+        document.getElementById('myWeeklyBible').textContent = weeklyCount;
+        document.getElementById('myYearlyBible').textContent = yearlyCount;
+    }
+
+    function renderAllRankings() {
+        const resList = document.getElementById('resolutionRankList');
+        resList.innerHTML = "";
+        const p = appData.period || {};
+        const hasPeriod = (p.start && p.end);
+        
+        const resRank = FAMILY_MEMBERS.map(m => {
+            let score = 0;
+            const memberData = appData[m] || {};
+            const history = memberData.history || {};
+            if (hasPeriod) {
+                for(const [dateStr, val] of Object.entries(history)) {
+                    if (dateStr >= p.start && dateStr <= p.end) score += val;
+                }
+            }
+            return { name: m, val: score };
+        }).sort((a,b) => b.val - a.val);
+        resRank.forEach((d, i) => resList.appendChild(createRankCard(i, d.name, d.val, "점")));
+
+        const bibleList = document.getElementById('bibleRankList');
+        bibleList.innerHTML = "";
+        const { startStr, endStr } = getWeekRangeStrings();
+        const partsS = startStr.split('-');
+        const partsE = endStr.split('-');
+        if(partsS.length === 3) {
+            document.getElementById('bibleYearLabel').textContent = `이번 주 (${parseInt(partsS[1])}.${parseInt(partsS[2])}~${parseInt(partsE[1])}.${parseInt(partsE[2])})`;
+        }
+        const bibleRank = FAMILY_MEMBERS.map(m => {
+            let count = 0;
+            const memberData = appData[m] || {};
+            const bible = memberData.bible || {};
+            for(const [key, dateStr] of Object.entries(bible)) {
+                if(dateStr >= startStr && dateStr <= endStr) count++; 
+            }
+            return { name: m, val: count };
+        }).sort((a,b) => b.val - a.val);
+        bibleRank.forEach((d, i) => bibleList.appendChild(createRankCard(i, d.name, d.val, "장")));
+    }
+
+    // [New] Habit Stats Renderer
+    function renderHabitAnalysis() {
+        if(!myName || !appData[myName] || !appData[myName].resolution) return;
+        const list = appData[myName].resolution;
+        if(list.length === 0) return;
+
+        const flatList = [];
+        list.forEach(item => {
+            item.steps.forEach((stepName, idx) => {
+                const count = (item.counts && item.counts[idx]) ? item.counts[idx] : 0;
+                let name = item.text;
+                if(item.steps.length > 1) name += ` (${stepName})`;
+                flatList.push({ name, count });
+            });
+        });
+
+        // Sort descending
+        flatList.sort((a,b) => b.count - a.count);
+        const maxVal = flatList.length > 0 ? Math.max(flatList[0].count, 1) : 1;
+
+        const container = document.getElementById('habitStatsList');
+        container.innerHTML = "";
+        
+        flatList.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'habit-bar-item';
+            const percent = (item.count / maxVal) * 100;
+            row.innerHTML = `
+                <div class="habit-bar-name">${item.name}</div>
+                <div class="habit-bar-graph"><div class="habit-bar-fill" style="width:${percent}%"></div></div>
+                <div class="habit-bar-count">${item.count}</div>
+            `;
+            container.appendChild(row);
+        });
+    }
+
+    function createRankCard(i, name, val, unit) {
+        const div = document.createElement('div');
+        div.className = "rank-card";
+        div.innerHTML = `<div class="rank-num">${i==0?'🥇':i==1?'🥈':i==2?'🥉':i+1}</div><div class="rank-name">${name}</div><div class="rank-score">${val} <span class="rank-unit">${unit}</span></div>`;
+        return div;
+    }
+
+    function renderMessages() {
+        const chatList = document.getElementById('chatList');
+        if(!chatList) return; 
+        const wasScrolledToBottom = chatList.scrollHeight - chatList.scrollTop <= chatList.clientHeight + 50;
+        chatList.innerHTML = "";
+        const msgs = appData.messages || [];
+        msgs.forEach((msg, idx) => {
+            const div = document.createElement('div');
+            div.className = `msg-card ${msg.sender === myName ? 'mine' : ''}`;
+            let dateStr = "";
+            try { dateStr = new Date(msg.ts).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch(e) {}
+            div.innerHTML = `<div class="msg-sender">${msg.sender}</div><div>${msg.text}</div><div class="msg-time">${dateStr}</div>`;
+            if(msg.sender === myName) {
+                const delBtn = document.createElement('div');
+                delBtn.className = 'msg-delete';
+                delBtn.textContent = '×';
+                delBtn.onclick = () => window.deleteMsg(idx);
+                div.appendChild(delBtn);
+            }
+            chatList.appendChild(div);
+        });
+        if (wasScrolledToBottom) chatList.scrollTop = chatList.scrollHeight;
+    }
+</script>
+</body>
+</html>
