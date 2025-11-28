@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>우리 가족 사랑방 (V27_Streak)</title>
+    <title>우리 가족 사랑방 (V28_Secure)</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         /* [변수] */
@@ -69,7 +69,18 @@
         .login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; transition: transform 0.3s ease-in-out; }
         .login-screen.hidden { transform: translateY(-100%); }
         .member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 80%; max-width: 300px; }
-        .login-btn { background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); color: white; padding: 20px; border-radius: 16px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+        
+        /* New Login Button Style */
+        .login-btn { 
+            background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); 
+            color: white; padding: 15px; border-radius: 16px; 
+            font-size: 16px; font-weight: bold; cursor: pointer; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+            min-height: 80px; transition: 0.2s;
+        }
+        .login-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
+        .login-btn .sub-label { font-size: 11px; opacity: 0.8; font-weight: normal; }
+        .login-btn.taken { background: rgba(255,255,255,0.9); color: var(--primary); border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
         
         .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
         .user-name { font-size: 20px; font-weight: 800; margin: 0; color: var(--primary); }
@@ -90,13 +101,14 @@
         .tab[data-target="bible"].active { color: var(--bible); }
         .tab[data-target="stats"].active { color: var(--stats); }
         .tab[data-target="cheers"].active { color: var(--chat); }
+        .tab[data-target="settings"].active { color: var(--sub-text); }
         
         .page { display: none; animation: fadeIn 0.3s; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .input-group { display: flex; gap: 8px; margin-bottom: 20px; }
-        input[type="text"] { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--text); font-size: 16px; outline: none; }
+        input[type="text"], input[type="password"] { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--text); font-size: 16px; outline: none; }
         .add-btn { width: 50px; border: none; background: var(--primary); color: white; border-radius: 12px; font-size: 24px; cursor: pointer; }
         
         ul { list-style: none; padding: 0; margin: 0; }
@@ -140,8 +152,6 @@
         .rank-num { font-size: 20px; margin-right: 10px; width: 30px; text-align: center; }
         .rank-name { flex: 1; font-weight: bold; margin-left: 5px; display: flex; align-items: center; gap: 5px; } .rank-score { font-weight: 900; color: var(--primary); }
         .rank-unit { font-size: 12px; color: var(--sub-text); font-weight: normal; margin-left: 2px; }
-        
-        /* [New Streak Style] */
         .streak-badge { background: #ffebee; color: #d32f2f; font-size: 11px; padding: 2px 6px; border-radius: 10px; display: inline-flex; align-items: center; gap: 2px; border: 1px solid #ffcdd2; margin-left: 5px;}
         
         .analysis-box { margin-top:30px; background:var(--card-bg); padding:20px; border-radius:16px; border:1px solid var(--border); }
@@ -151,13 +161,17 @@
         .habit-bar-fill { height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s; }
         .habit-bar-count { font-size: 12px; font-weight: bold; width: 30px; text-align: right; color: var(--primary); }
 
+        .settings-card { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; }
+        .settings-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold; }
+
         #serverStatus { position: fixed; bottom: 10px; right: 10px; font-size: 10px; opacity: 0.5; color: var(--text); z-index: 9999; }
     </style>
 </head>
 <body>
 
 <div id="loginScreen" class="login-screen">
-    <h2 style="margin-bottom:30px;">👋 가족 구성원을 선택하세요</h2>
+    <h2 style="margin-bottom:10px;">👋 가족 구성원을 선택하세요</h2>
+    <p style="margin-bottom:30px; font-size:13px; opacity:0.8;">🔒 표시는 비밀번호가 설정된 계정입니다</p>
     <div class="member-grid" id="loginGrid"></div>
 </div>
 
@@ -187,6 +201,7 @@
             <div class="tab" data-target="bible" onclick="window.goTab('bible', this)" style="color:var(--bible)">📖 성경</div>
             <div class="tab" data-target="stats" onclick="window.goTab('stats', this)" style="color:var(--stats)">📊 통계</div>
             <div class="tab" data-target="cheers" onclick="window.goTab('cheers', this)" style="color:var(--chat)">🗣️ 소통</div>
+            <div class="tab" data-target="settings" onclick="window.goTab('settings', this)">⚙️ 설정</div>
         </div>
     </aside>
 
@@ -255,7 +270,7 @@
                 </div>
             </div>
             <div class="analysis-box">
-                <h4 style="margin:0 0 15px 0; color:#333;">📋 나의 습관 분석 <span style="font-size:11px; font-weight:normal; color:#888;">(이번 버전부터 누적됨)</span></h4>
+                <h4 style="margin:0 0 15px 0; color:#333;">📋 나의 습관 분석</h4>
                 <div id="habitStatsList">
                     <div style="text-align:center; color:#999; font-size:12px;">아직 데이터가 충분하지 않습니다.</div>
                 </div>
@@ -269,6 +284,26 @@
                 <input type="text" id="input-msg" placeholder="메시지 입력..." onkeypress="if(event.key==='Enter') window.sendMsg()">
                 <button class="add-btn" onclick="window.sendMsg()" style="background:var(--chat);">💌</button>
             </div>
+        </div>
+        
+        <div id="settings" class="page">
+             <div class="settings-card">
+                 <h3 style="margin-top:0;">👤 프로필 수정</h3>
+                 <div style="margin-bottom:15px;">
+                     <label style="font-size:13px; color:var(--sub-text);">닉네임 변경</label>
+                     <div style="display:flex; gap:5px; margin-top:5px;">
+                         <input type="text" id="edit-nickname" placeholder="새 닉네임">
+                         <button onclick="window.updateNickname()" style="width:60px; border-radius:10px; border:none; background:var(--primary); color:white;">변경</button>
+                     </div>
+                 </div>
+                 <div style="margin-bottom:15px;">
+                     <label style="font-size:13px; color:var(--sub-text);">비밀번호(PIN) 변경</label>
+                     <div style="display:flex; gap:5px; margin-top:5px;">
+                         <input type="password" id="edit-pin" placeholder="새 PIN (4자리)" maxlength="4">
+                         <button onclick="window.updatePin()" style="width:60px; border-radius:10px; border:none; background:var(--edit); color:white;">변경</button>
+                     </div>
+                 </div>
+             </div>
         </div>
     </main>
     
@@ -320,7 +355,9 @@
         { t: "항상 기뻐하라 쉬지 말고 기도하라 범사에 감사하라", r: "살전 5:16-18" },
         { t: "너의 행사를 여호와께 맡기라 그리하면 네가 경영하는 것이 이루어지리라", r: "잠언 16:3" }
     ];
-    const FAMILY_MEMBERS = ["아빠", "엄마", "첫째", "둘째", "셋째", "넷째"];
+    
+    // [Changed] Using Fixed Slots instead of Names
+    const USER_SLOTS = ["user_1", "user_2", "user_3", "user_4", "user_5", "user_6"];
     
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -337,9 +374,11 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const docRef = doc(db, "appData", "familyDataV12_UltimatePlus");
+    // V28 DB Key
+    const docRef = doc(db, "appData", "familyDataV28_Secure");
 
-    let myName = localStorage.getItem('myName');
+    // myName holds the ID (e.g., "user_1") NOT the nickname
+    let myName = localStorage.getItem('myId'); 
     let appData = {};
     let bibleState = { currentTestament: null, currentBook: null };
     let currentViewYear = new Date().getFullYear();
@@ -350,20 +389,70 @@
     document.getElementById('verseText').textContent = verse.t;
     document.getElementById('verseRef').textContent = verse.r;
 
-    window.login = function(name) {
-        myName = name;
-        localStorage.setItem('myName', name);
+    // [New] Auth Logic
+    window.tryLogin = function(slotId) {
+        const authData = (appData.auth && appData.auth[slotId]) ? appData.auth[slotId] : null;
+
+        if (!authData) {
+            // Register
+            const newName = prompt("사용할 닉네임을 입력하세요:");
+            if(!newName) return;
+            const newPin = prompt("비밀번호(PIN) 4자리를 설정하세요:");
+            if(!newPin || newPin.length < 1) return;
+            
+            if(!appData.auth) appData.auth = {};
+            appData.auth[slotId] = { name: newName, pin: newPin };
+            // Init User Data
+            appData[slotId] = { resolution: [], bible: {}, history: {} };
+            
+            saveToServer().then(() => {
+                loginSuccess(slotId);
+            });
+        } else {
+            // Login
+            const inputPin = prompt(`'${authData.name}'님의 비밀번호를 입력하세요:`);
+            if(inputPin === authData.pin) {
+                loginSuccess(slotId);
+            } else {
+                alert("비밀번호가 틀렸습니다!");
+            }
+        }
+    }
+
+    function loginSuccess(slotId) {
+        myName = slotId;
+        localStorage.setItem('myId', slotId);
         document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('userNameDisplay').textContent = name;
-        if(!appData[name]) appData[name] = { resolution: [], bible: {}, history: {} };
         updateUI();
     }
     
     window.logoutAction = function() {
         if(confirm("로그아웃 하시겠습니까?")) {
-            localStorage.removeItem('myName');
+            localStorage.removeItem('myId');
             document.getElementById('loginScreen').classList.remove('hidden');
             myName = null;
+            renderLoginScreen();
+        }
+    }
+
+    // [New] Settings
+    window.updateNickname = function() {
+        const val = document.getElementById('edit-nickname').value;
+        if(!val) return;
+        if(confirm(`닉네임을 '${val}'(으)로 변경하시겠습니까?`)) {
+            appData.auth[myName].name = val;
+            saveToServer();
+            alert("변경되었습니다.");
+            updateUI();
+        }
+    }
+    window.updatePin = function() {
+        const val = document.getElementById('edit-pin').value;
+        if(!val || val.length !== 4) return alert("4자리 숫자로 입력해주세요.");
+        if(confirm("비밀번호를 변경하시겠습니까?")) {
+            appData.auth[myName].pin = val;
+            saveToServer();
+            alert("변경되었습니다.");
         }
     }
 
@@ -400,7 +489,6 @@
             counts: Array(steps.length).fill(0) 
         });
         input.value = "";
-        
         renderMyList(); 
         saveToServer();
     }
@@ -451,7 +539,7 @@
         saveToServer();
     }
 
-    // Bible & Stats
+    // Bible
     window.showBibleBooks = function(testament) {
         bibleState.currentTestament = testament;
         document.getElementById('bible-main-view').classList.add('hidden-view');
@@ -494,7 +582,6 @@
         if(!appData[myName].bible) appData[myName].bible = {};
         if(isChecked) appData[myName].bible[key] = getTodayStr();
         else delete appData[myName].bible[key];
-        
         updateMyStats(); 
         saveToServer();
     }
@@ -512,10 +599,11 @@
         const text = input.value.trim();
         if(!text) return;
         if(!appData.messages) appData.messages = [];
-        appData.messages.push({ sender: myName, text: text, ts: new Date().toISOString() });
+        // [New] Use Display Name
+        const senderName = appData.auth[myName].name;
+        appData.messages.push({ sender: senderName, id: myName, text: text, ts: new Date().toISOString() });
         if(appData.messages.length > 50) appData.messages.shift();
         input.value = "";
-        
         renderMessages(); 
         saveToServer();
     }
@@ -559,15 +647,29 @@
     }
     refreshYearDisplay();
 
-    const loginGrid = document.getElementById('loginGrid');
-    FAMILY_MEMBERS.forEach(member => {
-        const btn = document.createElement('div');
-        btn.className = 'login-btn';
-        btn.textContent = member;
-        btn.onclick = () => window.login(member);
-        loginGrid.appendChild(btn);
-    });
-    if (myName && FAMILY_MEMBERS.includes(myName)) window.login(myName);
+    // [New] Dynamic Login Screen
+    function renderLoginScreen() {
+        const loginGrid = document.getElementById('loginGrid');
+        loginGrid.innerHTML = "";
+        
+        USER_SLOTS.forEach((slotId, idx) => {
+            const btn = document.createElement('div');
+            const authData = (appData.auth && appData.auth[slotId]);
+            
+            if(authData) {
+                // Registered
+                btn.className = 'login-btn taken';
+                btn.innerHTML = `<span style="font-size:20px;">🔒</span> <span>${authData.name}</span>`;
+            } else {
+                // Empty
+                btn.className = 'login-btn';
+                btn.innerHTML = `<span style="opacity:0.5;">+</span> <span class="sub-label">빈 자리<br>(번호 ${idx+1})</span>`;
+            }
+            
+            btn.onclick = () => window.tryLogin(slotId);
+            loginGrid.appendChild(btn);
+        });
+    }
 
     const statusDiv = document.getElementById('serverStatus');
     onSnapshot(docRef, (docSnap) => {
@@ -575,16 +677,22 @@
             const data = docSnap.data();
             appData = data.appData || {};
             let needSave = false;
+            
             if(!appData.period) { appData.period = {start:"", end:""}; needSave = true; }
             if(!appData.messages) { appData.messages = []; needSave = true; }
-            FAMILY_MEMBERS.forEach(m => {
-                if (!appData[m]) { appData[m] = { resolution: [], bible: {}, history: {} }; needSave = true; }
+            if(!appData.auth) { appData.auth = {}; needSave = true; }
+            // Ensure data slots
+            USER_SLOTS.forEach(sid => {
+                if(!appData[sid]) { appData[sid] = { resolution: [], bible: {}, history: {} }; needSave = true; }
             });
+
             if (data.lastDate !== new Date().toDateString()) {
                 resetDailyCheckboxes();
             } else {
                 if(needSave) saveToServer();
-                updateUI();
+                renderLoginScreen();
+                // If logged in, update UI
+                if(myName) updateUI();
             }
             statusDiv.textContent = "🟢 실시간 연동됨";
         } else {
@@ -593,9 +701,10 @@
     });
 
     async function initData() {
-        appData = { period: {start:"", end:""}, messages: [] };
-        FAMILY_MEMBERS.forEach(m => appData[m] = { resolution: [], bible: {}, history: {} });
+        appData = { period: {start:"", end:""}, messages: [], auth: {} };
+        USER_SLOTS.forEach(sid => appData[sid] = { resolution: [], bible: {}, history: {} });
         await saveToServer();
+        renderLoginScreen();
     }
     async function saveToServer() {
         statusDiv.textContent = "🟡 저장 중...";
@@ -614,11 +723,15 @@
             }
         }
         await saveToServer();
-        updateUI();
+        if(myName) updateUI();
     }
 
     function updateUI() {
         if (myName) {
+            // [New] Show Nickname
+            const myInfo = appData.auth[myName];
+            document.getElementById('userNameDisplay').textContent = myInfo ? myInfo.name : "사용자";
+            
             if(document.activeElement.tagName !== 'INPUT') {
                  renderMyList();
                  renderMessages();
@@ -645,28 +758,19 @@
         return parseInt(parts[0]) === currentViewYear;
     }
 
-    // [New] Calculate Streak
     function calculateStreak(history) {
         if(!history) return 0;
         let streak = 0;
         const now = new Date();
-        // Check from yesterday backwards (or today if already done)
         for (let i = 0; i < 365; i++) {
             const d = new Date(now);
             d.setDate(now.getDate() - i);
             const dateStr = d.toISOString().split('T')[0];
-            
-            // If today: if done, count it. if not done, don't break yet.
             if(i === 0) {
                 if(history[dateStr] > 0) streak++;
                 continue;
             }
-            // Past days
-            if(history[dateStr] > 0) {
-                streak++;
-            } else {
-                break; // Stop counting
-            }
+            if(history[dateStr] > 0) streak++; else break;
         }
         return streak;
     }
@@ -678,61 +782,55 @@
         const p = appData.period || {};
         const hasPeriod = (p.start && p.end);
         
-        const resRank = FAMILY_MEMBERS.map(m => {
+        // [New] Rank Logic based on registered users only
+        const activeUsers = USER_SLOTS.filter(sid => appData.auth && appData.auth[sid]);
+        
+        const resRank = activeUsers.map(sid => {
             let score = 0;
-            const memberData = appData[m] || {};
+            const memberData = appData[sid] || {};
             const history = memberData.history || {};
-            // [New] Calc Streak
             const streak = calculateStreak(history);
+            const name = appData.auth[sid].name;
 
             if (hasPeriod) {
                 for(const [dateStr, val] of Object.entries(history)) {
                     if (dateStr >= p.start && dateStr <= p.end) score += val;
                 }
             }
-            return { name: m, val: score, streak: streak };
+            return { name: name, val: score, streak: streak };
         }).sort((a,b) => b.val - a.val);
         
         resRank.forEach((d, i) => {
-            // [New] Streak Badge
             let streakHtml = "";
-            if(d.streak > 1) { // Show fire if streak > 1 day
-                streakHtml = `<div class="streak-badge">🔥 ${d.streak}일</div>`;
-            }
-            
+            if(d.streak > 1) streakHtml = `<div class="streak-badge">🔥 ${d.streak}일</div>`;
             const div = document.createElement('div');
             div.className = "rank-card";
-            div.innerHTML = `
-                <div class="rank-num">${i==0?'🥇':i==1?'🥈':i==2?'🥉':i+1}</div>
-                <div class="rank-name">${d.name} ${streakHtml}</div>
-                <div class="rank-score">${d.val} <span class="rank-unit">점</span></div>
-            `;
+            div.innerHTML = `<div class="rank-num">${i+1}</div><div class="rank-name">${d.name} ${streakHtml}</div><div class="rank-score">${d.val} <span class="rank-unit">점</span></div>`;
             resList.appendChild(div);
         });
 
         const bibleList = document.getElementById('bibleRankList');
         bibleList.innerHTML = "";
-        
         const { startStr, endStr } = getWeekRangeStrings();
         const partsS = startStr.split('-');
         const partsE = endStr.split('-');
         if(partsS.length === 3) {
             document.getElementById('bibleYearLabel').textContent = `이번 주 (${parseInt(partsS[1])}.${parseInt(partsS[2])}~${parseInt(partsE[1])}.${parseInt(partsE[2])})`;
         }
-
-        const bibleRank = FAMILY_MEMBERS.map(m => {
+        const bibleRank = activeUsers.map(sid => {
             let count = 0;
-            const memberData = appData[m] || {};
+            const memberData = appData[sid] || {};
             const bible = memberData.bible || {};
+            const name = appData.auth[sid].name;
             for(const [key, dateStr] of Object.entries(bible)) {
                 if(dateStr >= startStr && dateStr <= endStr) count++; 
             }
-            return { name: m, val: count };
+            return { name: name, val: count };
         }).sort((a,b) => b.val - a.val);
         bibleRank.forEach((d, i) => {
             const div = document.createElement('div');
             div.className = "rank-card";
-            div.innerHTML = `<div class="rank-num">${i==0?'🥇':i==1?'🥈':i==2?'🥉':i+1}</div><div class="rank-name">${d.name}</div><div class="rank-score">${d.val} <span class="rank-unit">장</span></div>`;
+            div.innerHTML = `<div class="rank-num">${i+1}</div><div class="rank-name">${d.name}</div><div class="rank-score">${d.val} <span class="rank-unit">장</span></div>`;
             bibleList.appendChild(div);
         });
     }
@@ -741,7 +839,6 @@
         if(!myName || !appData[myName] || !appData[myName].resolution) return;
         const list = appData[myName].resolution;
         if(list.length === 0) return;
-
         const flatList = [];
         list.forEach(item => {
             item.steps.forEach((stepName, idx) => {
@@ -751,22 +848,15 @@
                 flatList.push({ name, count });
             });
         });
-
         flatList.sort((a,b) => b.count - a.count);
         const maxVal = flatList.length > 0 ? Math.max(flatList[0].count, 1) : 1;
-
         const container = document.getElementById('habitStatsList');
         container.innerHTML = "";
-        
         flatList.forEach(item => {
             const row = document.createElement('div');
             row.className = 'habit-bar-item';
             const percent = (item.count / maxVal) * 100;
-            row.innerHTML = `
-                <div class="habit-bar-name">${item.name}</div>
-                <div class="habit-bar-graph"><div class="habit-bar-fill" style="width:${percent}%"></div></div>
-                <div class="habit-bar-count">${item.count}</div>
-            `;
+            row.innerHTML = `<div class="habit-bar-name">${item.name}</div><div class="habit-bar-graph"><div class="habit-bar-fill" style="width:${percent}%"></div></div><div class="habit-bar-count">${item.count}</div>`;
             container.appendChild(row);
         });
     }
@@ -775,28 +865,20 @@
         const listEl = document.getElementById(`list-resolution`);
         listEl.innerHTML = "";
         if(!appData[myName] || !appData[myName].resolution) return;
-        
         (appData[myName].resolution || []).forEach((item, idx) => {
             const li = document.createElement('li');
             const btnContainer = document.createElement('div');
             btnContainer.className = 'action-btns';
             const editBtn = document.createElement('button');
-            editBtn.className = 'edit-btn';
-            editBtn.textContent = '✎';
-            editBtn.onclick = () => window.editResolution(idx);
+            editBtn.className = 'edit-btn'; editBtn.textContent = '✎'; editBtn.onclick = () => window.editResolution(idx);
             const delBtn = document.createElement('button');
-            delBtn.className = 'del-btn';
-            delBtn.textContent = '×';
-            delBtn.onclick = () => window.deleteResolution(idx);
-            btnContainer.appendChild(editBtn);
-            btnContainer.appendChild(delBtn);
+            delBtn.className = 'del-btn'; delBtn.textContent = '×'; delBtn.onclick = () => window.deleteResolution(idx);
+            btnContainer.appendChild(editBtn); btnContainer.appendChild(delBtn);
             const topDiv = document.createElement('div');
             topDiv.className = 'li-top';
             const span = document.createElement('span');
-            span.className = 'li-text';
-            span.textContent = item.text;
-            topDiv.appendChild(span);
-            topDiv.appendChild(btnContainer);
+            span.className = 'li-text'; span.textContent = item.text;
+            topDiv.appendChild(span); topDiv.appendChild(btnContainer);
             const stepsDiv = document.createElement('div');
             stepsDiv.className = 'steps';
             item.steps.forEach((s, si) => {
@@ -806,8 +888,7 @@
                 stepDiv.onclick = () => window.toggleResolution(idx, si);
                 stepsDiv.appendChild(stepDiv);
             });
-            li.appendChild(topDiv);
-            li.appendChild(stepsDiv);
+            li.appendChild(topDiv); li.appendChild(stepsDiv);
             listEl.appendChild(li);
         });
     }
@@ -829,12 +910,9 @@
         const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
         BIBLE_DATA.books.filter(b => b.testament === bibleState.currentTestament).forEach(book => {
             const btn = document.createElement('div');
-            btn.className = 'book-btn';
-            btn.textContent = book.name;
+            btn.className = 'book-btn'; btn.textContent = book.name;
             let readCount = 0;
-            for(let i=1; i<=book.chapters; i++) {
-                if(isInViewYear(myBible[`${book.name}-${i}`])) readCount++;
-            }
+            for(let i=1; i<=book.chapters; i++) { if(isInViewYear(myBible[`${book.name}-${i}`])) readCount++; }
             if(readCount === book.chapters) { btn.classList.add('completed'); btn.textContent = `✔️ ${book.name}`; }
             else if (readCount > 0) { btn.classList.add('in-progress'); }
             btn.onclick = () => window.showChapters(book.name);
@@ -849,22 +927,15 @@
         const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
         for(let i=1; i<=book.chapters; i++) {
             const chapterKey = `${book.name}-${i}`;
-            const div = document.createElement('div');
-            div.className = 'chapter-item';
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `ch-${chapterKey}`;
+            const div = document.createElement('div'); div.className = 'chapter-item';
+            const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = `ch-${chapterKey}`;
             if(isInViewYear(myBible[chapterKey])) checkbox.checked = true;
             checkbox.onchange = (e) => window.toggleChapter(chapterKey, e.target.checked);
-            const label = document.createElement('label');
-            label.htmlFor = `ch-${chapterKey}`;
-            label.textContent = i;
-            div.appendChild(checkbox);
-            div.appendChild(label);
+            const label = document.createElement('label'); label.htmlFor = `ch-${chapterKey}`; label.textContent = i;
+            div.appendChild(checkbox); div.appendChild(label);
             container.appendChild(div);
         }
     }
-
     function updateMyStats() {
         if(!appData[myName]) return;
         const bible = appData[myName].bible || {};
@@ -878,7 +949,6 @@
         document.getElementById('myWeeklyBible').textContent = weeklyCount;
         document.getElementById('myYearlyBible').textContent = yearlyCount;
     }
-
     function renderMessages() {
         const chatList = document.getElementById('chatList');
         if(!chatList) return; 
@@ -886,15 +956,16 @@
         chatList.innerHTML = "";
         const msgs = appData.messages || [];
         msgs.forEach((msg, idx) => {
+            // [New] Check if msg.id is same as myName for deletion rights
+            const isMine = (msg.id === myName) || (msg.sender === appData.auth[myName].name); // Compatibility check
             const div = document.createElement('div');
-            div.className = `msg-card ${msg.sender === myName ? 'mine' : ''}`;
+            div.className = `msg-card ${isMine ? 'mine' : ''}`;
             let dateStr = "";
             try { dateStr = new Date(msg.ts).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch(e) {}
             div.innerHTML = `<div class="msg-sender">${msg.sender}</div><div>${msg.text}</div><div class="msg-time">${dateStr}</div>`;
-            if(msg.sender === myName) {
+            if(isMine) {
                 const delBtn = document.createElement('div');
-                delBtn.className = 'msg-delete';
-                delBtn.textContent = '×';
+                delBtn.className = 'msg-delete'; delBtn.textContent = '×';
                 delBtn.onclick = () => window.deleteMsg(idx);
                 div.appendChild(delBtn);
             }
