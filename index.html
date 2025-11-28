@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>우리 가족 사랑방 (V26_HabitStats)</title>
+    <title>우리 가족 사랑방 (V27_Streak)</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         /* [변수] */
@@ -138,8 +138,11 @@
         .period-box { background: var(--card-bg); padding: 15px; border-radius: 15px; border: 2px solid var(--stats); margin-bottom: 20px; text-align: center; }
         .rank-card { display: flex; align-items: center; padding: 15px; margin-bottom: 10px; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); }
         .rank-num { font-size: 20px; margin-right: 10px; width: 30px; text-align: center; }
-        .rank-name { flex: 1; font-weight: bold; margin-left: 5px; } .rank-score { font-weight: 900; color: var(--primary); }
+        .rank-name { flex: 1; font-weight: bold; margin-left: 5px; display: flex; align-items: center; gap: 5px; } .rank-score { font-weight: 900; color: var(--primary); }
         .rank-unit { font-size: 12px; color: var(--sub-text); font-weight: normal; margin-left: 2px; }
+        
+        /* [New Streak Style] */
+        .streak-badge { background: #ffebee; color: #d32f2f; font-size: 11px; padding: 2px 6px; border-radius: 10px; display: inline-flex; align-items: center; gap: 2px; border: 1px solid #ffcdd2; margin-left: 5px;}
         
         .analysis-box { margin-top:30px; background:var(--card-bg); padding:20px; border-radius:16px; border:1px solid var(--border); }
         .habit-bar-item { display: flex; align-items: center; margin-bottom: 12px; }
@@ -389,7 +392,6 @@
         if (!v) return;
         const p = v.split('/');
         if(!appData[myName].resolution) appData[myName].resolution = [];
-        // [New] Init counts with 0
         const steps = p[1]?p.slice(1).map(s=>s.trim()):["완료"];
         appData[myName].resolution.push({ 
             text: p[0].trim(), 
@@ -419,11 +421,10 @@
             const p = newText.split('/');
             const newSteps = p.length > 1 ? p.slice(1).map(s=>s.trim()) : ["완료"];
             item.text = p[0].trim();
-            // Resizing counts logic
             if(item.steps.length !== newSteps.length) {
                 item.steps = newSteps;
                 item.done = Array(newSteps.length).fill(false);
-                item.counts = Array(newSteps.length).fill(0); // Reset counts if steps change significantly
+                item.counts = Array(newSteps.length).fill(0); 
             } else {
                 item.steps = newSteps;
             }
@@ -436,7 +437,6 @@
         const isNowDone = !item.done[si];
         item.done[si] = isNowDone;
         
-        // [New] Accumulate Counts
         if(!item.counts) item.counts = new Array(item.steps.length).fill(0);
         if(isNowDone) item.counts[si]++;
         else item.counts[si] = Math.max(0, item.counts[si] - 1);
@@ -451,7 +451,7 @@
         saveToServer();
     }
 
-    // Bible & Stats (Same as before)
+    // Bible & Stats
     window.showBibleBooks = function(testament) {
         bibleState.currentTestament = testament;
         document.getElementById('bible-main-view').classList.add('hidden-view');
@@ -580,7 +580,6 @@
             FAMILY_MEMBERS.forEach(m => {
                 if (!appData[m]) { appData[m] = { resolution: [], bible: {}, history: {} }; needSave = true; }
             });
-
             if (data.lastDate !== new Date().toDateString()) {
                 resetDailyCheckboxes();
             } else {
@@ -612,7 +611,6 @@
         for (let m in appData) {
             if(appData[m] && appData[m].resolution) {
                 appData[m].resolution.forEach(item => item.done.fill(false));
-                // Note: We do NOT reset 'counts' here. That's the whole point!
             }
         }
         await saveToServer();
@@ -629,7 +627,7 @@
             updateMyStats(); 
         }
         renderAllRankings();
-        renderHabitAnalysis(); // [New]
+        renderHabitAnalysis();
         const p = appData.period || {};
         if(p.start && p.end) {
             document.getElementById('startDateInput').value = p.start;
@@ -645,6 +643,132 @@
         const parts = dateStr.split('-');
         if(parts.length < 1) return false;
         return parseInt(parts[0]) === currentViewYear;
+    }
+
+    // [New] Calculate Streak
+    function calculateStreak(history) {
+        if(!history) return 0;
+        let streak = 0;
+        const now = new Date();
+        // Check from yesterday backwards (or today if already done)
+        for (let i = 0; i < 365; i++) {
+            const d = new Date(now);
+            d.setDate(now.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            
+            // If today: if done, count it. if not done, don't break yet.
+            if(i === 0) {
+                if(history[dateStr] > 0) streak++;
+                continue;
+            }
+            // Past days
+            if(history[dateStr] > 0) {
+                streak++;
+            } else {
+                break; // Stop counting
+            }
+        }
+        return streak;
+    }
+
+    function renderAllRankings() {
+        const resList = document.getElementById('resolutionRankList');
+        resList.innerHTML = "";
+        
+        const p = appData.period || {};
+        const hasPeriod = (p.start && p.end);
+        
+        const resRank = FAMILY_MEMBERS.map(m => {
+            let score = 0;
+            const memberData = appData[m] || {};
+            const history = memberData.history || {};
+            // [New] Calc Streak
+            const streak = calculateStreak(history);
+
+            if (hasPeriod) {
+                for(const [dateStr, val] of Object.entries(history)) {
+                    if (dateStr >= p.start && dateStr <= p.end) score += val;
+                }
+            }
+            return { name: m, val: score, streak: streak };
+        }).sort((a,b) => b.val - a.val);
+        
+        resRank.forEach((d, i) => {
+            // [New] Streak Badge
+            let streakHtml = "";
+            if(d.streak > 1) { // Show fire if streak > 1 day
+                streakHtml = `<div class="streak-badge">🔥 ${d.streak}일</div>`;
+            }
+            
+            const div = document.createElement('div');
+            div.className = "rank-card";
+            div.innerHTML = `
+                <div class="rank-num">${i==0?'🥇':i==1?'🥈':i==2?'🥉':i+1}</div>
+                <div class="rank-name">${d.name} ${streakHtml}</div>
+                <div class="rank-score">${d.val} <span class="rank-unit">점</span></div>
+            `;
+            resList.appendChild(div);
+        });
+
+        const bibleList = document.getElementById('bibleRankList');
+        bibleList.innerHTML = "";
+        
+        const { startStr, endStr } = getWeekRangeStrings();
+        const partsS = startStr.split('-');
+        const partsE = endStr.split('-');
+        if(partsS.length === 3) {
+            document.getElementById('bibleYearLabel').textContent = `이번 주 (${parseInt(partsS[1])}.${parseInt(partsS[2])}~${parseInt(partsE[1])}.${parseInt(partsE[2])})`;
+        }
+
+        const bibleRank = FAMILY_MEMBERS.map(m => {
+            let count = 0;
+            const memberData = appData[m] || {};
+            const bible = memberData.bible || {};
+            for(const [key, dateStr] of Object.entries(bible)) {
+                if(dateStr >= startStr && dateStr <= endStr) count++; 
+            }
+            return { name: m, val: count };
+        }).sort((a,b) => b.val - a.val);
+        bibleRank.forEach((d, i) => {
+            const div = document.createElement('div');
+            div.className = "rank-card";
+            div.innerHTML = `<div class="rank-num">${i==0?'🥇':i==1?'🥈':i==2?'🥉':i+1}</div><div class="rank-name">${d.name}</div><div class="rank-score">${d.val} <span class="rank-unit">장</span></div>`;
+            bibleList.appendChild(div);
+        });
+    }
+
+    function renderHabitAnalysis() {
+        if(!myName || !appData[myName] || !appData[myName].resolution) return;
+        const list = appData[myName].resolution;
+        if(list.length === 0) return;
+
+        const flatList = [];
+        list.forEach(item => {
+            item.steps.forEach((stepName, idx) => {
+                const count = (item.counts && item.counts[idx]) ? item.counts[idx] : 0;
+                let name = item.text;
+                if(item.steps.length > 1) name += ` (${stepName})`;
+                flatList.push({ name, count });
+            });
+        });
+
+        flatList.sort((a,b) => b.count - a.count);
+        const maxVal = flatList.length > 0 ? Math.max(flatList[0].count, 1) : 1;
+
+        const container = document.getElementById('habitStatsList');
+        container.innerHTML = "";
+        
+        flatList.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'habit-bar-item';
+            const percent = (item.count / maxVal) * 100;
+            row.innerHTML = `
+                <div class="habit-bar-name">${item.name}</div>
+                <div class="habit-bar-graph"><div class="habit-bar-fill" style="width:${percent}%"></div></div>
+                <div class="habit-bar-count">${item.count}</div>
+            `;
+            container.appendChild(row);
+        });
     }
 
     function renderMyList() {
@@ -753,88 +877,6 @@
         }
         document.getElementById('myWeeklyBible').textContent = weeklyCount;
         document.getElementById('myYearlyBible').textContent = yearlyCount;
-    }
-
-    function renderAllRankings() {
-        const resList = document.getElementById('resolutionRankList');
-        resList.innerHTML = "";
-        const p = appData.period || {};
-        const hasPeriod = (p.start && p.end);
-        
-        const resRank = FAMILY_MEMBERS.map(m => {
-            let score = 0;
-            const memberData = appData[m] || {};
-            const history = memberData.history || {};
-            if (hasPeriod) {
-                for(const [dateStr, val] of Object.entries(history)) {
-                    if (dateStr >= p.start && dateStr <= p.end) score += val;
-                }
-            }
-            return { name: m, val: score };
-        }).sort((a,b) => b.val - a.val);
-        resRank.forEach((d, i) => resList.appendChild(createRankCard(i, d.name, d.val, "점")));
-
-        const bibleList = document.getElementById('bibleRankList');
-        bibleList.innerHTML = "";
-        const { startStr, endStr } = getWeekRangeStrings();
-        const partsS = startStr.split('-');
-        const partsE = endStr.split('-');
-        if(partsS.length === 3) {
-            document.getElementById('bibleYearLabel').textContent = `이번 주 (${parseInt(partsS[1])}.${parseInt(partsS[2])}~${parseInt(partsE[1])}.${parseInt(partsE[2])})`;
-        }
-        const bibleRank = FAMILY_MEMBERS.map(m => {
-            let count = 0;
-            const memberData = appData[m] || {};
-            const bible = memberData.bible || {};
-            for(const [key, dateStr] of Object.entries(bible)) {
-                if(dateStr >= startStr && dateStr <= endStr) count++; 
-            }
-            return { name: m, val: count };
-        }).sort((a,b) => b.val - a.val);
-        bibleRank.forEach((d, i) => bibleList.appendChild(createRankCard(i, d.name, d.val, "장")));
-    }
-
-    // [New] Habit Stats Renderer
-    function renderHabitAnalysis() {
-        if(!myName || !appData[myName] || !appData[myName].resolution) return;
-        const list = appData[myName].resolution;
-        if(list.length === 0) return;
-
-        const flatList = [];
-        list.forEach(item => {
-            item.steps.forEach((stepName, idx) => {
-                const count = (item.counts && item.counts[idx]) ? item.counts[idx] : 0;
-                let name = item.text;
-                if(item.steps.length > 1) name += ` (${stepName})`;
-                flatList.push({ name, count });
-            });
-        });
-
-        // Sort descending
-        flatList.sort((a,b) => b.count - a.count);
-        const maxVal = flatList.length > 0 ? Math.max(flatList[0].count, 1) : 1;
-
-        const container = document.getElementById('habitStatsList');
-        container.innerHTML = "";
-        
-        flatList.forEach(item => {
-            const row = document.createElement('div');
-            row.className = 'habit-bar-item';
-            const percent = (item.count / maxVal) * 100;
-            row.innerHTML = `
-                <div class="habit-bar-name">${item.name}</div>
-                <div class="habit-bar-graph"><div class="habit-bar-fill" style="width:${percent}%"></div></div>
-                <div class="habit-bar-count">${item.count}</div>
-            `;
-            container.appendChild(row);
-        });
-    }
-
-    function createRankCard(i, name, val, unit) {
-        const div = document.createElement('div');
-        div.className = "rank-card";
-        div.innerHTML = `<div class="rank-num">${i==0?'🥇':i==1?'🥈':i==2?'🥉':i+1}</div><div class="rank-name">${name}</div><div class="rank-score">${val} <span class="rank-unit">${unit}</span></div>`;
-        return div;
     }
 
     function renderMessages() {
