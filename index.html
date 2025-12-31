@@ -2,177 +2,223 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>우리 가족 사랑방</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>우리 가족 결단서 & 성경통독</title>
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --bg: #f5f5f5;
+            --card: #ffffff;
+            --text: #333333;
+            --border: #dddddd;
+            --shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        body.dark-mode {
+            --primary: #81c784;
+            --bg: #121212;
+            --card: #1e1e1e;
+            --text: #e0e0e0;
+            --border: #333333;
+        }
+        body { margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background: var(--bg); color: var(--text); padding-bottom: 80px; transition: background 0.3s; }
+        
+        /* 헤더 스타일 */
+        header { background: var(--card); padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
+        .logo { font-weight: bold; font-size: 1.2rem; color: var(--primary); }
+        .user-badge { background: var(--bg); padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; cursor: pointer; border: 1px solid var(--border); }
+        
+        /* 오늘의 말씀 */
+        .verse-card { background: var(--card); margin: 15px; padding: 15px; border-radius: 12px; box-shadow: var(--shadow); text-align: center; }
+        .verse-text { font-size: 1rem; margin-bottom: 8px; line-height: 1.4; word-break: keep-all; }
+        .verse-ref { font-size: 0.85rem; color: #666; font-weight: bold; }
 
-    <link rel="manifest" href="manifest.json">
+        /* 탭 네비게이션 */
+        .tabs { display: flex; background: var(--card); margin: 0 15px; border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); margin-bottom: 15px; }
+        .tab { flex: 1; text-align: center; padding: 12px; cursor: pointer; transition: 0.2s; font-size: 0.95rem; }
+        .tab.active { background: var(--primary); color: white; font-weight: bold; }
 
-    <meta name="theme-color" content="#2196F3" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+        /* 페이지 공통 */
+        .page { display: none; padding: 0 15px; animation: fadeIn 0.3s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="사랑방">
+        /* 입력창 스타일 */
+        .input-area, .msg-input-box { display: flex; gap: 8px; margin-bottom: 15px; }
+        input[type="text"], input[type="date"], input[type="time"] { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--card); color: var(--text); font-size: 1rem; }
+        button { padding: 10px 15px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+        
+        /* 리스트 스타일 (결단서) */
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { background: var(--card); margin-bottom: 10px; padding: 15px; border-radius: 10px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; }
+        .res-content { flex: 1; }
+        .res-text { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; cursor: pointer; }
+        .steps { display: flex; gap: 5px; flex-wrap: wrap; }
+        .step-item { display: flex; align-items: center; gap: 4px; background: var(--bg); padding: 4px 8px; border-radius: 4px; font-size: 0.85rem; cursor: pointer; border: 1px solid var(--border); }
+        .step-item.done { background: var(--primary); color: white; border-color: var(--primary); }
+        .del-btn { background: #ff5252; padding: 5px 10px; font-size: 0.8rem; margin-left: 10px; }
 
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%232196F3%22/><path d=%22M50 20 L80 45 L80 80 L20 80 L20 45 Z%22 fill=%22white%22/><text x=%2250%22 y=%2270%22 font-size=%2235%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>❤️</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232196F3%22/><path d=%22M50 20 L80 45 L80 80 L20 80 L20 45 Z%22 fill=%22white%22/><text x=%2250%22 y=%2270%22 font-size=%2235%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>❤️</text></svg>">
+        /* 성경 탭 스타일 */
+        .bible-stat-summary { background: #E8F5E9; color: #2E7D32; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 15px; font-weight: bold; font-size: 0.95rem; }
+        #bible-main-view { display: flex; gap: 10px; justify-content: center; height: 200px; align-items: center; }
+        .testament-btn { width: 45%; height: 100px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; border-radius: 15px; box-shadow: var(--shadow); }
+        .testament-btn.old { background: #FFF3E0; color: #E65100; }
+        .testament-btn.new { background: #E3F2FD; color: #1565C0; }
+        
+        .hidden-view { display: none !important; }
+        .bible-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-top: 10px; }
+        .bible-btn { background: var(--card); padding: 12px 5px; text-align: center; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; font-size: 0.9rem; position: relative; }
+        .bible-btn.completed-book { background: #E8F5E9; border-color: #4CAF50; color: #2E7D32; font-weight: bold; }
+        .round-badge { position: absolute; top: -5px; right: -5px; background: #FF9800; color: white; font-size: 0.7rem; padding: 2px 5px; border-radius: 10px; }
 
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+        .chapters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; margin-top: 15px; }
+        .chapter-item { display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--card); padding: 8px; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+        .chapter-item input { width: 20px; height: 20px; margin-bottom: 4px; }
+        
+        .chapter-controls { display: flex; gap: 5px; margin-bottom: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .chapter-controls button { font-size: 0.85rem; padding: 8px 12px; }
+        .finish-book-btn { background: #FF9800; }
+
+        /* 메시지 스타일 */
+        .message-section { margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
+        #msg-list { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column-reverse; gap: 10px; margin-bottom: 10px; }
+        #msg-list li { background: transparent; padding: 0; box-shadow: none; display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 5px; }
+        .msg-bubble { background: var(--card); padding: 8px 12px; border-radius: 12px; border-bottom-left-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); max-width: 80%; }
+        .my-msg { align-items: flex-end !important; }
+        .my-msg .msg-bubble { background: #DCF8C6; border-bottom-left-radius: 12px; border-bottom-right-radius: 2px; }
+        .msg-sender { font-size: 0.75rem; color: #666; margin-bottom: 2px; }
+        .msg-info { font-size: 0.7rem; color: #999; text-align: right; margin-top: 4px; display: flex; justify-content: flex-end; gap: 5px; }
+        .msg-del { color: red; cursor: pointer; font-weight: bold; }
+
+        /* 로그인 오버레이 */
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .login-overlay.hidden { display: none; }
+        .login-box { background: white; padding: 25px; border-radius: 15px; width: 90%; max-width: 400px; text-align: center; }
+        .login-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; }
+        .login-btn { padding: 20px; background: #f5f5f5; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; transition: 0.2s; border: 2px solid transparent; }
+        .login-btn:hover { background: #e0e0e0; }
+        .login-btn.taken { background: #E8F5E9; border-color: #4CAF50; color: #2E7D32; font-weight: bold; }
+        
+        /* 캘린더 및 통계 */
+        .cal-header { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--card); border-radius: 8px; margin-bottom: 10px; font-weight: bold; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; background: var(--bg); }
+        .cal-day-label { text-align: center; font-size: 0.8rem; padding: 5px 0; color: #666; }
+        .cal-day { aspect-ratio: 1; background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; position: relative; cursor: pointer; border-radius: 4px; }
+        .cal-day.today { border: 2px solid var(--primary); }
+        .dot-bible { width: 6px; height: 6px; background: #2196F3; border-radius: 50%; position: absolute; bottom: 4px; }
+        .rank-card { display: flex; align-items: center; background: var(--card); padding: 12px; margin-bottom: 8px; border-radius: 10px; }
+        .rank-num { font-size: 1.2rem; font-weight: bold; width: 30px; color: var(--primary); }
+        .rank-name { flex: 1; font-weight: bold; }
+        .rank-score { font-weight: bold; color: #FF9800; }
+
+        /* 기타 */
+        .back-btn { background: #9E9E9E; font-size: 0.85rem; padding: 6px 12px; margin-bottom: 10px; }
+        #serverStatus { font-size: 0.7rem; text-align: center; margin-top: 20px; color: #999; }
+        .accordion-header { background: var(--card); padding: 15px; margin-top: 10px; border-radius: 8px; display: flex; justify-content: space-between; cursor: pointer; font-weight: bold; }
+        .accordion-content { display: none; padding: 10px; }
+        .accordion-content.active { display: block; }
+        .habit-bar-item { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.9rem; }
+        .habit-bar-name { width: 80px; text-align: right; margin-right: 10px; font-size: 0.8rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .habit-bar-graph { flex: 1; background: #eee; height: 10px; border-radius: 5px; overflow: hidden; }
+        .habit-bar-fill { height: 100%; background: var(--primary); }
+        .habit-bar-count { width: 30px; text-align: right; margin-left: 5px; font-weight: bold; }
+    </style>
 </head>
 <body>
 
-<div id="loginScreen" class="login-screen">
-    <div class="big-logo">
-        <div class="heart-badge-big">❤️</div>
+    <div id="loginScreen" class="login-overlay">
+        <div class="login-box">
+            <h2>🏡 우리 가족 로그인</h2>
+            <p style="font-size:0.9rem; color:#666;">가족 구성원을 선택해주세요</p>
+            <div id="loginGrid" class="login-grid"></div>
+        </div>
     </div>
-    <h2 style="margin-bottom:10px;">우리 가족 사랑방</h2>
-    <p style="margin-bottom:30px; font-size:13px; opacity:0.8;">함께 나누는 은혜와 사랑</p>
-    <div class="member-grid" id="loginGrid"></div>
-</div>
 
-<div class="app-container">
-    <aside class="sidebar-area">
-        <header>
-            <div class="top-row">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div class="app-logo"><div class="heart-badge">❤️</div></div>
-                    <div>
-                        <span style="font-size:12px; opacity:0.7; font-weight:bold;">Love House</span>
-                        <h1 class="user-name" id="userNameDisplay" style="font-size:18px;">사용자</h1>
-                    </div>
-                </div>
-                <div class="header-btns">
-                    <button class="icon-btn" onclick="window.toggleTheme()">🌙</button>
-                    <button class="icon-btn" onclick="window.logoutAction()">🚪</button>
-                </div>
-            </div>
-            <div class="verse-box" id="dailyVerseBox">
-                <div class="verse-text" id="verseText">로딩 중...</div>
-                <div class="verse-ref" id="verseRef"></div>
-            </div>
-            <div class="year-selector">
-                <button class="year-btn" onclick="window.changeYear(-1)">◀</button>
-                <span class="current-year" id="displayYear">2025</span>
-                <button class="year-btn" onclick="window.changeYear(1)">▶</button>
-            </div>
-            <div style="text-align:center; font-size:11px; color:var(--sub-text); margin-bottom:10px;">▲ 성경 읽기 기록 연도</div>
-        </header>
-        <div class="tabs">
-            <div class="tab active" data-target="resolution" onclick="window.goTab('resolution', this)">🔥 결단서</div>
-            <div class="tab" data-target="bible" onclick="window.goTab('bible', this)" style="color:var(--bible)">📖 성경</div>
-            <div class="tab" data-target="stats" onclick="window.goTab('stats', this)" style="color:var(--stats)">📊 통계</div>
-            <div class="tab" data-target="cheers" onclick="window.goTab('cheers', this)" style="color:var(--chat)">🗣️ 소통</div>
-            <div class="tab" data-target="settings" onclick="window.goTab('settings', this)">⚙️ 설정</div>
+    <header>
+        <div class="logo">Family Resolution ✨</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button onclick="window.toggleTheme()" style="padding:5px 10px; background:var(--bg); color:var(--text); border:1px solid var(--border); font-size:12px;">🌗</button>
+            <div id="userNameDisplay" class="user-badge" onclick="window.logoutAction()">로그인 필요</div>
         </div>
-    </aside>
+    </header>
 
-    <main class="content-area">
-        <div id="resolution" class="page active">
-            <div class="input-group">
-                <input type="text" id="input-resolution" placeholder="예: 말씀 1장 읽기 / 완료" onkeypress="if(event.key==='Enter') window.addItem('resolution')">
-                <button class="add-btn" onclick="window.addItem('resolution')">+</button>
-            </div>
-            <ul id="list-resolution"></ul>
-        </div>
+    <div class="verse-card">
+        <div id="verseText" class="verse-text">말씀을 불러오는 중...</div>
+        <div id="verseRef" class="verse-ref"></div>
+    </div>
 
-        <div id="bible" class="page">
-            <div class="bible-stats-box">
-                <div class="stat-card">
-                    <div style="font-size:12px;" id="weekLabel">이번 주 (토~금)</div>
-                    <div class="stat-val" id="myWeeklyBible">0</div>
-                </div>
-                <div class="stat-card" style="background:#004d40;">
-                    <div style="font-size:12px;" id="yearTotalLabel">2025년 누적</div>
-                    <div class="stat-val" id="myYearlyBible">0</div>
-                </div>
-            </div>
-            <div id="bible-main-view">
-                <div class="testament-grid">
-                    <button class="testament-btn" onclick="window.showBibleBooks('old')">구약 성경</button>
-                    <button class="testament-btn" onclick="window.showBibleBooks('new')">신약 성경</button>
-                </div>
-            </div>
-            <div id="bible-books-view" class="hidden-view">
-                <div class="bible-nav-header">
-                    <button class="bible-back-btn" onclick="window.showBibleMain()">◀ 뒤로</button>
-                    <span style="font-size:18px; font-weight:bold; color:var(--bible);" id="bible-testament-title">구약</span>
-                </div>
-                <div class="book-grid" id="book-grid-container"></div>
-            </div>
-            <div id="bible-chapters-view" class="hidden-view">
-                <div class="bible-nav-header">
-                    <button class="bible-back-btn" onclick="window.backToBooks()">◀ 뒤로</button>
-                    <span style="font-size:18px; font-weight:bold; color:var(--bible);" id="bible-book-title">창세기</span>
-                </div>
-                <div style="display:flex; gap:10px; margin-bottom:15px;">
-                    <button style="flex:1; padding:10px; background:#00796b; color:white; border:none; border-radius:8px;" onclick="window.controlAllChapters(true)">전체 선택</button>
-                    <button style="flex:1; padding:10px; background:#757575; color:white; border:none; border-radius:8px;" onclick="window.controlAllChapters(false)">전체 해제</button>
-                </div>
-                <div class="chapter-grid" id="chapter-grid-container"></div>
-            </div>
-        </div>
+    <div style="margin: 0 15px 15px 15px; text-align: right;">
+        <span style="font-size:0.8rem; color:#666;">⏰ 약속 시간: </span>
+        <input type="time" id="alarm-time-input" onchange="window.saveAlarmTime()" style="padding:4px;">
+    </div>
 
-        <div id="stats" class="page">
-            <div class="rank-grid">
-                <div>
-                    <div class="period-box">
-                        <div style="font-weight:bold; color:var(--stats);">📅 결단서 시즌 기간 설정</div>
-                        <div style="display:flex; gap:5px; justify-content:center; margin-top:10px;">
-                            <input type="date" id="startDateInput" style="width:40%;"> ~ <input type="date" id="endDateInput" style="width:40%;">
-                        </div>
-                        <button class="save-period-btn" onclick="window.savePeriod()" style="margin-top:10px; padding:8px 20px; border:none; background:var(--stats); color:white; border-radius:10px;">적용</button>
-                    </div>
-                    <h4 style="color:var(--primary); margin-bottom:10px;">🔥 결단서 랭킹 <span style="font-size:11px; font-weight:normal; color:#666;" id="rankPeriodLabel"></span></h4>
-                    <div id="resolutionRankList" style="margin-bottom:20px;"></div>
-                </div>
-                <div>
-                    <h4 style="color:var(--bible); margin-bottom:10px;">📖 성경 다독왕 <span style="font-size:11px; font-weight:normal; color:#666;" id="bibleYearLabel"></span></h4>
-                    <div id="bibleRankList"></div>
-                </div>
-            </div>
-            <div class="analysis-box">
-                <h4 style="margin:0 0 15px 0; color:#333;">📋 나의 습관 분석</h4>
-                <div id="habitStatsList">
-                    <div style="text-align:center; color:#999; font-size:12px;">아직 데이터가 충분하지 않습니다.</div>
-                </div>
-            </div>
-        </div>
+    <div class="tabs">
+        <div class="tab active" onclick="window.goTab('resolution', this)">✅ 나의 다짐</div>
+        <div class="tab" onclick="window.goTab('bible', this)">📖 성경 읽기</div>
+        <div class="tab" onclick="window.goTab('stats', this)">📊 가족 통계</div>
+    </div>
 
-        <div id="cheers" class="page">
-            <div style="text-align:center; color:var(--sub-text); font-size:13px; margin-bottom:10px;">가족들에게 응원의 한마디를 남겨주세요! 💖</div>
-            <div class="chat-container" id="chatList"></div>
-            <div class="input-group">
-                <input type="text" id="input-msg" placeholder="메시지 입력..." onkeypress="if(event.key==='Enter') window.sendMsg()">
-                <button class="add-btn" onclick="window.sendMsg()" style="background:var(--chat);">💌</button>
-            </div>
+    <div id="resolution" class="page active">
+        <div class="input-area">
+            <input type="text" id="input-resolution" placeholder="예: 매일 운동하기 / 30분 / 완료">
+            <button onclick="window.addItem()">추가</button>
         </div>
         
-        <div id="settings" class="page">
-             <div class="settings-card">
-                 <h3 style="margin-top:0;">👤 프로필 수정</h3>
-                 <div style="margin-bottom:15px;">
-                     <label style="font-size:13px; color:var(--sub-text);">닉네임 변경</label>
-                     <div style="display:flex; gap:5px; margin-top:5px;">
-                         <input type="text" id="edit-nickname" placeholder="새 닉네임">
-                         <button onclick="window.updateNickname()" style="width:60px; border-radius:10px; border:none; background:var(--primary); color:white;">변경</button>
-                     </div>
-                 </div>
-                 <div style="margin-bottom:15px;">
-                     <label style="font-size:13px; color:var(--sub-text);">비밀번호(PIN) 변경</label>
-                     <div style="display:flex; gap:5px; margin-top:5px;">
-                         <input type="password" id="edit-pin" placeholder="새 PIN (4자리)" maxlength="4">
-                         <button onclick="window.updatePin()" style="width:60px; border-radius:10px; border:none; background:var(--edit); color:white;">변경</button>
-                     </div>
-                 </div>
-             </div>
+        <ul id="list-resolution"></ul>
+        
+        <div class="message-section">
+            <h3>💬 가족 응원 메시지</h3>
+            <div class="msg-input-box">
+                <input type="text" id="input-msg" placeholder="서로에게 힘이 되는 한마디!">
+                <button onclick="window.sendMsg()">전송</button>
+            </div>
+            <ul id="msg-list"></ul>
         </div>
-    </main>
-    
-    <div id="serverStatus">연결 대기중...</div>
-</div>
+    </div>
 
-<script type="module" src="script.js"></script>
+    <div id="bible" class="page">
+        <div id="myBibleStat" class="bible-stat-summary">로딩 중...</div>
+
+        <div id="bible-main-view">
+            <div class="testament-btn old" onclick="window.showBibleBooks('old')">
+                <div>📜<br>구약 성경</div>
+            </div>
+            <div class="testament-btn new" onclick="window.showBibleBooks('new')">
+                <div>✝️<br>신약 성경</div>
+            </div>
+        </div>
+
+        <div id="bible-books-view" class="hidden-view">
+            <button class="back-btn" onclick="window.showBibleMain()">◀ 처음으로</button>
+            <h3 id="bible-testament-title" style="text-align:center; margin-top:0;"></h3>
+            <div id="bible-books-grid" class="bible-grid"></div>
+        </div>
+
+        <div id="bible-chapters-view" class="hidden-view">
+            <button class="back-btn" onclick="window.backToBooks()">◀ 책 목록으로</button>
+            <h3 id="bible-book-title" style="text-align:center; margin-top:0;"></h3>
+            
+            <div class="chapter-controls">
+                <button onclick="window.controlAllChapters(true)">전체 V</button>
+                <button onclick="window.controlAllChapters(false)">전체 X</button>
+                <button class="finish-book-btn" onclick="window.finishBookAndReset()">🏆 이 책 완독!</button>
+            </div>
+            
+            <div id="bible-chapters-grid" class="chapters-grid"></div>
+        </div>
+    </div>
+
+    <div id="stats" class="page">
+        <div style="text-align:center; padding:20px; color:#666;">
+            통계 데이터를 불러오는 중입니다...<br>
+            (잠시 후 자동으로 표시됩니다)
+        </div>
+    </div>
+
+    <div id="serverStatus">⚪ 서버 연결 대기 중</div>
+
+    <script type="module" src="script.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 </body>
 </html>
