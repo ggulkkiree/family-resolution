@@ -171,7 +171,6 @@ window.goTab = function(t, element) {
     if(t==='bible') updateUI();
 }
 
-// [수정됨] 통계 페이지 렌더링 (결단서만 active, 나머지 닫힘)
 function renderStatsPage() {
     const statsDiv = document.getElementById('stats');
     
@@ -720,7 +719,14 @@ try {
     onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
-            appData = data.appData || {};
+            
+            // [중요] 데이터 구조 자동 감지 (Matryoshka fix)
+            if (data.appData) {
+                appData = data.appData; 
+            } else {
+                appData = data; 
+            }
+
             let needSave = false;
             if(!appData.period) { appData.period = {start:"", end:""}; needSave = true; }
             if(!appData.messages) { appData.messages = []; needSave = true; }
