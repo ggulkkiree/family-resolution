@@ -1,11 +1,11 @@
 /* =================================================================
-   [1] 중요: 외부 기능 불러오기
+   [1] 모듈 불러오기
    ================================================================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* =================================================================
-   [2] 데이터 및 설정
+   [2] 데이터
    ================================================================= */
 const BIBLE_DATA = {
     "books": [
@@ -71,16 +71,19 @@ let appData = {};
 let bibleState = { currentTestament: null, currentBook: null };
 let currentViewYear = new Date().getFullYear();
 let myName = localStorage.getItem('myId'); 
+let lastAlarmMinute = "";
+
+// [신규] 달력용 변수 (현재 보고 있는 연/월)
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0부터 시작 (0=1월)
 
 /* =================================================================
    [3] 기능 함수들
    ================================================================= */
-// 로그인
 window.tryLogin = function(slotId) {
     const authData = (appData.auth && appData.auth[slotId]) ? appData.auth[slotId] : null;
 
     if (!authData) {
-        // 신규 등록
         const newName = prompt("사용할 닉네임을 입력하세요:");
         if(!newName) return;
         const newPin = prompt("비밀번호(PIN) 4자리를 설정하세요:");
@@ -94,7 +97,6 @@ window.tryLogin = function(slotId) {
             loginSuccess(slotId);
         });
     } else {
-        // 기존 로그인
         const inputPin = prompt(`'${authData.name}'님의 비밀번호를 입력하세요:`);
         if(inputPin === authData.pin) {
             loginSuccess(slotId);
@@ -120,7 +122,13 @@ window.logoutAction = function() {
     }
 }
 
-// 닉네임/PIN 설정
+window.saveAlarmTime = function() {
+    const timeInput = document.getElementById('alarm-time-input').value;
+    if(!timeInput) return alert("시간을 선택해주세요.");
+    appData.alarmTime = timeInput;
+    saveToServer().then(() => alert(`⏰ 가족 약속 시간이 [${timeInput}]로 설정되었습니다.`));
+}
+
 window.updateNickname = function() {
     const val = document.getElementById('edit-nickname').value;
     if(!val) return;
@@ -141,7 +149,6 @@ window.updatePin = function() {
     }
 }
 
-// UI 제어
 window.toggleTheme = function() {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
@@ -156,10 +163,16 @@ window.goTab = function(t, element) {
     element.classList.add('active');
     document.querySelectorAll('.page').forEach(e => e.classList.remove('active'));
     document.getElementById(t).classList.add('active');
-    if(t==='stats'||t==='bible') updateUI();
+    
+    // [수정] 통계 탭에 들어가면 달력도 그리기
+    if(t==='stats') {
+        renderCalendar();
+        renderAllRankings();
+        renderHabitAnalysis();
+    }
+    if(t==='bible') updateUI();
 }
 
-// 결단서
 window.addItem = function(cat) {
     if(!myName) return;
     const input = document.getElementById(`input-resolution`);
@@ -225,7 +238,6 @@ window.toggleResolution = function(i, si) {
     saveToServer();
 }
 
-// 성경
 window.showBibleBooks = function(testament) {
     bibleState.currentTestament = testament;
     document.getElementById('bible-main-view').classList.add('hidden-view');
@@ -271,34 +283,28 @@ window.toggleChapter = function(key, isChecked) {
     updateMyStats(); 
     saveToServer();
 }
-
-// [신규] 완독 및 리셋 기능
 window.finishBookAndReset = function() {
     const bookName = bibleState.currentBook;
     const book = BIBLE_DATA.books.find(b => b.name === bookName);
     if(!book) return;
 
     if(confirm(`🎉 축하합니다!\n'${bookName}'을(를) 정말 완독 처리하시겠습니까?\n\n- 체크박스가 모두 초기화됩니다.\n- 완독 횟수(배지)가 1 증가합니다.`)) {
-        // 1. 배지(회차) 증가
         if(!appData[myName].bibleRounds) appData[myName].bibleRounds = {};
         const currentRound = appData[myName].bibleRounds[bookName] || 0;
         appData[myName].bibleRounds[bookName] = currentRound + 1;
 
-        // 2. 체크박스 초기화
         for(let i=1; i<=book.chapters; i++) {
             const key = `${bookName}-${i}`;
             delete appData[myName].bible[key];
         }
 
-        // 3. 저장 및 축하
         confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
         saveToServer();
-        renderBibleChapters(); // 화면 갱신
+        renderBibleChapters(); 
         updateMyStats();
     }
 }
 
-// 기간 설정
 window.savePeriod = function() {
     const s = document.getElementById('startDateInput').value;
     const e = document.getElementById('endDateInput').value;
@@ -308,7 +314,6 @@ window.savePeriod = function() {
     saveToServer().then(() => alert("📅 시즌 기간 설정 완료!"));
 }
 
-// 채팅
 window.sendMsg = function() {
     const input = document.getElementById('input-msg');
     const text = input.value.trim();
@@ -327,6 +332,12 @@ window.deleteMsg = function(idx) {
         renderMessages();
         saveToServer();
     }
+}
+window.changeCalMonth = function(delta) {
+    calMonth += delta;
+    if(calMonth > 11) { calMonth = 0; calYear++; }
+    else if(calMonth < 0) { calMonth = 11; calYear--; }
+    renderCalendar();
 }
 
 /* =================================================================
@@ -423,9 +434,20 @@ function updateUI() {
         }
         renderBibleUI();
         updateMyStats(); 
+
+        if(appData.alarmTime) {
+            document.getElementById('alarm-time-input').value = appData.alarmTime;
+        }
     }
     renderAllRankings();
     renderHabitAnalysis();
+    
+    // [추가] 통계 탭이 열려있으면 달력도 갱신
+    const statsTab = document.getElementById('stats');
+    if(statsTab && statsTab.classList.contains('active')) {
+        renderCalendar();
+    }
+
     const p = appData.period || {};
     if(p.start && p.end) {
         document.getElementById('startDateInput').value = p.start;
@@ -460,18 +482,15 @@ function calculateStreak(history) {
     return streak;
 }
 
-// 총 읽은 장수 계산 (현재 체크 + 과거 완독 횟수 * 장수)
 function calculateTotalBibleRead(slotId) {
     const memberData = appData[slotId] || {};
     const bible = memberData.bible || {};
     const bibleRounds = memberData.bibleRounds || {};
     
     let total = 0;
-    // 1. 현재 체크된 것
     for(const [key, dateStr] of Object.entries(bible)) {
         if(isInViewYear(dateStr)) total++;
     }
-    // 2. 완독한 것 (배지) 합산
     BIBLE_DATA.books.forEach(book => {
         const rounds = bibleRounds[book.name] || 0;
         total += (rounds * book.chapters);
@@ -560,6 +579,100 @@ function renderHabitAnalysis() {
     });
 }
 
+// [신규] 월간 캘린더 렌더링
+function renderCalendar() {
+    if(!myName) return;
+    
+    // 달력 컨테이너가 없으면 만듦 (analysis-box 위에 삽입)
+    let calWrapper = document.getElementById('monthly-calendar-wrapper');
+    if(!calWrapper) {
+        const statsPage = document.getElementById('stats');
+        const rankGrid = statsPage.querySelector('.rank-grid');
+        calWrapper = document.createElement('div');
+        calWrapper.id = 'monthly-calendar-wrapper';
+        calWrapper.className = 'calendar-box';
+        // 랭킹 바로 아래에 삽입
+        rankGrid.parentNode.insertBefore(calWrapper, rankGrid.nextSibling);
+    }
+
+    calWrapper.innerHTML = `
+        <div class="cal-header">
+            <button class="cal-nav-btn" onclick="window.changeCalMonth(-1)">◀</button>
+            <span>${calYear}년 ${calMonth + 1}월</span>
+            <button class="cal-nav-btn" onclick="window.changeCalMonth(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+        <div class="cal-legend">
+            <div class="legend-item"><div class="cal-dot dot-res"></div>결단서 실천</div>
+            <div class="legend-item"><div class="cal-dot dot-bible"></div>성경 읽음</div>
+        </div>
+    `;
+
+    const calGrid = document.getElementById('calGrid');
+    
+    // 요일 헤더
+    const days = ['일','월','화','수','목','금','토'];
+    days.forEach(d => {
+        const div = document.createElement('div');
+        div.className = 'cal-day-label'; div.textContent = d;
+        calGrid.appendChild(div);
+    });
+
+    // 날짜 계산
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+    
+    // 빈 칸 (첫 주 앞부분)
+    for(let i=0; i<firstDay; i++) {
+        calGrid.appendChild(document.createElement('div'));
+    }
+
+    // 날짜 채우기
+    const myHistory = (appData[myName] && appData[myName].history) ? appData[myName].history : {};
+    const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
+    const todayStr = getTodayStr();
+
+    for(let d=1; d<=lastDate; d++) {
+        const dateObj = new Date(calYear, calMonth, d);
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth()+1).padStart(2,'0');
+        const da = String(dateObj.getDate()).padStart(2,'0');
+        const dateStr = `${y}-${m}-${da}`;
+
+        const cell = document.createElement('div');
+        cell.className = 'cal-day';
+        if(dateStr === todayStr) cell.classList.add('today');
+        
+        cell.innerHTML = `<span>${d}</span>`;
+
+        // 점 찍기 컨테이너
+        const dotContainer = document.createElement('div');
+        dotContainer.style.display = 'flex';
+        dotContainer.style.marginTop = '2px';
+
+        // 1. 결단서 점 (초록)
+        if(myHistory[dateStr] > 0) {
+            const dot = document.createElement('div');
+            dot.className = 'cal-dot dot-res';
+            dotContainer.appendChild(dot);
+        }
+        // 2. 성경 점 (파랑) - bible 데이터 값 검색
+        let readBible = false;
+        // 성능상 비효율적일 수 있으나 데이터 양이 적으므로 순회
+        for(const val of Object.values(myBible)) {
+            if(val === dateStr) { readBible = true; break; }
+        }
+        if(readBible) {
+            const dot = document.createElement('div');
+            dot.className = 'cal-dot dot-bible';
+            dotContainer.appendChild(dot);
+        }
+
+        cell.appendChild(dotContainer);
+        calGrid.appendChild(cell);
+    }
+}
+
 function renderMyList() {
     const listEl = document.getElementById(`list-resolution`);
     listEl.innerHTML = "";
@@ -604,7 +717,6 @@ function renderBibleUI() {
     if(!document.getElementById('bible-chapters-view').classList.contains('hidden-view')) renderBibleChapters();
 }
 
-// [수정] 책 목록에 'N독' 배지 표시
 function renderBibleBooks() {
     const container = document.getElementById('book-grid-container');
     container.innerHTML = '';
@@ -636,7 +748,6 @@ function renderBibleBooks() {
     });
 }
 
-// [수정] 챕터 목록 아래에 리셋 버튼 표시
 function renderBibleChapters() {
     const container = document.getElementById('chapter-grid-container');
     container.innerHTML = '';
@@ -656,7 +767,6 @@ function renderBibleChapters() {
         container.appendChild(div);
     }
 
-    // 만약 모든 챕터를 다 읽었다면? '완독 & 리셋' 버튼 추가
     if(checkedCount === book.chapters) {
         const resetBtnDiv = document.createElement('div');
         resetBtnDiv.style.gridColumn = "1 / -1"; 
@@ -670,11 +780,9 @@ function renderBibleChapters() {
     }
 }
 
-// [수정] 통계 계산 시 N독 횟수 포함
 function updateMyStats() {
     if(!appData[myName]) return;
     
-    // 이번 주 읽은 장수 (단순 계산)
     const bible = appData[myName].bible || {};
     let weeklyCount = 0;
     const { startStr, endStr } = getWeekRangeStrings();
@@ -682,9 +790,7 @@ function updateMyStats() {
         if (dateStr >= startStr && dateStr <= endStr) weeklyCount++;
     }
     
-    // 올해 누적 장수 (완독 포함)
     const totalCount = calculateTotalBibleRead(myName);
-
     document.getElementById('myWeeklyBible').textContent = weeklyCount;
     document.getElementById('myYearlyBible').textContent = totalCount;
 }
@@ -713,9 +819,18 @@ function renderMessages() {
     if (wasScrolledToBottom) chatList.scrollTop = chatList.scrollHeight;
 }
 
-/* =================================================================
-   [5] 앱 실행 시작
-   ================================================================= */
+setInterval(() => {
+    if(!appData.alarmTime) return;
+    const now = new Date();
+    const currentHM = now.toTimeString().slice(0, 5);
+    if(currentHM === appData.alarmTime && lastAlarmMinute !== currentHM) {
+        lastAlarmMinute = currentHM;
+        const audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+        audio.play().catch(e => console.log("브라우저 정책상 소리 재생 차단됨"));
+        alert(`🔔 딩동댕! [${appData.alarmTime}] 입니다.\n우리 가족 약속 시간이에요! ❤️`);
+    }
+}, 1000);
+
 try {
     if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
     
