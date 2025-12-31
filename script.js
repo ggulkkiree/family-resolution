@@ -1,9 +1,12 @@
 /* =================================================================
-   [1] 모듈 및 데이터
+   [1] 모듈 불러오기
    ================================================================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* =================================================================
+   [2] 데이터 설정
+   ================================================================= */
 const BIBLE_DATA = {
     "books": [
         { "name": "창세기", "chapters": 50, "testament": "old" }, { "name": "출애굽기", "chapters": 40, "testament": "old" },
@@ -72,11 +75,10 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 
 /* =================================================================
-   [2] 기능 함수
+   [3] 기능 함수들
    ================================================================= */
 window.tryLogin = function(slotId) {
     const authData = (appData.auth && appData.auth[slotId]) ? appData.auth[slotId] : null;
-
     if (!authData) {
         const newName = prompt("사용할 닉네임을 입력하세요:");
         if(!newName) return;
@@ -477,6 +479,12 @@ async function resetDailyCheckboxes() {
 
 function updateUI() {
     if (myName) {
+        // [안전장치] 내 데이터가 없으면 로그인 화면으로 보냄
+        if (!appData[myName]) {
+            console.error("데이터 로드 실패: 재로그인 필요");
+            return;
+        }
+
         const myInfo = appData.auth[myName];
         document.getElementById('userNameDisplay').textContent = myInfo ? myInfo.name : "사용자";
         if(document.activeElement.tagName !== 'INPUT') {
@@ -489,20 +497,11 @@ function updateUI() {
             const alarmInput = document.getElementById('alarm-time-input');
             if(alarmInput) alarmInput.value = appData.alarmTime;
         }
-    }
-
-    if(document.getElementById('accordion-res')) {
-        renderAllRankings();
-        renderCalendar();
-        renderHabitAnalysis();
         
-        const p = appData.period || {};
-        if(p.start && p.end) {
-            document.getElementById('startDateInput').value = p.start;
-            document.getElementById('endDateInput').value = p.end;
-            document.getElementById('rankPeriodLabel').textContent = `(${p.start} ~ ${p.end})`;
-        } else {
-            document.getElementById('rankPeriodLabel').textContent = "(기간 미설정)";
+        // [중요] 통계 탭이 열려있으면 아코디언 UI를 강제로 그림
+        const statsTab = document.getElementById('stats');
+        if(statsTab && statsTab.classList.contains('active')) {
+            renderStatsPage(); // 여기서 내용이 그려짐
         }
     }
 }
@@ -602,7 +601,11 @@ function renderAllRankings() {
 function renderHabitAnalysis() {
     const container = document.getElementById('habitStatsList');
     if(!container) return;
-    if(!myName || !appData[myName] || !appData[myName].resolution) return;
+    // [안전장치] 데이터 확인
+    if(!myName || !appData[myName] || !appData[myName].resolution) {
+        container.innerHTML = "<div style='text-align:center;color:#999;'>데이터 없음</div>";
+        return;
+    }
     const list = appData[myName].resolution;
     if(list.length === 0) return;
     const flatList = [];
@@ -720,7 +723,7 @@ try {
         if (docSnap.exists()) {
             const data = docSnap.data();
             
-            // [중요] 데이터 구조 자동 감지 (Matryoshka fix)
+            // [중요] Matryoshka Fix (데이터 구조 자동 감지)
             if (data.appData) {
                 appData = data.appData; 
             } else {
