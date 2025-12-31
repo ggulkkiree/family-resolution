@@ -2,127 +2,105 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Family Promise & Bible</title>
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
-    <link rel="stylesheet" href="style.css"> </head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>우리 가족 결단서</title>
+    <link rel="stylesheet" href="style.css">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
 <body>
 
     <div id="splash-screen">
         <div class="splash-content">
-            <div class="logo-large">Family✨</div>
-            <p>우리 가족의 믿음 습관</p>
-            <div class="spinner"></div>
+            <h1>❤️ 우리 가족 ❤️<br>2025 믿음의 결단</h1>
+            <p>데이터 불러오는 중...</p>
         </div>
     </div>
 
-    <div id="login-modal" class="modal hidden">
+    <div id="login-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2>반가워요! 👋</h2>
-            <p>오늘 하루를 기록할 가족을 선택해주세요.</p>
-            <div id="login-grid" class="grid-2">
+            <h2>누구신가요?</h2>
+            <div id="login-grid" class="grid-container">
                 </div>
         </div>
     </div>
 
     <div id="app-container" class="hidden">
         
-        <header class="top-bar">
-            <div class="logo">Family✨</div>
-            <div class="header-actions">
-                <button class="icon-btn" onclick="window.toggleTheme()">🌗</button>
-                <div id="user-profile" class="profile-badge" onclick="window.logoutAction()">
-                    <span id="user-name">Guest</span>
-                </div>
+        <header>
+            <div class="header-left">
+                <span id="user-name">사용자</span>님 화이팅! 💪
+            </div>
+            <div class="header-right">
+                <button onclick="window.saveAlarmTime()">⏰ 알람</button>
+                <button onclick="window.logoutAction()">로그아웃</button>
             </div>
         </header>
 
-        <main class="content-area">
+        <div class="verse-card">
+            <p id="verse-text">말씀 로딩 중...</p>
+            <p id="verse-ref" style="text-align: right; font-size: 0.9em; color: #666;"></p>
+        </div>
+
+        <div class="alarm-setting">
+            <input type="time" id="alarm-time-input">
+        </div>
+
+        <main id="main-content">
             
-            <section class="card verse-card">
-                <div class="card-bg-deco"></div>
-                <div id="verseText" class="verse-text">오늘의 말씀을 불러오고 있습니다...</div>
-                <div id="verseRef" class="verse-ref"></div>
-            </section>
-
             <div id="page-resolution" class="page active">
-                <div class="section-header">
-                    <h3>오늘의 다짐</h3>
-                    <input type="time" id="alarm-time-input" class="time-picker" onchange="window.saveAlarmTime()">
-                </div>
-                
                 <div class="input-group">
-                    <input type="text" id="input-resolution" placeholder="새로운 다짐 추가하기...">
-                    <button class="btn-primary" onclick="window.addItem()">+</button>
+                    <input type="text" id="input-resolution" placeholder="예: 매일 성경 1장 읽기 / 완료">
+                    <button onclick="window.addItem()" class="add-btn">+</button>
                 </div>
-                <ul id="list-resolution" class="list-stack"></ul>
-
-                <div class="divider"></div>
-                
-                <h3>응원 메시지 💌</h3>
-                <div class="input-group">
-                    <input type="text" id="input-msg" placeholder="가족들에게 힘이 되는 한마디">
-                    <button class="btn-secondary" onclick="window.sendMsg()">전송</button>
-                </div>
-                <ul id="msg-list" class="msg-stack"></ul>
+                <ul id="list-resolution">
+                    </ul>
             </div>
 
             <div id="page-bible" class="page hidden">
-                <div id="myBibleStat" class="stat-banner">데이터 로딩 중...</div>
+                <div id="myBibleStat" class="stat-badge">통계 로딩 중...</div>
                 
-                <div id="bible-main-view" class="grid-2 mt-20">
-                    <button class="big-card old-testament" onclick="window.showBibleBooks('old')">
-                        <span class="icon">📜</span>
-                        <span class="label">구약 성경</span>
-                    </button>
-                    <button class="big-card new-testament" onclick="window.showBibleBooks('new')">
-                        <span class="icon">✝️</span>
-                        <span class="label">신약 성경</span>
-                    </button>
+                <div id="bible-main-view">
+                    <button class="big-btn old" onclick="window.showBibleBooks('old')">📜 구약 성경</button>
+                    <button class="big-btn new" onclick="window.showBibleBooks('new')">✝️ 신약 성경</button>
                 </div>
 
-                <div id="bible-books-view" class="sub-view hidden">
-                    <button class="btn-text" onclick="window.showBibleMain()">← 뒤로가기</button>
+                <div id="bible-books-view" class="hidden-view">
+                    <button class="back-btn" onclick="window.showBibleMain()">◀ 뒤로</button>
                     <h3 id="bible-testament-title"></h3>
-                    <div id="bible-books-grid" class="grid-xs"></div>
+                    <div id="bible-books-grid" class="grid-books"></div>
                 </div>
 
-                <div id="bible-chapters-view" class="sub-view hidden">
-                    <div class="view-header">
-                        <button class="btn-text" onclick="window.backToBooks()">←</button>
-                        <h3 id="bible-book-title">창세기</h3>
-                        <button class="btn-finish" onclick="window.finishBookAndReset()">완독 🎉</button>
-                    </div>
-                    <div class="chapter-controls">
-                        <button class="btn-xs" onclick="window.controlAllChapters(true)">전체선택</button>
-                        <button class="btn-xs" onclick="window.controlAllChapters(false)">해제</button>
+                <div id="bible-chapters-view" class="hidden-view">
+                    <button class="back-btn" onclick="window.backToBooks()">◀ 뒤로</button>
+                    <h3 id="bible-book-title"></h3>
+                    <div class="chapter-actions">
+                        <button onclick="window.finishBookAndReset()" class="finish-btn">🎉 이 책 완독하기</button>
                     </div>
                     <div id="bible-chapters-grid" class="grid-chapters"></div>
                 </div>
             </div>
 
             <div id="page-stats" class="page hidden">
-                <div class="empty-state">
-                    <div class="emoji">📊</div>
-                    <p>가족들의 통계를 분석하고 있어요</p>
-                </div>
+                <div id="stats-content">
+                    </div>
             </div>
-            
-            <div style="height: 80px;"></div> </main>
+
+            <div class="msg-section">
+                <h3>우리의 응원 한마디 💬</h3>
+                <div class="input-group">
+                    <input type="text" id="input-msg" placeholder="응원 메시지 보내기...">
+                    <button onclick="window.sendMsg()">전송</button>
+                </div>
+                <ul id="msg-list"></ul>
+            </div>
+
+        </main>
 
         <nav class="bottom-nav">
-            <button class="nav-item active" onclick="window.goTab('resolution', this)">
-                <span class="icon">✅</span>
-                <span class="label">다짐</span>
-            </button>
-            <button class="nav-item" onclick="window.goTab('bible', this)">
-                <span class="icon">📖</span>
-                <span class="label">성경</span>
-            </button>
-            <button class="nav-item" onclick="window.goTab('stats', this)">
-                <span class="icon">📊</span>
-                <span class="label">통계</span>
-            </button>
+            <button class="nav-item active" onclick="window.goTab('resolution', this)">📝 결단서</button>
+            <button class="nav-item" onclick="window.goTab('bible', this)">📖 성경</button>
+            <button class="nav-item" onclick="window.goTab('stats', this)">📊 통계</button>
         </nav>
     </div>
 
