@@ -1,0 +1,17 @@
+{
+  "name": "우리 가족 사랑방",
+  "short_name": "사랑방",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F4F5F7",
+  "theme_color": "#2196F3",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%232196F3%22/><text x=%2250%22 y=%2270%22 font-size=%2250%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>❤️</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
