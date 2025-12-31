@@ -196,3 +196,36 @@ li { background: var(--card-bg); border: 1px solid var(--border); margin-bottom:
 .settings-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold; }
 
 #serverStatus { position: fixed; bottom: 10px; right: 10px; font-size: 10px; opacity: 0.5; color: var(--text); z-index: 9999; }
+/* [추가] 월간 캘린더 스타일 */
+.calendar-box {
+    background: var(--card-bg); padding: 20px; border-radius: 16px; 
+    border: 1px solid var(--border); margin-top: 20px;
+}
+.cal-header {
+    display: flex; justify-content: space-between; align-items: center; 
+    margin-bottom: 15px; font-weight: bold; font-size: 16px;
+}
+.cal-nav-btn {
+    background: none; border: 1px solid var(--border); border-radius: 8px; 
+    cursor: pointer; padding: 5px 10px; font-size: 14px; color: var(--text);
+}
+.cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; 
+    text-align: center; font-size: 12px;
+}
+.cal-day-label {
+    font-weight: bold; color: var(--sub-text); margin-bottom: 5px;
+}
+.cal-day {
+    aspect-ratio: 1/1; display: flex; flex-direction: column; 
+    justify-content: center; align-items: center; border-radius: 8px; 
+    background: var(--bg); position: relative; font-size: 11px;
+}
+.cal-day.today { border: 2px solid var(--primary); }
+.cal-dot { width: 6px; height: 6px; border-radius: 50%; margin: 1px; }
+.dot-res { background-color: var(--edit); } /* 결단서: 초록 */
+.dot-bible { background-color: var(--bible); } /* 성경: 청록 */
+.cal-legend {
+    display: flex; justify-content: center; gap: 15px; margin-top: 15px; font-size: 11px; color: var(--sub-text);
+}
+.legend-item { display: flex; align-items: center; gap: 5px; }
