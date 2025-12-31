@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>우리 가족 사랑방 (V28_Secure)</title>
+    <title>우리 가족 사랑방 (V29_Design)</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2225%22 fill=%22%232196F3%22/><path d=%22M50 20 L80 45 L80 80 L20 80 L20 45 Z%22 fill=%22white%22/><text x=%2250%22 y=%2270%22 font-size=%2235%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>❤️</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%232196F3%22/><path d=%22M50 20 L80 45 L80 80 L20 80 L20 45 Z%22 fill=%22white%22/><text x=%2250%22 y=%2270%22 font-size=%2235%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>❤️</text></svg>">
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         /* [변수] */
@@ -86,6 +90,38 @@
         .user-name { font-size: 20px; font-weight: 800; margin: 0; color: var(--primary); }
         .header-btns { display: flex; gap: 8px; }
         .icon-btn { font-size: 18px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 15px; background: var(--bg); color: var(--text); cursor: pointer; }
+
+        /* [새로 추가된 로고 스타일] */
+        .app-logo {
+            width: 40px; height: 40px; 
+            background: var(--primary); 
+            border-radius: 12px; 
+            display: flex; justify-content: center; align-items: center; 
+            color: white; font-size: 20px; 
+            box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3);
+            position: relative;
+        }
+        .app-logo::after { content: '🏠'; font-size: 24px; }
+        .app-logo .heart-badge {
+            position: absolute; bottom: -2px; right: -2px;
+            font-size: 14px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        /* 로그인 화면용 큰 로고 */
+        .big-logo {
+            width: 80px; height: 80px;
+            background: white;
+            border-radius: 24px;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 45px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            color: var(--primary);
+            position: relative;
+        }
+        .big-logo::after { content: '🏠'; }
+        .big-logo .heart-badge-big {
+            position: absolute; bottom: 5px; right: 5px; font-size: 24px;
+        }
 
         .verse-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center; box-shadow: 0 4px 10px rgba(118, 75, 162, 0.3); }
         .verse-text { font-size: 14px; font-weight: 500; line-height: 1.5; font-style: italic; }
@@ -170,8 +206,11 @@
 <body>
 
 <div id="loginScreen" class="login-screen">
-    <h2 style="margin-bottom:10px;">👋 가족 구성원을 선택하세요</h2>
-    <p style="margin-bottom:30px; font-size:13px; opacity:0.8;">🔒 표시는 비밀번호가 설정된 계정입니다</p>
+    <div class="big-logo">
+        <div class="heart-badge-big">❤️</div>
+    </div>
+    <h2 style="margin-bottom:10px;">우리 가족 사랑방</h2>
+    <p style="margin-bottom:30px; font-size:13px; opacity:0.8;">함께 나누는 은혜와 사랑</p>
     <div class="member-grid" id="loginGrid"></div>
 </div>
 
@@ -179,7 +218,13 @@
     <aside class="sidebar-area">
         <header>
             <div class="top-row">
-                <div><span style="font-size:12px; opacity:0.7;">우리 가족 사랑방</span><h1 class="user-name" id="userNameDisplay">사용자</h1></div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="app-logo"><div class="heart-badge">❤️</div></div>
+                    <div>
+                        <span style="font-size:12px; opacity:0.7; font-weight:bold;">Love House</span>
+                        <h1 class="user-name" id="userNameDisplay" style="font-size:18px;">사용자</h1>
+                    </div>
+                </div>
                 <div class="header-btns">
                     <button class="icon-btn" onclick="window.toggleTheme()">🌙</button>
                     <button class="icon-btn" onclick="window.logoutAction()">🚪</button>
