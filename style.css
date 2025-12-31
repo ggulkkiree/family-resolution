@@ -1,241 +1,160 @@
-/* [변수] 색상 및 기본 설정 */
 :root {
-    --primary: #2196F3; --red: #ff5252; --edit: #4CAF50; --stats: #9C27B0; --bible: #00796b; --chat: #FF9800;
-    --bg: #F4F5F7; --card-bg: #FFFFFF; --text: #333; --sub-text: #666;
-    --border: #E0E0E0; --shadow: rgba(0,0,0,0.05);
-    --msg-bg: #E9ECEF; --msg-text: #333; --my-msg-bg: #2196F3; --my-msg-text: #fff;
-    --sidebar-width: 280px;
+    --primary: #059669;
+    --primary-soft: #D1FAE5;
+    --accent: #F59E0B;
+    --bg-body: #F9FAFB;
+    --bg-card: #FFFFFF;
+    --text-main: #111827;
+    --text-sub: #6B7280;
+    --border: #E5E7EB;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --safe-area-bottom: env(safe-area-inset-bottom);
 }
 
-/* 다크 모드 설정 */
 body.dark-mode {
-    --bg: #121212; --card-bg: #1e1e1e; --text: #e0e0e0; --sub-text: #aaaaaa;
-    --border: #333333; --shadow: rgba(0,0,0,0.5);
-    --msg-bg: #2C2C2C; --msg-text: #E0E0E0; --my-msg-bg: #1565C0;
+    --primary: #34D399;
+    --primary-soft: #064E3B;
+    --bg-body: #111827;
+    --bg-card: #1F2937;
+    --text-main: #F9FAFB;
+    --text-sub: #9CA3AF;
+    --border: #374151;
 }
 
-body { 
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-    background-color: var(--bg); color: var(--text); margin: 0; 
-    display: flex; justify-content: center; min-height: 100vh;
-    transition: background-color 0.3s, color 0.3s;
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+    margin: 0; font-family: 'Pretendard', sans-serif;
+    background: var(--bg-body); color: var(--text-main);
+    overflow: hidden; /* 스크롤은 main 안에서만 */
+    height: 100vh; display: flex; flex-direction: column;
 }
 
-/* [레이아웃] */
-.app-container {
-    width: 100%; max-width: 600px; background: var(--card-bg); 
-    min-height: 100vh; display: flex; flex-direction: column;
-    box-shadow: 0 0 20px var(--shadow); position: relative;
-    transition: all 0.3s;
-}
-.sidebar-area { width: 100%; display: contents; }
-header { padding: 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); }
-.content-area { background: var(--bg); padding: 20px; padding-bottom: 80px; flex: 1; overflow-y: auto; }
+/* 유틸리티 */
+.hidden { display: none !important; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.mt-20 { margin-top: 20px; }
 
-/* [태블릿 및 PC 화면 대응] */
-@media (min-width: 768px) {
-    body { padding: 40px; box-sizing: border-box; align-items: center; }
-    .app-container {
-        max-width: 1200px; height: 85vh; min-height: 600px;
-        border-radius: 24px; flex-direction: row; overflow: hidden; border: 1px solid var(--border);
-    }
-    .sidebar-area {
-        width: var(--sidebar-width); border-right: 1px solid var(--border); background: var(--card-bg);
-        padding: 30px 20px; display: flex; flex-direction: column; overflow-y: auto; z-index: 10;
-    }
-    .sidebar-area header { padding: 0 !important; border: none !important; }
-    .content-area { flex: 1; background: var(--bg); padding: 40px !important; overflow-y: auto; }
-    .tabs {
-        flex-direction: column !important; position: static !important; box-shadow: none !important;
-        background: transparent !important; margin-top: 20px;
-    }
-    .tab {
-        text-align: left !important; padding: 15px 20px !important; border-bottom: none !important;
-        border-left: 4px solid transparent; font-size: 16px !important; border-radius: 0 10px 10px 0; margin-bottom: 5px;
-    }
-    .tab:hover { background: var(--shadow); }
-    .tab.active { background: var(--bg); border-left-color: currentColor; font-weight: 800 !important; }
-    ul#list-resolution { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    .rank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+/* 1. 스플래시 스크린 */
+#splash-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--bg-body); z-index: 9999;
+    display: flex; justify-content: center; align-items: center; text-align: center;
+    transition: opacity 0.5s ease;
+}
+.logo-large { font-size: 2.5rem; font-weight: 800; color: var(--primary); margin-bottom: 10px; }
+.spinner {
+    width: 30px; height: 30px; border: 3px solid var(--border);
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin 1s linear infinite; margin: 20px auto 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 2. 헤더 */
+.top-bar {
+    padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    z-index: 10;
+}
+body.dark-mode .top-bar { background: rgba(17, 24, 39, 0.8); }
+.logo { font-weight: 800; font-size: 1.2rem; color: var(--primary); }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+.profile-badge {
+    background: var(--primary-soft); color: var(--primary);
+    padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 700;
 }
 
-/* [UI 컴포넌트] 로그인 화면 */
-.login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; transition: transform 0.3s ease-in-out; }
-.login-screen.hidden { transform: translateY(-100%); }
-.member-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 80%; max-width: 300px; }
-
-/* 로그인 버튼 스타일 */
-.login-btn { 
-    background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); 
-    color: white; padding: 15px; border-radius: 16px; 
-    font-size: 16px; font-weight: bold; cursor: pointer; 
-    display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
-    min-height: 80px; transition: 0.2s;
-}
-.login-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-2px); }
-.login-btn .sub-label { font-size: 11px; opacity: 0.8; font-weight: normal; }
-.login-btn.taken { background: rgba(255,255,255,0.9); color: var(--primary); border:none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-
-.top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
-.user-name { font-size: 20px; font-weight: 800; margin: 0; color: var(--primary); }
-.header-btns { display: flex; gap: 8px; }
-.icon-btn { font-size: 18px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 15px; background: var(--bg); color: var(--text); cursor: pointer; }
-
-/* 로고 스타일 */
-.app-logo {
-    width: 40px; height: 40px; 
-    background: var(--primary); 
-    border-radius: 12px; 
-    display: flex; justify-content: center; align-items: center; 
-    color: white; font-size: 20px; 
-    box-shadow: 0 4px 10px rgba(33, 150, 243, 0.3);
-    position: relative;
-}
-.app-logo::after { content: '🏠'; font-size: 24px; }
-.app-logo .heart-badge {
-    position: absolute; bottom: -2px; right: -2px;
-    font-size: 14px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-/* 로그인 화면용 큰 로고 */
-.big-logo {
-    width: 80px; height: 80px;
-    background: white;
-    border-radius: 24px;
-    display: flex; justify-content: center; align-items: center;
-    font-size: 45px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    margin-bottom: 20px;
-    color: var(--primary);
-    position: relative;
-}
-.big-logo::after { content: '🏠'; }
-.big-logo .heart-badge-big {
-    position: absolute; bottom: 5px; right: 5px; font-size: 24px;
+/* 3. 메인 컨텐츠 영역 */
+.content-area {
+    flex: 1; overflow-y: auto; padding: 20px;
+    scroll-behavior: smooth;
 }
 
-.verse-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center; box-shadow: 0 4px 10px rgba(118, 75, 162, 0.3); }
-.verse-text { font-size: 14px; font-weight: 500; line-height: 1.5; font-style: italic; }
-.verse-ref { font-size: 12px; margin-top: 8px; opacity: 0.9; font-weight: bold; }
-
-.year-selector { display: flex; justify-content: center; align-items: center; gap: 15px; background: var(--bg); padding: 8px; border-radius: 12px; font-weight: bold; margin-bottom: 10px; }
-.year-btn { border: none; background: none; font-size: 18px; cursor: pointer; color: var(--sub-text); }
-.current-year { font-size: 16px; color: var(--text); }
-
-/* 탭 메뉴 */
-.tabs { display: flex; background: var(--card-bg); position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 10px var(--shadow); transition: 0.3s;}
-.tab { flex: 1; padding: 15px 5px; text-align: center; color: var(--sub-text); cursor: pointer; border-bottom: 3px solid transparent; font-size: 13px; font-weight: 600;}
-.tab[data-target="resolution"].active { color: var(--primary); }
-.tab[data-target="bible"].active { color: var(--bible); }
-.tab[data-target="stats"].active { color: var(--stats); }
-.tab[data-target="cheers"].active { color: var(--chat); }
-.tab[data-target="settings"].active { color: var(--sub-text); }
-
-/* 페이지 전환 애니메이션 */
-.page { display: none; animation: fadeIn 0.3s; }
-.page.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-.input-group { display: flex; gap: 8px; margin-bottom: 20px; }
-input[type="text"], input[type="password"] { flex: 1; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--text); font-size: 16px; outline: none; }
-.add-btn { width: 50px; border: none; background: var(--primary); color: white; border-radius: 12px; font-size: 24px; cursor: pointer; }
-
-ul { list-style: none; padding: 0; margin: 0; }
-li { background: var(--card-bg); border: 1px solid var(--border); margin-bottom: 12px; padding: 15px; border-radius: 16px; box-shadow: 0 2px 8px var(--shadow); height: 100%; box-sizing: border-box; display: flex; flex-direction: column;}
-.li-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; font-weight: bold; font-size: 16px; width: 100%;}
-.li-text { flex: 1; word-break: break-all; line-height: 1.4; margin-right: 10px;}
-.action-btns { display: flex; gap: 5px; flex-shrink: 0;}
-.del-btn, .edit-btn { background: none; border: none; cursor: pointer; font-size: 16px; padding: 5px; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border:1px solid var(--border);}
-.del-btn { color: var(--red); } .edit-btn { color: var(--edit); }
-.steps { display: flex; gap: 5px; flex-wrap: wrap; margin-top: auto; width: 100%;}
-.step { flex-grow: 1; padding: 10px; background: var(--bg); border-radius: 8px; text-align: center; font-size: 13px; color: var(--sub-text); cursor: pointer; min-width: 50px; transition: 0.2s; }
-.step.done { background: var(--primary); color: white; font-weight: bold; transform: scale(0.98); }
-
-/* 성경 통계 박스 */
-.bible-stats-box { display: flex; gap: 10px; margin-bottom: 20px; }
-.stat-card { flex: 1; background: var(--bible); color: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0, 121, 107, 0.3); }
-.stat-val { font-size: 24px; font-weight: 900; } .stat-desc { font-size: 10px; opacity: 0.8; }
-.testament-grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
-.testament-btn { padding: 30px; font-size: 18px; font-weight: bold; background: var(--card-bg); color: var(--bible); border: 1px solid var(--bible); border-radius: 12px; cursor: pointer; }
-.bible-nav-header { display: flex; align-items: center; margin-bottom: 15px; gap: 10px; }
-.bible-back-btn { background: var(--bible); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; }
-.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; }
-.book-btn { padding: 15px 5px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; cursor: pointer; text-align: center; color: var(--text); }
-.book-btn.completed { background: var(--bible); color: white; border-color: var(--bible); }
-.book-btn.in-progress { border-color: var(--bible); background: rgba(0, 121, 107, 0.1); }
-.chapter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 8px; }
-.chapter-item label { width: 100%; padding: 12px 0; text-align: center; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--text); display:block; transition: 0.1s; }
-.chapter-item input { display: none; }
-.chapter-item input:checked + label { background: var(--bible); color: white; border-color: var(--bible); }
-.hidden-view { display: none !important; }
-
-/* 채팅(소통) */
-.chat-container { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; margin-bottom: 15px; }
-.msg-card { padding: 12px 16px; border-radius: 18px; border-top-left-radius: 2px; background: var(--msg-bg); color: var(--msg-text); align-self: flex-start; max-width: 75%; font-size: 15px; position: relative; line-height: 1.4; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.msg-card.mine { background: var(--my-msg-bg); color: var(--my-msg-text); align-self: flex-end; border-top-left-radius: 18px; border-top-right-radius: 2px; }
-.msg-sender { font-size: 11px; margin-bottom: 4px; opacity: 0.8; font-weight: bold; display: block;}
-.msg-time { font-size: 10px; opacity: 0.6; text-align: right; margin-top: 5px; display: block;}
-.msg-delete { position: absolute; top: -8px; right: -8px; background: #ef5350; color: white; width: 20px; height: 20px; border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-.msg-card:hover .msg-delete { display: flex; }
-
-/* 랭킹 및 통계 */
-.period-box { background: var(--card-bg); padding: 15px; border-radius: 15px; border: 2px solid var(--stats); margin-bottom: 20px; text-align: center; }
-.rank-card { display: flex; align-items: center; padding: 15px; margin-bottom: 10px; background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); }
-.rank-num { font-size: 20px; margin-right: 10px; width: 30px; text-align: center; }
-.rank-name { flex: 1; font-weight: bold; margin-left: 5px; display: flex; align-items: center; gap: 5px; } .rank-score { font-weight: 900; color: var(--primary); }
-.rank-unit { font-size: 12px; color: var(--sub-text); font-weight: normal; margin-left: 2px; }
-.streak-badge { background: #ffebee; color: #d32f2f; font-size: 11px; padding: 2px 6px; border-radius: 10px; display: inline-flex; align-items: center; gap: 2px; border: 1px solid #ffcdd2; margin-left: 5px;}
-
-.analysis-box { margin-top:30px; background:var(--card-bg); padding:20px; border-radius:16px; border:1px solid var(--border); }
-.habit-bar-item { display: flex; align-items: center; margin-bottom: 12px; }
-.habit-bar-name { width: 40%; font-size: 13px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.habit-bar-graph { flex: 1; background: var(--bg); height: 10px; border-radius: 5px; overflow: hidden; margin: 0 10px; }
-.habit-bar-fill { height: 100%; background: var(--primary); border-radius: 5px; transition: width 0.5s; }
-.habit-bar-count { font-size: 12px; font-weight: bold; width: 30px; text-align: right; color: var(--primary); }
-
-.settings-card { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 15px; }
-.settings-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; cursor: pointer; font-weight: bold; }
-
-#serverStatus { position: fixed; bottom: 10px; right: 10px; font-size: 10px; opacity: 0.5; color: var(--text); z-index: 9999; }
-/* [접이식 섹션 스타일] */
-.accordion {
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: 12px; margin-bottom: 15px; overflow: hidden;
-}
-.accordion-header {
-    padding: 15px; font-weight: bold; cursor: pointer; display: flex; 
-    justify-content: space-between; align-items: center; background: var(--bg);
-}
-.accordion-header:hover { background: var(--shadow); }
-.accordion-content { display: none; padding: 15px; border-top: 1px solid var(--border); }
-.accordion-content.active { display: block; animation: fadeIn 0.3s; }
-.arrow-icon { transition: transform 0.3s; }
-.accordion-content.active + .accordion-header .arrow-icon { transform: rotate(180deg); } /* 회전 처리 */
-
-/* [업그레이드된 캘린더 스타일] */
-.cal-grid {
-    display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; 
-    text-align: center; font-size: 12px; margin-top: 10px;
-}
-.cal-day {
-    aspect-ratio: 1/1; display: flex; flex-direction: column; 
-    justify-content: center; align-items: center; border-radius: 6px; 
-    background: var(--bg); position: relative; font-size: 11px; cursor: pointer;
-    transition: transform 0.1s;
-}
-.cal-day:active { transform: scale(0.9); }
-.cal-day.today { border: 2px solid var(--primary); font-weight: bold; }
-
-/* 성경 읽은 날 (파란 점) */
-.dot-bible { 
-    width: 6px; height: 6px; background-color: var(--bible); 
-    border-radius: 50%; position: absolute; bottom: 3px; right: 3px; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+/* 카드 공통 */
+.card {
+    background: var(--bg-card); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md); padding: 20px; margin-bottom: 20px;
+    position: relative; overflow: hidden;
 }
 
-/* [상세 정보 팝업 영역] */
-.cal-detail-box {
-    margin-top: 15px; padding: 15px; background: var(--bg); 
-    border-radius: 12px; text-align: center; font-size: 13px; color: var(--text);
-    display: none; /* 클릭하면 보여짐 */
+/* 말씀 카드 */
+.verse-card {
+    background: linear-gradient(135deg, var(--primary), #047857);
+    color: white; border: none; min-height: 120px; display: flex; flex-direction: column; justify-content: center;
 }
-.cal-detail-box.show { display: block; animation: fadeIn 0.3s; }
+.verse-text { font-size: 1.1rem; font-weight: 600; line-height: 1.5; margin-bottom: 8px; z-index: 1; }
+.verse-ref { font-size: 0.9rem; opacity: 0.9; z-index: 1; }
+
+/* 입력 그룹 */
+.input-group {
+    display: flex; gap: 8px; margin-bottom: 20px; background: var(--bg-card);
+    padding: 6px; border-radius: 16px; border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+.input-group input {
+    flex: 1; border: none; background: transparent; padding: 10px;
+    font-size: 1rem; color: var(--text-main); outline: none;
+}
+.btn-primary {
+    background: var(--primary); color: white; border: none;
+    border-radius: 12px; width: 44px; font-size: 1.2rem; cursor: pointer;
+}
+.btn-secondary {
+    background: var(--primary-soft); color: var(--primary); border: none;
+    border-radius: 12px; padding: 0 16px; font-weight: 700; cursor: pointer;
+}
+
+/* 리스트 스타일 */
+.list-stack li {
+    background: var(--bg-card); padding: 16px; margin-bottom: 10px;
+    border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
+    display: flex; justify-content: space-between; align-items: flex-start;
+    animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 성경 카드 */
+.big-card {
+    height: 140px; border-radius: 24px; border: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; transition: transform 0.2s;
+    font-size: 1rem; font-weight: 700;
+}
+.big-card:active { transform: scale(0.96); }
+.old-testament { background: #FFF7ED; color: #EA580C; }
+.new-testament { background: #EFF6FF; color: #2563EB; }
+.big-card .icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+/* 4. 하단 네비게이션 (핵심) */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0; width: 100%;
+    background: rgba(255,255,255,0.9); backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around;
+    padding: 10px 0 calc(10px + var(--safe-area-bottom));
+    z-index: 100;
+}
+body.dark-mode .bottom-nav { background: rgba(17, 24, 39, 0.9); }
+
+.nav-item {
+    background: none; border: none; color: var(--text-sub);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 0.75rem; cursor: pointer; padding: 5px 20px;
+}
+.nav-item .icon { font-size: 1.4rem; transition: transform 0.2s; }
+.nav-item.active { color: var(--primary); font-weight: 700; }
+.nav-item.active .icon { transform: translateY(-3px); }
+
+/* 모달 */
+.modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+    display: flex; align-items: center; justify-content: center; z-index: 2000;
+}
+.modal-content {
+    background: var(--bg-card); width: 90%; max-width: 360px;
+    padding: 30px; border-radius: 28px; text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
