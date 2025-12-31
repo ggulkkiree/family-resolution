@@ -2,389 +2,131 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>우리 가족 결단서 & 성경통독</title>
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
-    <style>
-        :root {
-            /* 세련된 컬러 팔레트 */
-            --primary: #059669;       /* 진한 에메랄드 */
-            --primary-light: #D1FAE5; /* 연한 민트 */
-            --accent: #F59E0B;        /* 포인트 오렌지 */
-            --bg: #F3F4F6;            /* 쿨 그레이 배경 */
-            --card: #FFFFFF;
-            --text-main: #1F2937;
-            --text-sub: #6B7280;
-            --border: #E5E7EB;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --radius: 16px;           /* 둥근 모서리 통일 */
-        }
-
-        body.dark-mode {
-            --primary: #34D399;
-            --primary-light: #064E3B;
-            --bg: #111827;
-            --card: #1F2937;
-            --text-main: #F9FAFB;
-            --text-sub: #9CA3AF;
-            --border: #374151;
-        }
-
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text-main);
-            padding-bottom: 90px;
-            transition: background 0.3s ease, color 0.3s ease;
-            line-height: 1.5;
-        }
-
-        /* 글래스모피즘 헤더 */
-        header {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(12px);
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            border-bottom: 1px solid var(--border);
-        }
-        body.dark-mode header { background: rgba(31, 41, 55, 0.85); }
-        
-        .logo { font-weight: 800; font-size: 1.3rem; color: var(--primary); letter-spacing: -0.5px; }
-        .user-badge {
-            background: var(--primary-light);
-            color: var(--primary);
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .user-badge:active { transform: scale(0.95); }
-
-        /* 오늘의 말씀 카드 */
-        .verse-card {
-            background: linear-gradient(135deg, var(--primary), #34D399);
-            color: white;
-            margin: 20px;
-            padding: 25px;
-            border-radius: var(--radius);
-            box-shadow: 0 10px 15px -3px rgba(5, 150, 105, 0.3);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        .verse-card::before {
-            content: '"';
-            position: absolute;
-            top: 10px; left: 15px;
-            font-size: 4rem;
-            opacity: 0.2;
-            font-family: serif;
-        }
-        .verse-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 10px; word-break: keep-all; line-height: 1.6; }
-        .verse-ref { font-size: 0.9rem; opacity: 0.9; font-weight: 700; }
-
-        /* 탭 네비게이션 */
-        .tabs {
-            display: flex;
-            background: var(--card);
-            margin: 0 20px 20px;
-            border-radius: var(--radius);
-            padding: 5px;
-            box-shadow: var(--shadow);
-        }
-        .tab {
-            flex: 1;
-            text-align: center;
-            padding: 12px;
-            cursor: pointer;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            color: var(--text-sub);
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .tab.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* 페이지 애니메이션 */
-        .page { display: none; padding: 0 20px; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        .page.active { display: block; }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* 입력창 디자인 */
-        .input-area, .msg-input-box { display: flex; gap: 10px; margin-bottom: 20px; }
-        input[type="text"], input[type="date"], input[type="time"] {
-            flex: 1; padding: 12px 15px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            background: var(--card);
-            color: var(--text-main);
-            font-size: 1rem;
-            transition: border-color 0.2s;
-            outline: none;
-        }
-        input:focus { border-color: var(--primary); }
-        button {
-            padding: 12px 20px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: 700;
-            font-size: 0.95rem;
-            transition: filter 0.2s, transform 0.1s;
-        }
-        button:active { transform: scale(0.95); }
-
-        /* 리스트 아이템 (결단서) */
-        ul { list-style: none; padding: 0; margin: 0; }
-        li {
-            background: var(--card);
-            margin-bottom: 12px;
-            padding: 18px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            display: flex; align-items: flex-start; justify-content: space-between;
-            transition: transform 0.2s;
-            border: 1px solid transparent;
-        }
-        li:hover { transform: translateY(-2px); border-color: var(--primary-light); }
-        
-        .res-content { flex: 1; }
-        .res-text { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: var(--text-main); }
-        
-        /* 체크박스 스텝 */
-        .steps { display: flex; gap: 8px; flex-wrap: wrap; }
-        .step-item {
-            display: flex; align-items: center; gap: 6px;
-            background: var(--bg);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            color: var(--text-sub);
-            font-weight: 600;
-            transition: all 0.2s;
-            border: 1px solid var(--border);
-        }
-        .step-item.done {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-            padding-right: 14px;
-        }
-        .step-item.done::before { content: '✓'; font-weight: 800; }
-        
-        .del-btn {
-            background: #FEE2E2; color: #EF4444;
-            padding: 8px 12px; border-radius: 10px; font-size: 0.8rem; margin-left: 10px;
-            align-self: flex-start;
-        }
-
-        /* 성경 탭 */
-        .bible-stat-summary {
-            background: var(--primary-light);
-            color: var(--primary);
-            padding: 15px; border-radius: var(--radius);
-            text-align: center; margin-bottom: 20px;
-            font-weight: 700; font-size: 1rem;
-        }
-        #bible-main-view { display: flex; gap: 15px; justify-content: center; margin-top: 40px; }
-        .testament-btn {
-            width: 48%; height: 140px;
-            border-radius: 24px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            font-size: 1.2rem; font-weight: 800;
-            box-shadow: var(--shadow); cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .testament-btn:active { transform: scale(0.97); }
-        .testament-btn.old { background: #FFF7ED; color: #EA580C; border: 2px solid #FED7AA; }
-        .testament-btn.new { background: #EFF6FF; color: #2563EB; border: 2px solid #BFDBFE; }
-
-        .bible-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(85px, 1fr)); gap: 10px; margin-top: 15px; }
-        .bible-btn {
-            background: var(--card); padding: 15px 5px;
-            text-align: center; border-radius: 12px;
-            border: 1px solid var(--border);
-            cursor: pointer; font-size: 0.9rem; font-weight: 600;
-            box-shadow: 0 2px 0 var(--border);
-            transition: all 0.1s;
-        }
-        .bible-btn:active { transform: translateY(2px); box-shadow: none; }
-        .bible-btn.completed-book {
-            background: var(--primary); color: white; border-color: var(--primary);
-            box-shadow: 0 2px 0 #047857;
-        }
-        .round-badge {
-            position: absolute; top: -5px; right: -5px;
-            background: var(--accent); color: white;
-            font-size: 0.7rem; padding: 2px 6px; border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        /* 챕터 체크박스 */
-        .chapters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 8px; margin-top: 20px; }
-        .chapter-item {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: var(--card); padding: 10px;
-            border-radius: 12px; border: 2px solid var(--border);
-            cursor: pointer; transition: all 0.2s;
-        }
-        .chapter-item:has(input:checked) {
-            border-color: var(--primary); background: var(--primary-light); color: var(--primary); font-weight: bold;
-        }
-        .chapter-item input { display: none; } /* 기본 체크박스 숨김 */
-        
-        .chapter-controls button { font-size: 0.8rem; padding: 8px 12px; background: var(--text-sub); }
-        .finish-book-btn { background: var(--accent) !important; color: white !important; }
-
-        /* 메시지 */
-        .msg-bubble {
-            background: var(--card); padding: 10px 16px;
-            border-radius: 16px; border-top-left-radius: 2px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            max-width: 85%; line-height: 1.4;
-        }
-        .my-msg .msg-bubble {
-            background: var(--primary); color: white;
-            border-top-left-radius: 16px; border-top-right-radius: 2px;
-        }
-        .my-msg .msg-sender { color: rgba(255,255,255,0.8); }
-        .my-msg .msg-info { color: rgba(255,255,255,0.7); }
-
-        /* 로그인 화면 */
-        .login-overlay { background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); }
-        .login-box { border-radius: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-        .login-btn {
-            border-radius: 16px; background: white; border: 2px solid var(--border);
-            padding: 25px; transition: all 0.2s;
-        }
-        .login-btn:hover { border-color: var(--primary); transform: translateY(-3px); }
-        .login-btn.taken { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
-
-        /* 공통 유틸 */
-        .hidden-view { display: none !important; }
-        .back-btn { background: white; color: var(--text-sub); border: 1px solid var(--border); margin-bottom: 15px; }
-        #serverStatus { font-size: 0.75rem; text-align: center; margin-top: 30px; color: var(--text-sub); opacity: 0.7; }
-        
-        /* 캘린더 */
-        .cal-day { border-radius: 8px; font-weight: 500; }
-        .cal-day.today { border: 2px solid var(--accent); color: var(--accent); }
-    </style>
-</head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Family Promise & Bible</title>
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+    <link rel="stylesheet" href="style.css"> </head>
 <body>
 
-    <div id="loginScreen" class="login-overlay">
-        <div class="login-box">
-            <h2 style="margin-bottom:5px; color:var(--primary);">🏡 우리 가족 로그인</h2>
-            <p style="font-size:0.9rem; color:var(--text-sub); margin-top:0;">가족 구성원을 선택해주세요</p>
-            <div id="loginGrid" class="login-grid"></div>
+    <div id="splash-screen">
+        <div class="splash-content">
+            <div class="logo-large">Family✨</div>
+            <p>우리 가족의 믿음 습관</p>
+            <div class="spinner"></div>
         </div>
     </div>
 
-    <header>
-        <div class="logo">Family✨</div>
-        <div style="display:flex; align-items:center; gap:8px;">
-            <button onclick="window.toggleTheme()" style="padding:6px 10px; background:transparent; color:var(--text-main); border:1px solid var(--border); font-size:1.2rem;">🌗</button>
-            <div id="userNameDisplay" class="user-badge" onclick="window.logoutAction()">로그인 필요</div>
+    <div id="login-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>반가워요! 👋</h2>
+            <p>오늘 하루를 기록할 가족을 선택해주세요.</p>
+            <div id="login-grid" class="grid-2">
+                </div>
         </div>
-    </header>
-
-    <div class="verse-card">
-        <div id="verseText" class="verse-text">말씀을 불러오는 중...</div>
-        <div id="verseRef" class="verse-ref"></div>
     </div>
 
-    <div style="margin: 0 20px 10px; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-        <span style="font-size:0.85rem; color:var(--text-sub); font-weight:600;">⏰ 약속 시간</span>
-        <input type="time" id="alarm-time-input" onchange="window.saveAlarmTime()" style="padding:5px 10px; width:auto; flex:none;">
-    </div>
-
-    <div class="tabs">
-        <div class="tab active" onclick="window.goTab('resolution', this)">✅ 다짐</div>
-        <div class="tab" onclick="window.goTab('bible', this)">📖 성경</div>
-        <div class="tab" onclick="window.goTab('stats', this)">📊 통계</div>
-    </div>
-
-    <div id="resolution" class="page active">
-        <div class="input-area">
-            <input type="text" id="input-resolution" placeholder="예: 매일 운동하기 / 30분 / 완료">
-            <button onclick="window.addItem()">추가하기</button>
-        </div>
+    <div id="app-container" class="hidden">
         
-        <ul id="list-resolution"></ul>
-        
-        <div style="margin-top: 40px;">
-            <h3 style="margin-bottom: 15px; color:var(--text-main);">💌 응원 메시지</h3>
-            <div class="msg-input-box">
-                <input type="text" id="input-msg" placeholder="가족들에게 힘이 되는 한마디!">
-                <button onclick="window.sendMsg()">전송</button>
+        <header class="top-bar">
+            <div class="logo">Family✨</div>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="window.toggleTheme()">🌗</button>
+                <div id="user-profile" class="profile-badge" onclick="window.logoutAction()">
+                    <span id="user-name">Guest</span>
+                </div>
             </div>
-            <ul id="msg-list"></ul>
-        </div>
-    </div>
+        </header>
 
-    <div id="bible" class="page">
-        <div id="myBibleStat" class="bible-stat-summary">데이터 불러오는 중...</div>
+        <main class="content-area">
+            
+            <section class="card verse-card">
+                <div class="card-bg-deco"></div>
+                <div id="verseText" class="verse-text">오늘의 말씀을 불러오고 있습니다...</div>
+                <div id="verseRef" class="verse-ref"></div>
+            </section>
 
-        <div id="bible-main-view">
-            <div class="testament-btn old" onclick="window.showBibleBooks('old')">
-                <div>📜<br>구약 성경</div>
+            <div id="page-resolution" class="page active">
+                <div class="section-header">
+                    <h3>오늘의 다짐</h3>
+                    <input type="time" id="alarm-time-input" class="time-picker" onchange="window.saveAlarmTime()">
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="input-resolution" placeholder="새로운 다짐 추가하기...">
+                    <button class="btn-primary" onclick="window.addItem()">+</button>
+                </div>
+                <ul id="list-resolution" class="list-stack"></ul>
+
+                <div class="divider"></div>
+                
+                <h3>응원 메시지 💌</h3>
+                <div class="input-group">
+                    <input type="text" id="input-msg" placeholder="가족들에게 힘이 되는 한마디">
+                    <button class="btn-secondary" onclick="window.sendMsg()">전송</button>
+                </div>
+                <ul id="msg-list" class="msg-stack"></ul>
             </div>
-            <div class="testament-btn new" onclick="window.showBibleBooks('new')">
-                <div>✝️<br>신약 성경</div>
+
+            <div id="page-bible" class="page hidden">
+                <div id="myBibleStat" class="stat-banner">데이터 로딩 중...</div>
+                
+                <div id="bible-main-view" class="grid-2 mt-20">
+                    <button class="big-card old-testament" onclick="window.showBibleBooks('old')">
+                        <span class="icon">📜</span>
+                        <span class="label">구약 성경</span>
+                    </button>
+                    <button class="big-card new-testament" onclick="window.showBibleBooks('new')">
+                        <span class="icon">✝️</span>
+                        <span class="label">신약 성경</span>
+                    </button>
+                </div>
+
+                <div id="bible-books-view" class="sub-view hidden">
+                    <button class="btn-text" onclick="window.showBibleMain()">← 뒤로가기</button>
+                    <h3 id="bible-testament-title"></h3>
+                    <div id="bible-books-grid" class="grid-xs"></div>
+                </div>
+
+                <div id="bible-chapters-view" class="sub-view hidden">
+                    <div class="view-header">
+                        <button class="btn-text" onclick="window.backToBooks()">←</button>
+                        <h3 id="bible-book-title">창세기</h3>
+                        <button class="btn-finish" onclick="window.finishBookAndReset()">완독 🎉</button>
+                    </div>
+                    <div class="chapter-controls">
+                        <button class="btn-xs" onclick="window.controlAllChapters(true)">전체선택</button>
+                        <button class="btn-xs" onclick="window.controlAllChapters(false)">해제</button>
+                    </div>
+                    <div id="bible-chapters-grid" class="grid-chapters"></div>
+                </div>
             </div>
-        </div>
 
-        <div id="bible-books-view" class="hidden-view">
-            <button class="back-btn" onclick="window.showBibleMain()">◀ 처음으로 돌아가기</button>
-            <h3 id="bible-testament-title" style="text-align:center; margin-top:0;"></h3>
-            <div id="bible-books-grid" class="bible-grid"></div>
-        </div>
-
-        <div id="bible-chapters-view" class="hidden-view">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <button class="back-btn" onclick="window.backToBooks()" style="margin:0;">◀ 뒤로</button>
-                <h3 id="bible-book-title" style="margin:0; font-size:1.2rem; color:var(--primary);"></h3>
+            <div id="page-stats" class="page hidden">
+                <div class="empty-state">
+                    <div class="emoji">📊</div>
+                    <p>가족들의 통계를 분석하고 있어요</p>
+                </div>
             </div>
             
-            <div class="chapter-controls">
-                <button onclick="window.controlAllChapters(true)">전체 선택</button>
-                <button onclick="window.controlAllChapters(false)">전체 해제</button>
-                <button class="finish-book-btn" onclick="window.finishBookAndReset()">🏆 완독 확정</button>
-            </div>
-            
-            <div id="bible-chapters-grid" class="chapters-grid"></div>
-        </div>
+            <div style="height: 80px;"></div> </main>
+
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="window.goTab('resolution', this)">
+                <span class="icon">✅</span>
+                <span class="label">다짐</span>
+            </button>
+            <button class="nav-item" onclick="window.goTab('bible', this)">
+                <span class="icon">📖</span>
+                <span class="label">성경</span>
+            </button>
+            <button class="nav-item" onclick="window.goTab('stats', this)">
+                <span class="icon">📊</span>
+                <span class="label">통계</span>
+            </button>
+        </nav>
     </div>
 
-    <div id="stats" class="page">
-        <div style="text-align:center; padding:40px; color:var(--text-sub);">
-            <div style="font-size:2rem; margin-bottom:10px;">⏳</div>
-            통계 데이터를 계산하고 있습니다...
-        </div>
-    </div>
-
-    <div id="serverStatus">⚪ 서버와 연결 대기 중</div>
-
-    <script type="module" src="script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
+    <script type="module" src="script.js"></script>
 </body>
 </html>
