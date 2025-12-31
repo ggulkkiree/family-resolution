@@ -1,4 +1,12 @@
-// [데이터] 성경 책 목록 및 챕터 수
+/* =================================================================
+   [1] 중요: 외부 기능 불러오기 (무조건 맨 위에 있어야 함)
+   ================================================================= */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+/* =================================================================
+   [2] 데이터 및 설정
+   ================================================================= */
 const BIBLE_DATA = {
     "books": [
         { "name": "창세기", "chapters": 50, "testament": "old" }, { "name": "출애굽기", "chapters": 40, "testament": "old" },
@@ -45,14 +53,8 @@ const DAILY_VERSES = [
     { t: "너의 행사를 여호와께 맡기라 그리하면 네가 경영하는 것이 이루어지리라", r: "잠언 16:3" }
 ];
 
-// 사용자 슬롯 (6명 고정)
 const USER_SLOTS = ["user_1", "user_2", "user_3", "user_4", "user_5", "user_6"];
 
-// Firebase 모듈 불러오기
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// Firebase 설정 (기존 키값 유지)
 const firebaseConfig = {
   apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
   authDomain: "family-resolution.firebaseapp.com",
@@ -63,23 +65,17 @@ const firebaseConfig = {
   measurementId: "G-RH6E87B4H0"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-// V28 DB Key 사용
-const docRef = doc(db, "appData", "familyDataV28_Secure");
-
-let myName = localStorage.getItem('myId'); 
+// 앱 초기화 및 변수 선언
+let app, db, docRef;
 let appData = {};
 let bibleState = { currentTestament: null, currentBook: null };
 let currentViewYear = new Date().getFullYear();
+let myName = localStorage.getItem('myId'); 
 
-// 초기화
-if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-const verse = DAILY_VERSES[Math.floor(Math.random() * DAILY_VERSES.length)];
-document.getElementById('verseText').textContent = verse.t;
-document.getElementById('verseRef').textContent = verse.r;
-
-// [인증 및 로그인 관련 함수]
+/* =================================================================
+   [3] 기능 함수들 (HTML에서 버튼 누를 때 실행되는 친구들)
+   ================================================================= */
+// 로그인
 window.tryLogin = function(slotId) {
     const authData = (appData.auth && appData.auth[slotId]) ? appData.auth[slotId] : null;
 
@@ -92,14 +88,13 @@ window.tryLogin = function(slotId) {
         
         if(!appData.auth) appData.auth = {};
         appData.auth[slotId] = { name: newName, pin: newPin };
-        // 사용자 데이터 초기화
-        appData[slotId] = { resolution: [], bible: {}, history: {} };
+        appData[slotId] = { resolution: [], bible: {}, history: {} }; // 데이터 초기화
         
         saveToServer().then(() => {
             loginSuccess(slotId);
         });
     } else {
-        // 로그인 (PIN 확인)
+        // 기존 로그인
         const inputPin = prompt(`'${authData.name}'님의 비밀번호를 입력하세요:`);
         if(inputPin === authData.pin) {
             loginSuccess(slotId);
@@ -116,6 +111,7 @@ function loginSuccess(slotId) {
     updateUI();
 }
 
+// 로그아웃
 window.logoutAction = function() {
     if(confirm("로그아웃 하시겠습니까?")) {
         localStorage.removeItem('myId');
@@ -125,7 +121,7 @@ window.logoutAction = function() {
     }
 }
 
-// [설정 관련 함수]
+// 설정 (닉네임, 비번 변경)
 window.updateNickname = function() {
     const val = document.getElementById('edit-nickname').value;
     if(!val) return;
@@ -146,15 +142,20 @@ window.updatePin = function() {
     }
 }
 
+// 테마 변경
 window.toggleTheme = function() {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
 }
+
+// 연도 변경
 window.changeYear = function(delta) {
     currentViewYear += delta;
     refreshYearDisplay();
     updateUI(); 
 }
+
+// 탭 이동
 window.goTab = function(t, element) {
     document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
     element.classList.add('active');
@@ -163,7 +164,7 @@ window.goTab = function(t, element) {
     if(t==='stats'||t==='bible') updateUI();
 }
 
-// [결단서 기능]
+// 결단서 추가
 window.addItem = function(cat) {
     if(!myName) return;
     const input = document.getElementById(`input-resolution`);
@@ -229,7 +230,7 @@ window.toggleResolution = function(i, si) {
     saveToServer();
 }
 
-// [성경 읽기 기능]
+// 성경 기능
 window.showBibleBooks = function(testament) {
     bibleState.currentTestament = testament;
     document.getElementById('bible-main-view').classList.add('hidden-view');
@@ -285,13 +286,12 @@ window.savePeriod = function() {
     saveToServer().then(() => alert("📅 시즌 기간 설정 완료!"));
 }
 
-// [소통 기능]
+// 소통 기능
 window.sendMsg = function() {
     const input = document.getElementById('input-msg');
     const text = input.value.trim();
     if(!text) return;
     if(!appData.messages) appData.messages = [];
-    // 닉네임 사용
     const senderName = appData.auth[myName].name;
     appData.messages.push({ sender: senderName, id: myName, text: text, ts: new Date().toISOString() });
     if(appData.messages.length > 50) appData.messages.shift();
@@ -307,7 +307,9 @@ window.deleteMsg = function(idx) {
     }
 }
 
-// [유틸리티 및 렌더링 함수들]
+/* =================================================================
+   [4] 내부 로직 및 렌더링 함수들
+   ================================================================= */
 function getTodayStr() {
     const d = new Date();
     const year = d.getFullYear();
@@ -337,9 +339,7 @@ function refreshYearDisplay() {
     document.getElementById('displayYear').textContent = currentViewYear;
     document.getElementById('yearTotalLabel').textContent = `${currentViewYear}년 누적`;
 }
-refreshYearDisplay();
 
-// 로그인 화면 그리기
 function renderLoginScreen() {
     const loginGrid = document.getElementById('loginGrid');
     loginGrid.innerHTML = "";
@@ -349,11 +349,9 @@ function renderLoginScreen() {
         const authData = (appData.auth && appData.auth[slotId]);
         
         if(authData) {
-            // 이미 등록된 사용자
             btn.className = 'login-btn taken';
             btn.innerHTML = `<span style="font-size:20px;">🔒</span> <span>${authData.name}</span>`;
         } else {
-            // 빈 슬롯
             btn.className = 'login-btn';
             btn.innerHTML = `<span style="opacity:0.5;">+</span> <span class="sub-label">빈 자리<br>(번호 ${idx+1})</span>`;
         }
@@ -363,43 +361,15 @@ function renderLoginScreen() {
     });
 }
 
-// [Firestore 실시간 연동]
-const statusDiv = document.getElementById('serverStatus');
-onSnapshot(docRef, (docSnap) => {
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        appData = data.appData || {};
-        let needSave = false;
-        
-        if(!appData.period) { appData.period = {start:"", end:""}; needSave = true; }
-        if(!appData.messages) { appData.messages = []; needSave = true; }
-        if(!appData.auth) { appData.auth = {}; needSave = true; }
-        // 데이터 슬롯 확보
-        USER_SLOTS.forEach(sid => {
-            if(!appData[sid]) { appData[sid] = { resolution: [], bible: {}, history: {} }; needSave = true; }
-        });
-
-        if (data.lastDate !== new Date().toDateString()) {
-            resetDailyCheckboxes();
-        } else {
-            if(needSave) saveToServer();
-            renderLoginScreen();
-            // 로그인 상태라면 UI 갱신
-            if(myName) updateUI();
-        }
-        statusDiv.textContent = "🟢 실시간 연동됨";
-    } else {
-        initData();
-    }
-});
-
 async function initData() {
     appData = { period: {start:"", end:""}, messages: [], auth: {} };
     USER_SLOTS.forEach(sid => appData[sid] = { resolution: [], bible: {}, history: {} });
     await saveToServer();
     renderLoginScreen();
 }
+
 async function saveToServer() {
+    const statusDiv = document.getElementById('serverStatus');
     statusDiv.textContent = "🟡 저장 중...";
     try {
         await setDoc(docRef, { appData: appData, lastDate: new Date().toDateString() });
@@ -409,6 +379,7 @@ async function saveToServer() {
         statusDiv.textContent = "🔴 저장 실패 (네트워크 확인)";
     }
 }
+
 async function resetDailyCheckboxes() {
     for (let m in appData) {
         if(appData[m] && appData[m].resolution) {
@@ -421,7 +392,6 @@ async function resetDailyCheckboxes() {
 
 function updateUI() {
     if (myName) {
-        // 닉네임 표시
         const myInfo = appData.auth[myName];
         document.getElementById('userNameDisplay').textContent = myInfo ? myInfo.name : "사용자";
         
@@ -475,7 +445,6 @@ function renderAllRankings() {
     const p = appData.period || {};
     const hasPeriod = (p.start && p.end);
     
-    // 등록된 사용자만 랭킹에 표시
     const activeUsers = USER_SLOTS.filter(sid => appData.auth && appData.auth[sid]);
     
     const resRank = activeUsers.map(sid => {
@@ -664,4 +633,58 @@ function renderMessages() {
         chatList.appendChild(div);
     });
     if (wasScrolledToBottom) chatList.scrollTop = chatList.scrollHeight;
+}
+
+/* =================================================================
+   [5] 앱 실행 시작 (초기화)
+   ================================================================= */
+try {
+    if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+    
+    const verse = DAILY_VERSES[Math.floor(Math.random() * DAILY_VERSES.length)];
+    if(document.getElementById('verseText')) {
+        document.getElementById('verseText').textContent = verse.t;
+        document.getElementById('verseRef').textContent = verse.r;
+    }
+    refreshYearDisplay();
+
+    // Firebase 앱 시작
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    docRef = doc(db, "appData", "familyDataV28_Secure");
+    
+    // 데이터 실시간 수신 대기
+    const statusDiv = document.getElementById('serverStatus');
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            appData = data.appData || {};
+            let needSave = false;
+            
+            if(!appData.period) { appData.period = {start:"", end:""}; needSave = true; }
+            if(!appData.messages) { appData.messages = []; needSave = true; }
+            if(!appData.auth) { appData.auth = {}; needSave = true; }
+            USER_SLOTS.forEach(sid => {
+                if(!appData[sid]) { appData[sid] = { resolution: [], bible: {}, history: {} }; needSave = true; }
+            });
+
+            if (data.lastDate !== new Date().toDateString()) {
+                resetDailyCheckboxes();
+            } else {
+                if(needSave) saveToServer();
+                renderLoginScreen();
+                if(myName) updateUI();
+            }
+            if(statusDiv) statusDiv.textContent = "🟢 실시간 연동됨";
+        } else {
+            initData();
+        }
+    }, (error) => {
+        console.error("Firebase 접속 오류:", error);
+        if(statusDiv) statusDiv.textContent = "🔴 연결 실패 (인터넷 확인)";
+    });
+
+} catch (e) {
+    console.error("스크립트 실행 중 치명적 오류:", e);
+    alert("앱 실행 중 오류가 발생했습니다. 새로고침 해주세요.");
 }
