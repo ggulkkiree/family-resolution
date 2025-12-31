@@ -146,7 +146,6 @@ window.changeYear = function(delta) {
     updateUI(); 
 }
 
-// [신규] 접이식(아코디언) 메뉴 토글
 window.toggleAccordion = function(id) {
     const content = document.getElementById(id);
     const arrow = content.previousElementSibling.querySelector('.arrow-icon');
@@ -167,55 +166,55 @@ window.goTab = function(t, element) {
     document.getElementById(t).classList.add('active');
     
     if(t==='stats') {
-        renderStatsPage(); // [수정] 통계 페이지 렌더링 함수 분리
+        renderStatsPage(); 
     }
     if(t==='bible') updateUI();
 }
 
-// [신규] 통계 페이지 구조를 그리는 함수 (아코디언 적용)
+// [수정됨] 통계 페이지 렌더링 (결단서만 active, 나머지 닫힘)
 function renderStatsPage() {
     const statsDiv = document.getElementById('stats');
     
-    // 이미 구조가 잡혀있으면 내용만 갱신
-    if(document.getElementById('accordion-rank')) {
+    if(document.getElementById('accordion-res')) {
         renderAllRankings();
         renderCalendar();
         renderHabitAnalysis();
         return;
     }
 
-    // 처음 한 번 구조 잡기
     statsDiv.innerHTML = `
         <div class="accordion">
-            <div class="accordion-header" onclick="window.toggleAccordion('accordion-rank')">
-                <span>🏆 가족 랭킹</span> <span class="arrow-icon" style="transform:rotate(180deg)">▼</span>
+            <div class="accordion-header" onclick="window.toggleAccordion('accordion-res')">
+                <span>🔥 결단서 랭킹 (시즌 설정)</span> <span class="arrow-icon" style="transform:rotate(180deg)">▼</span>
             </div>
-            <div id="accordion-rank" class="accordion-content active">
-                <div class="period-box">
-                    <div style="font-weight:bold; color:var(--stats);">📅 시즌 기간 설정</div>
-                    <div style="display:flex; gap:5px; justify-content:center; margin-top:10px;">
+            <div id="accordion-res" class="accordion-content active">
+                <div class="period-box" style="margin-bottom:15px;">
+                    <div style="font-weight:bold; color:var(--stats); font-size:13px;">📅 시즌 기간 설정</div>
+                    <div style="display:flex; gap:5px; justify-content:center; margin-top:5px;">
                         <input type="date" id="startDateInput" style="width:40%;"> ~ <input type="date" id="endDateInput" style="width:40%;">
                     </div>
-                    <button onclick="window.savePeriod()" style="margin-top:10px; padding:8px 20px; border:none; background:var(--stats); color:white; border-radius:10px;">적용</button>
+                    <button onclick="window.savePeriod()" style="margin-top:5px; padding:6px 15px; border:none; background:var(--stats); color:white; border-radius:8px; font-size:12px;">적용</button>
+                    <div style="font-size:11px; color:#666; margin-top:5px;" id="rankPeriodLabel"></div>
                 </div>
-                <div class="rank-grid">
-                    <div>
-                        <h4 style="color:var(--primary); margin-bottom:10px;">🔥 결단서 랭킹 <span style="font-size:11px; font-weight:normal;" id="rankPeriodLabel"></span></h4>
-                        <div id="resolutionRankList"></div>
-                    </div>
-                    <div>
-                        <h4 style="color:var(--bible); margin-bottom:10px;">📖 성경 다독왕 <span style="font-size:11px; font-weight:normal;" id="bibleYearLabel"></span></h4>
-                        <div id="bibleRankList"></div>
-                    </div>
-                </div>
+                <div id="resolutionRankList"></div>
+            </div>
+        </div>
+
+        <div class="accordion">
+            <div class="accordion-header" onclick="window.toggleAccordion('accordion-bible')">
+                <span>📖 성경 다독왕</span> <span class="arrow-icon">▼</span>
+            </div>
+            <div id="accordion-bible" class="accordion-content">
+                <div style="font-size:12px; color:#666; text-align:center; margin-bottom:10px;" id="bibleYearLabel"></div>
+                <div id="bibleRankList"></div>
             </div>
         </div>
 
         <div class="accordion">
             <div class="accordion-header" onclick="window.toggleAccordion('accordion-cal')">
-                <span>📅 나의 월간 기록 (히트맵)</span> <span class="arrow-icon" style="transform:rotate(180deg)">▼</span>
+                <span>📅 월간 기록 (히트맵)</span> <span class="arrow-icon">▼</span>
             </div>
-            <div id="accordion-cal" class="accordion-content active">
+            <div id="accordion-cal" class="accordion-content">
                 <div id="calendar-container"></div>
             </div>
         </div>
@@ -230,7 +229,7 @@ function renderStatsPage() {
         </div>
     `;
     
-    updateUI(); // 값 채워넣기
+    updateUI(); 
 }
 
 window.addItem = function(cat) {
@@ -377,11 +376,9 @@ window.changeCalMonth = function(delta) {
     renderCalendar();
 }
 
-// [신규] 특정 날짜 클릭 시 상세 정보 보기
 window.showDateDetail = function(dateStr) {
     const historyVal = (appData[myName].history && appData[myName].history[dateStr]) || 0;
     
-    // 전체 할 일 개수 계산
     let totalItems = 0;
     (appData[myName].resolution || []).forEach(item => totalItems += item.steps.length);
     if(totalItems === 0) totalItems = 1;
@@ -495,8 +492,7 @@ function updateUI() {
         }
     }
 
-    // 통계 페이지가 열려있을 때만 내용 갱신
-    if(document.getElementById('accordion-rank')) {
+    if(document.getElementById('accordion-res')) {
         renderAllRankings();
         renderCalendar();
         renderHabitAnalysis();
@@ -585,11 +581,10 @@ function renderAllRankings() {
     });
 
     const bibleList = document.getElementById('bibleRankList');
+    if(!bibleList) return;
     bibleList.innerHTML = "";
-    const { startStr, endStr } = getWeekRangeStrings();
-    const partsS = startStr.split('-');
-    const partsE = endStr.split('-');
-    if(partsS.length === 3) {
+    
+    if(document.getElementById('bibleYearLabel')) {
         document.getElementById('bibleYearLabel').textContent = `2025년 전체 누적`;
     }
     const bibleRank = activeUsers.map(sid => {
@@ -632,7 +627,6 @@ function renderHabitAnalysis() {
     });
 }
 
-// [신규] 히트맵 캘린더 렌더링
 function renderCalendar() {
     if(!myName) return;
     const container = document.getElementById('calendar-container');
@@ -664,10 +658,9 @@ function renderCalendar() {
     const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
     const todayStr = getTodayStr();
 
-    // 전체 할 일 개수 (분모)
     let totalItems = 0;
     (appData[myName].resolution || []).forEach(item => totalItems += item.steps.length);
-    if(totalItems === 0) totalItems = 1; // 0으로 나누기 방지
+    if(totalItems === 0) totalItems = 1;
 
     for(let d=1; d<=lastDate; d++) {
         const dateObj = new Date(calYear, calMonth, d);
@@ -682,17 +675,13 @@ function renderCalendar() {
         cell.onclick = () => window.showDateDetail(dateStr);
         cell.innerHTML = `<span>${d}</span>`;
 
-        // [히트맵] 수행 개수에 따라 배경색 농도 조절
         const doneCount = myHistory[dateStr] || 0;
         if(doneCount > 0) {
-            // 최대 100% 농도까지 (0.2 ~ 1.0)
             const alpha = Math.min(1.0, Math.max(0.2, doneCount / totalItems));
-            // --edit 색상(#4CAF50)을 RGB로 변환하여 알파값 적용
             cell.style.backgroundColor = `rgba(76, 175, 80, ${alpha})`;
-            cell.style.color = alpha > 0.6 ? 'white' : 'inherit'; // 진하면 글자 흰색
+            cell.style.color = alpha > 0.6 ? 'white' : 'inherit';
         }
 
-        // 성경 읽음 표시 (파란 점)
         let readBible = false;
         for(const val of Object.values(myBible)) { if(val === dateStr) { readBible = true; break; } }
         if(readBible) {
@@ -702,140 +691,6 @@ function renderCalendar() {
         }
         calGrid.appendChild(cell);
     }
-}
-
-function renderMyList() {
-    const listEl = document.getElementById(`list-resolution`);
-    listEl.innerHTML = "";
-    if(!appData[myName] || !appData[myName].resolution) return;
-    (appData[myName].resolution || []).forEach((item, idx) => {
-        const li = document.createElement('li');
-        const btnContainer = document.createElement('div');
-        btnContainer.className = 'action-btns';
-        const editBtn = document.createElement('button');
-        editBtn.className = 'edit-btn'; editBtn.textContent = '✎'; editBtn.onclick = () => window.editResolution(idx);
-        const delBtn = document.createElement('button');
-        delBtn.className = 'del-btn'; delBtn.textContent = '×'; delBtn.onclick = () => window.deleteResolution(idx);
-        btnContainer.appendChild(editBtn); btnContainer.appendChild(delBtn);
-        const topDiv = document.createElement('div');
-        topDiv.className = 'li-top';
-        const span = document.createElement('span');
-        span.className = 'li-text'; span.textContent = item.text;
-        topDiv.appendChild(span); topDiv.appendChild(btnContainer);
-        const stepsDiv = document.createElement('div');
-        stepsDiv.className = 'steps';
-        item.steps.forEach((s, si) => {
-            const stepDiv = document.createElement('div');
-            stepDiv.className = `step ${item.done[si] ? 'done' : ''}`;
-            stepDiv.textContent = s;
-            stepDiv.onclick = () => window.toggleResolution(idx, si);
-            stepsDiv.appendChild(stepDiv);
-        });
-        li.appendChild(topDiv); li.appendChild(stepsDiv);
-        listEl.appendChild(li);
-    });
-}
-function updateDailyHistory(m) {
-    const d = getTodayStr();
-    if(!appData[m]) return;
-    let s = (appData[m].resolution||[]).reduce((acc, cur) => acc + cur.done.filter(Boolean).length, 0);
-    if (!appData[m].history) appData[m].history = {};
-    appData[m].history[d] = s;
-}
-
-function renderBibleUI() {
-    if(!document.getElementById('bible-books-view').classList.contains('hidden-view')) renderBibleBooks();
-    if(!document.getElementById('bible-chapters-view').classList.contains('hidden-view')) renderBibleChapters();
-}
-
-function renderBibleBooks() {
-    const container = document.getElementById('book-grid-container');
-    container.innerHTML = '';
-    const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
-    const myRounds = (appData[myName] && appData[myName].bibleRounds) ? appData[myName].bibleRounds : {};
-    BIBLE_DATA.books.filter(b => b.testament === bibleState.currentTestament).forEach(book => {
-        const btn = document.createElement('div');
-        btn.className = 'book-btn';
-        let readCount = 0;
-        for(let i=1; i<=book.chapters; i++) { if(isInViewYear(myBible[`${book.name}-${i}`])) readCount++; }
-        const rounds = myRounds[book.name] || 0;
-        let badgeHtml = "";
-        if(rounds > 0) badgeHtml = `<div style="font-size:10px; color:gold; font-weight:bold;">👑 ${rounds}독</div>`;
-        btn.innerHTML = `<div>${book.name}</div>${badgeHtml}`;
-        if(readCount === book.chapters) { 
-            btn.classList.add('completed'); 
-            btn.innerHTML = `<div>✔️ ${book.name}</div>${badgeHtml}`;
-        } else if (readCount > 0) { btn.classList.add('in-progress'); }
-        btn.onclick = () => window.showChapters(book.name);
-        container.appendChild(btn);
-    });
-}
-
-function renderBibleChapters() {
-    const container = document.getElementById('chapter-grid-container');
-    container.innerHTML = '';
-    const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
-    if(!book) return;
-    const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
-    let checkedCount = 0;
-    for(let i=1; i<=book.chapters; i++) {
-        const chapterKey = `${book.name}-${i}`;
-        const div = document.createElement('div'); div.className = 'chapter-item';
-        const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = `ch-${chapterKey}`;
-        if(isInViewYear(myBible[chapterKey])) { checkbox.checked = true; checkedCount++; }
-        checkbox.onchange = (e) => window.toggleChapter(chapterKey, e.target.checked);
-        const label = document.createElement('label'); label.htmlFor = `ch-${chapterKey}`; label.textContent = i;
-        div.appendChild(checkbox); div.appendChild(label);
-        container.appendChild(div);
-    }
-    if(checkedCount === book.chapters) {
-        const resetBtnDiv = document.createElement('div');
-        resetBtnDiv.style.gridColumn = "1 / -1"; 
-        resetBtnDiv.style.marginTop = "20px";
-        resetBtnDiv.innerHTML = `
-            <button onclick="window.finishBookAndReset()" style="width:100%; padding:15px; background:linear-gradient(45deg, #FF9800, #FFC107); border:none; border-radius:12px; color:white; font-weight:bold; font-size:16px; cursor:pointer; box-shadow:0 4px 10px rgba(255,152,0,0.3);">
-                🎉 ${book.name} 완독! (초기화 및 2독 도전)
-            </button>
-        `;
-        container.appendChild(resetBtnDiv);
-    }
-}
-
-function updateMyStats() {
-    if(!appData[myName]) return;
-    const bible = appData[myName].bible || {};
-    let weeklyCount = 0;
-    const { startStr, endStr } = getWeekRangeStrings();
-    for (const [key, dateStr] of Object.entries(bible)) {
-        if (dateStr >= startStr && dateStr <= endStr) weeklyCount++;
-    }
-    const totalCount = calculateTotalBibleRead(myName);
-    document.getElementById('myWeeklyBible').textContent = weeklyCount;
-    document.getElementById('myYearlyBible').textContent = totalCount;
-}
-
-function renderMessages() {
-    const chatList = document.getElementById('chatList');
-    if(!chatList) return; 
-    const wasScrolledToBottom = chatList.scrollHeight - chatList.scrollTop <= chatList.clientHeight + 50;
-    chatList.innerHTML = "";
-    const msgs = appData.messages || [];
-    msgs.forEach((msg, idx) => {
-        const isMine = (msg.id === myName) || (msg.sender === appData.auth[myName].name);
-        const div = document.createElement('div');
-        div.className = `msg-card ${isMine ? 'mine' : ''}`;
-        let dateStr = "";
-        try { dateStr = new Date(msg.ts).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch(e) {}
-        div.innerHTML = `<div class="msg-sender">${msg.sender}</div><div>${msg.text}</div><div class="msg-time">${dateStr}</div>`;
-        if(isMine) {
-            const delBtn = document.createElement('div');
-            delBtn.className = 'msg-delete'; delBtn.textContent = '×';
-            delBtn.onclick = () => window.deleteMsg(idx);
-            div.appendChild(delBtn);
-        }
-        chatList.appendChild(div);
-    });
-    if (wasScrolledToBottom) chatList.scrollTop = chatList.scrollHeight;
 }
 
 setInterval(() => {
