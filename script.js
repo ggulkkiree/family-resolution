@@ -1,33 +1,15 @@
 /* =================================================================
    [0] 긴급 스타일 주입 (스크롤 해결사)
-   이 코드는 CSS 파일이 놓친 "스크롤 기능"을 강제로 만들어줍니다.
    ================================================================= */
 (function fixStyles() {
     const style = document.createElement('style');
     style.innerHTML = `
-        /* 전체 화면 고정 */
         html, body { overflow: hidden; height: 100%; margin: 0; padding: 0; }
-        
-        /* 메인 컨테이너가 화면을 꽉 채우고 넘치면 스크롤 */
-        #app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
-        
-        /* 실제 페이지 내용들이 들어가는 곳 */
+        #app-container { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         .page-content, #page-resolution, #page-bible, #page-stats {
-            flex: 1;
-            overflow-y: auto !important; /* 강제 스크롤 */
-            padding-bottom: 100px; /* 하단 탭에 가려지지 않게 여백 */
-            -webkit-overflow-scrolling: touch; /* 모바일 부드러운 스크롤 */
+            flex: 1; overflow-y: auto !important; padding-bottom: 100px; -webkit-overflow-scrolling: touch;
         }
-        
-        /* 리스트 아이템 스타일 보정 */
         .resolution-item { margin-bottom: 15px; }
-        
-        /* 통계 화면 강제 높이 확보 */
         #page-stats { min-height: 100%; display: block !important; }
     `;
     document.head.appendChild(style);
@@ -39,10 +21,11 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// [중요] 고객님 프로젝트 정보에 맞춘 설정 (비공개 키 아님, 공개용 설정)
 const firebaseConfig = {
-  apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
+  apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI", // 기존에 작동하던 공개 키
   authDomain: "family-resolution.firebaseapp.com",
-  projectId: "family-resolution",
+  projectId: "family-resolution", // 방금 확인한 프로젝트 ID
   storageBucket: "family-resolution.firebasestorage.app",
   messagingSenderId: "711396068080",
   appId: "1:711396068080:web:861c41a8259f0b6dca9035",
@@ -112,24 +95,17 @@ let calMonth = new Date().getMonth();
 /* =================================================================
    [3] 기능 함수들 (로직)
    ================================================================= */
-
-// [로그인 및 화면 전환]
 window.tryLogin = function(slotId) {
     const authData = (appData.auth && appData.auth[slotId]) ? appData.auth[slotId] : null;
-    
-    // 신규 등록
     if (!authData) {
         const newName = prompt("사용할 닉네임을 입력하세요:");
         if(!newName) return;
         const newPin = prompt("비밀번호(PIN) 4자리를 설정하세요:");
         if(!newPin || newPin.length < 1) return;
-        
         if(!appData.auth) appData.auth = {};
         appData.auth[slotId] = { name: newName, pin: newPin };
         appData[slotId] = { resolution: [], bible: {}, history: {}, bibleRounds: {} }; 
         saveToServer().then(() => loginSuccess(slotId));
-    
-    // 기존 로그인
     } else {
         const inputPin = prompt(`'${authData.name}'님의 비밀번호를 입력하세요:`);
         if(inputPin === authData.pin) loginSuccess(slotId);
@@ -140,12 +116,10 @@ window.tryLogin = function(slotId) {
 function loginSuccess(slotId) {
     myName = slotId;
     localStorage.setItem('myId', slotId);
-    
     const loginModal = document.getElementById('login-modal');
     const appContainer = document.getElementById('app-container');
     if(loginModal) loginModal.classList.add('hidden');
     if(appContainer) appContainer.classList.remove('hidden');
-
     updateUI();
 }
 
@@ -153,39 +127,29 @@ window.logoutAction = function() {
     if(confirm("로그아웃 하시겠습니까?")) {
         localStorage.removeItem('myId');
         myName = null;
-        
         const loginModal = document.getElementById('login-modal');
         const appContainer = document.getElementById('app-container');
         if(appContainer) appContainer.classList.add('hidden');
         if(loginModal) loginModal.classList.remove('hidden');
-        
         renderLoginScreen();
     }
 };
 
-// [탭 전환] - 페이지 숨김/보임 처리 개선
 window.goTab = function(tabName, element) {
-    // 버튼 활성화
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     if(element) element.classList.add('active');
-
-    // 페이지 전환
+    
+    // 강제 숨김 처리
     const pages = ['resolution', 'bible', 'stats'];
     pages.forEach(page => {
         const el = document.getElementById('page-' + page);
-        if(el) {
-            el.classList.add('hidden');
-            el.style.display = 'none'; // 확실하게 숨김
-        }
+        if(el) { el.classList.add('hidden'); el.style.display = 'none'; }
     });
 
+    // 강제 보임 처리
     const target = document.getElementById('page-' + tabName);
-    if(target) {
-        target.classList.remove('hidden');
-        target.style.display = 'block'; // 확실하게 보임
-    }
+    if(target) { target.classList.remove('hidden'); target.style.display = 'block'; }
     
-    // 통계 페이지는 클릭할 때마다 강제로 새로고침 (분석중 메시지 제거용)
     if(tabName === 'stats') renderStatsPage();
     if(tabName === 'bible') updateUI();
 };
@@ -250,8 +214,7 @@ window.toggleResolution = function(i, si) {
     }
     
     updateDailyHistory(myName);
-    renderMyList(); 
-    saveToServer();
+    renderMyList(); saveToServer();
 };
 
 window.showBibleBooks = function(testament) {
@@ -336,7 +299,6 @@ function updateUI() {
         const myInfo = appData.auth[myName];
         const nameDisplay = document.getElementById('user-name'); 
         if(nameDisplay) nameDisplay.textContent = myInfo ? myInfo.name : "사용자";
-        
         renderMyList();
         renderMessages();
         renderBibleUI();
@@ -429,330 +391,4 @@ function renderBibleBooks() {
         const rounds = (appData[myName].bibleRounds && appData[myName].bibleRounds[book.name]) || 0;
         const badge = rounds > 0 ? `<span class="round-badge">+${rounds}</span>` : "";
         let readCount = 0;
-        for(let i=1; i<=book.chapters; i++) {
-            if(appData[myName].bible && appData[myName].bible[`${book.name}-${i}`]) readCount++;
-        }
-        if(readCount >= book.chapters) btn.classList.add('completed-book'); 
-        btn.innerHTML = `${book.name} ${badge}`;
-        btn.onclick = () => window.showChapters(book.name);
-        container.appendChild(btn);
-    });
-}
-
-function renderBibleChapters() {
-    const container = document.getElementById('bible-chapters-grid');
-    if(!container) return;
-    container.innerHTML = "";
-    const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
-    if(!book) return;
-    document.getElementById('bible-book-title').textContent = book.name;
-    for(let i=1; i<=book.chapters; i++) {
-        const key = `${book.name}-${i}`;
-        const isRead = (appData[myName].bible && appData[myName].bible[key]);
-        const isThisYear = isInViewYear(isRead);
-        const label = document.createElement('label');
-        label.className = 'chapter-item';
-        const chk = document.createElement('input');
-        chk.type = "checkbox"; chk.checked = isThisYear;
-        chk.onchange = (e) => window.toggleChapter(key, e.target.checked);
-        const span = document.createElement('span');
-        span.textContent = `${i}장`;
-        label.appendChild(chk); label.appendChild(span);
-        container.appendChild(label);
-    }
-}
-
-// [중요 수정] 통계 페이지 강제 렌더링
-function renderStatsPage() {
-    const statsDiv = document.getElementById('page-stats'); 
-    if (!statsDiv) return;
-    
-    // 내용이 있든 없든(analyzing 텍스트가 있든) 무조건 덮어씌웁니다.
-    statsDiv.innerHTML = `
-        <div class="card" style="margin-bottom:20px;">
-            <h3>📅 월간 히트맵</h3>
-            <div id="calendar-container"></div>
-        </div>
-        <div class="card" style="margin-bottom:20px;">
-            <h3>🔥 결단서 랭킹</h3>
-            <div id="resolutionRankList"></div>
-        </div>
-        <div class="card">
-            <h3>📖 성경 다독왕</h3>
-            <div id="bibleRankList"></div>
-        </div>
-    `;
-    
-    // 렌더링 호출
-    renderCalendar();
-    renderAllRankings();
-}
-
-function renderCalendar() {
-    const container = document.getElementById('calendar-container');
-    if(!container) return;
-    container.innerHTML = `
-        <div class="cal-header">
-            <button onclick="window.changeCalMonth(-1)">◀</button>
-            <span>${calYear}년 ${calMonth + 1}월</span>
-            <button onclick="window.changeCalMonth(1)">▶</button>
-        </div>
-        <div class="cal-grid" id="calGrid"></div>
-    `;
-    const calGrid = document.getElementById('calGrid');
-    const days = ['일','월','화','수','목','금','토'];
-    days.forEach(d => {
-        const div = document.createElement('div');
-        div.className = 'cal-day-label'; div.textContent = d;
-        calGrid.appendChild(div);
-    });
-    const firstDay = new Date(calYear, calMonth, 1).getDay();
-    const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
-    for(let i=0; i<firstDay; i++) calGrid.appendChild(document.createElement('div'));
-    
-    const myHistory = (appData[myName] && appData[myName].history) ? appData[myName].history : {};
-    const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
-    const todayStr = getTodayStr();
-    let totalItems = 0;
-    (appData[myName].resolution || []).forEach(item => totalItems += item.steps.length);
-    if(totalItems === 0) totalItems = 1;
-    
-    for(let d=1; d<=lastDate; d++) {
-        const dateObj = new Date(calYear, calMonth, d);
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth()+1).padStart(2,'0');
-        const da = String(dateObj.getDate()).padStart(2,'0');
-        const dateStr = `${y}-${m}-${da}`;
-        const cell = document.createElement('div');
-        cell.className = 'cal-day';
-        if(dateStr === todayStr) cell.classList.add('today');
-        cell.onclick = () => window.showDateDetail(dateStr);
-        cell.innerHTML = `<span>${d}</span>`;
-        const doneCount = myHistory[dateStr] || 0;
-        if(doneCount > 0) {
-            const alpha = Math.min(1.0, Math.max(0.2, doneCount / totalItems));
-            cell.style.backgroundColor = `rgba(76, 175, 80, ${alpha})`;
-            cell.style.color = alpha > 0.6 ? 'white' : 'inherit';
-        }
-        let readBible = false;
-        for(const val of Object.values(myBible)) { if(val === dateStr) { readBible = true; break; } }
-        if(readBible) {
-            const dot = document.createElement('div');
-            dot.className = 'dot-bible';
-            cell.appendChild(dot);
-        }
-        calGrid.appendChild(cell);
-    }
-}
-
-function renderAllRankings() {
-    const resList = document.getElementById('resolutionRankList');
-    const bibleList = document.getElementById('bibleRankList');
-    if(!resList || !bibleList) return;
-    
-    const activeUsers = USER_SLOTS.filter(sid => appData.auth && appData.auth[sid]);
-    
-    // 결단서 랭킹
-    const resRank = activeUsers.map(sid => {
-        const memberData = appData[sid] || {};
-        const history = memberData.history || {};
-        const streak = calculateStreak(history);
-        let score = 0;
-        Object.values(history).forEach(v => score += v);
-        return { name: appData.auth[sid].name, val: score, streak: streak };
-    }).sort((a,b) => b.val - a.val);
-    
-    resList.innerHTML = "";
-    resRank.forEach((d, i) => {
-        const streakHtml = d.streak > 1 ? `<span style="font-size:0.8rem; color:red;">🔥${d.streak}일</span>` : "";
-        resList.innerHTML += `<div class="rank-card"><div class="rank-num">${i+1}</div><div class="rank-name">${d.name} ${streakHtml}</div><div class="rank-score">${d.val}</div></div>`;
-    });
-
-    // 성경 랭킹
-    const bibleRank = activeUsers.map(sid => {
-        return { name: appData.auth[sid].name, val: calculateTotalBibleRead(sid) };
-    }).sort((a,b) => b.val - a.val);
-    
-    bibleList.innerHTML = "";
-    bibleRank.forEach((d, i) => {
-        bibleList.innerHTML += `<div class="rank-card"><div class="rank-num">${i+1}</div><div class="rank-name">${d.name}</div><div class="rank-score">${d.val}장</div></div>`;
-    });
-}
-
-function updateMyStats() {
-    let bibleCount = 0;
-    if(appData[myName].bible) {
-        Object.values(appData[myName].bible).forEach(dateStr => { if(isInViewYear(dateStr)) bibleCount++; });
-    }
-    let booksDone = 0;
-    if(appData[myName].bibleRounds) { Object.values(appData[myName].bibleRounds).forEach(r => booksDone += r); }
-    const statElem = document.getElementById('myBibleStat'); 
-    if(statElem) statElem.textContent = `올해 ${bibleCount}장 읽음 (완독 ${booksDone}권)`;
-}
-
-/* =================================================================
-   [5] 보조 함수들
-   ================================================================= */
-function getTodayStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-function isInViewYear(dateStr) {
-    if(!dateStr) return false;
-    return parseInt(dateStr.split('-')[0]) === currentViewYear;
-}
-function calculateStreak(history) {
-    if(!history) return 0;
-    let streak = 0;
-    const now = new Date();
-    for (let i = 0; i < 365; i++) {
-        const d = new Date(now);
-        d.setDate(now.getDate() - i);
-        const dateStr = d.toISOString().split('T')[0];
-        if(i === 0) { if(history[dateStr] > 0) streak++; continue; }
-        if(history[dateStr] > 0) streak++; else break;
-    }
-    return streak;
-}
-function calculateTotalBibleRead(slotId) {
-    const memberData = appData[slotId] || {};
-    const bible = memberData.bible || {};
-    const bibleRounds = memberData.bibleRounds || {};
-    let total = 0;
-    for(const [key, dateStr] of Object.entries(bible)) { if(isInViewYear(dateStr)) total++; }
-    BIBLE_DATA.books.forEach(book => { total += ((bibleRounds[book.name] || 0) * book.chapters); });
-    return total;
-}
-function updateDailyHistory(slotId) {
-    const today = getTodayStr();
-    if(!appData[slotId].history) appData[slotId].history = {};
-    let totalDone = 0;
-    (appData[slotId].resolution || []).forEach(item => { item.done.forEach(d => { if(d) totalDone++; }); });
-    appData[slotId].history[today] = totalDone;
-}
-
-function renderLoginScreen() {
-    const loginGrid = document.getElementById('login-grid'); 
-    if(!loginGrid) return;
-    loginGrid.innerHTML = "";
-    USER_SLOTS.forEach((slotId, idx) => {
-        const btn = document.createElement('div');
-        const authData = (appData.auth && appData.auth[slotId]);
-        if(authData) {
-            btn.className = 'login-btn taken';
-            btn.innerHTML = `<span style="font-size:20px;">🔒</span> <span>${authData.name}</span>`;
-        } else {
-            btn.className = 'login-btn';
-            btn.innerHTML = `<span style="opacity:0.5;">+</span> <span class="sub-label">빈 자리<br>${idx+1}</span>`;
-        }
-        btn.onclick = () => window.tryLogin(slotId);
-        loginGrid.appendChild(btn);
-    });
-}
-async function initData() {
-    appData = { period: {start:"", end:""}, messages: [], auth: {} };
-    USER_SLOTS.forEach(sid => appData[sid] = { resolution: [], bible: {}, history: {}, bibleRounds: {} });
-    await saveToServer();
-    renderLoginScreen();
-}
-async function saveToServer() {
-    const statusDiv = document.getElementById('serverStatus');
-    if(statusDiv) statusDiv.textContent = "🟡 저장 중...";
-    try {
-        await setDoc(docRef, { appData: appData, lastDate: new Date().toDateString() });
-        if(statusDiv) statusDiv.textContent = "🟢 저장 완료";
-    } catch(e) {
-        console.error(e);
-        if(statusDiv) statusDiv.textContent = "🔴 저장 실패 (네트워크 확인)";
-    }
-}
-async function resetDailyCheckboxes() {
-    for (let m in appData) {
-        if(appData[m] && appData[m].resolution) { appData[m].resolution.forEach(item => item.done.fill(false)); }
-    }
-    await saveToServer();
-    if(myName) updateUI();
-}
-
-/* =================================================================
-   [6] 실행 및 초기화 (메인)
-   ================================================================= */
-try {
-    // [중요 수정] 말씀 로딩 로직 강화 (여러 가지 ID 케이스 대응)
-    // HTML에 id="verse-text"가 있든 id="verseText"가 있든 다 찾아서 넣음
-    const verse = DAILY_VERSES[Math.floor(Math.random() * DAILY_VERSES.length)];
-    
-    const possibleVerseIds = ['verse-text', 'verseText', 'daily-verse'];
-    const possibleRefIds = ['verse-ref', 'verseRef', 'daily-ref'];
-    
-    possibleVerseIds.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.textContent = verse.t;
-    });
-    possibleRefIds.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.textContent = verse.r;
-    });
-
-    // Firebase 초기화
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    docRef = doc(db, "appData", "familyDataV28_Secure");
-    
-    const statusDiv = document.getElementById('serverStatus');
-    onSnapshot(docRef, (docSnap) => {
-        const splash = document.getElementById('splash-screen');
-        if(splash) {
-             splash.style.opacity = '0';
-             setTimeout(() => splash.style.display = 'none', 500);
-        }
-
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.appData) appData = data.appData; else appData = data;
-
-            let needSave = false;
-            if(!appData.messages) { appData.messages = []; needSave = true; }
-            if(!appData.auth) { appData.auth = {}; needSave = true; }
-            USER_SLOTS.forEach(sid => {
-                if(!appData[sid]) { appData[sid] = { resolution: [], bible: {}, history: {}, bibleRounds: {} }; needSave = true; }
-            });
-
-            if (data.lastDate !== new Date().toDateString()) { resetDailyCheckboxes(); }
-            else { if(needSave) saveToServer(); renderLoginScreen(); if(myName) updateUI(); }
-            
-            if(statusDiv) statusDiv.textContent = "🟢 실시간 연동됨";
-            
-            const loginModal = document.getElementById('login-modal');
-            const appContainer = document.getElementById('app-container');
-
-            if(myName) {
-                if(loginModal) loginModal.classList.add('hidden');
-                if(appContainer) appContainer.classList.remove('hidden');
-                updateUI();
-            } else {
-                if(appContainer) appContainer.classList.add('hidden');
-                if(loginModal) loginModal.classList.remove('hidden');
-                renderLoginScreen();
-            }
-        } else { 
-            initData(); 
-        }
-    }, (error) => { alert("서버 연결 오류:\n" + error.message); if(statusDiv) statusDiv.textContent = "🔴 연결 실패"; });
-    
-    setInterval(() => {
-        if(!appData.alarmTime) return;
-        const now = new Date();
-        const currentHM = now.toTimeString().slice(0, 5);
-        if(currentHM === appData.alarmTime && lastAlarmMinute !== currentHM) {
-            lastAlarmMinute = currentHM;
-            const audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
-            audio.play().catch(e => console.log("자동 재생 정책으로 소리 차단됨"));
-            alert(`🔔 딩동댕! [${appData.alarmTime}] 입니다.\n우리 가족 약속 시간이에요! ❤️`);
-        }
-    }, 1000);
-
-} catch (e) { 
-    alert("코드 실행 오류:\n" + e.message); 
-    console.error(e);
-}
+        for(let i=1; i<=book.chapters;
