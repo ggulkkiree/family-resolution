@@ -391,4 +391,322 @@ function renderBibleBooks() {
         const rounds = (appData[myName].bibleRounds && appData[myName].bibleRounds[book.name]) || 0;
         const badge = rounds > 0 ? `<span class="round-badge">+${rounds}</span>` : "";
         let readCount = 0;
-        for(let i=1; i<=book.chapters;
+        for(let i=1; i<=book.chapters; i++) {
+            if(appData[myName].bible && appData[myName].bible[`${book.name}-${i}`]) readCount++;
+        }
+        if(readCount >= book.chapters) btn.classList.add('completed-book'); 
+        btn.innerHTML = `${book.name} ${badge}`;
+        btn.onclick = () => window.showChapters(book.name);
+        container.appendChild(btn);
+    });
+}
+
+function renderBibleChapters() {
+    const container = document.getElementById('bible-chapters-grid');
+    if(!container) return;
+    container.innerHTML = "";
+    const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
+    if(!book) return;
+    document.getElementById('bible-book-title').textContent = book.name;
+    for(let i=1; i<=book.chapters; i++) {
+        const key = `${book.name}-${i}`;
+        const isRead = (appData[myName].bible && appData[myName].bible[key]);
+        const isThisYear = isInViewYear(isRead);
+        const label = document.createElement('label');
+        label.className = 'chapter-item';
+        const chk = document.createElement('input');
+        chk.type = "checkbox"; chk.checked = isThisYear;
+        chk.onchange = (e) => window.toggleChapter(key, e.target.checked);
+        const span = document.createElement('span');
+        span.textContent = `${i}장`;
+        label.appendChild(chk); label.appendChild(span);
+        container.appendChild(label);
+    }
+}
+
+function renderStatsPage() {
+    const statsDiv = document.getElementById('page-stats'); 
+    if (!statsDiv) return;
+    
+    // 내용 무조건 갱신
+    statsDiv.innerHTML = `
+        <div class="card" style="margin-bottom:20px;">
+            <h3>📅 월간 히트맵</h3>
+            <div id="calendar-container"></div>
+        </div>
+        <div class="card" style="margin-bottom:20px;">
+            <h3>🔥 결단서 랭킹</h3>
+            <div id="resolutionRankList"></div>
+        </div>
+        <div class="card">
+            <h3>📖 성경 다독왕</h3>
+            <div id="bibleRankList"></div>
+        </div>
+    `;
+    renderCalendar();
+    renderAllRankings();
+}
+
+function renderCalendar() {
+    const container = document.getElementById('calendar-container');
+    if(!container) return;
+    container.innerHTML = `
+        <div class="cal-header">
+            <button onclick="window.changeCalMonth(-1)">◀</button>
+            <span>${calYear}년 ${calMonth + 1}월</span>
+            <button onclick="window.changeCalMonth(1)">▶</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+    `;
+    const calGrid = document.getElementById('calGrid');
+    const days = ['일','월','화','수','목','금','토'];
+    days.forEach(d => {
+        const div = document.createElement('div');
+        div.className = 'cal-day-label'; div.textContent = d;
+        calGrid.appendChild(div);
+    });
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const lastDate = new Date(calYear, calMonth + 1, 0).getDate();
+    for(let i=0; i<firstDay; i++) calGrid.appendChild(document.createElement('div'));
+    
+    const myHistory = (appData[myName] && appData[myName].history) ? appData[myName].history : {};
+    const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
+    const todayStr = getTodayStr();
+    let totalItems = 0;
+    (appData[myName].resolution || []).forEach(item => totalItems += item.steps.length);
+    if(totalItems === 0) totalItems = 1;
+    
+    for(let d=1; d<=lastDate; d++) {
+        const dateObj = new Date(calYear, calMonth, d);
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth()+1).padStart(2,'0');
+        const da = String(dateObj.getDate()).padStart(2,'0');
+        const dateStr = `${y}-${m}-${da}`;
+        const cell = document.createElement('div');
+        cell.className = 'cal-day';
+        if(dateStr === todayStr) cell.classList.add('today');
+        cell.onclick = () => window.showDateDetail(dateStr);
+        cell.innerHTML = `<span>${d}</span>`;
+        const doneCount = myHistory[dateStr] || 0;
+        if(doneCount > 0) {
+            const alpha = Math.min(1.0, Math.max(0.2, doneCount / totalItems));
+            cell.style.backgroundColor = `rgba(76, 175, 80, ${alpha})`;
+            cell.style.color = alpha > 0.6 ? 'white' : 'inherit';
+        }
+        let readBible = false;
+        for(const val of Object.values(myBible)) { if(val === dateStr) { readBible = true; break; } }
+        if(readBible) {
+            const dot = document.createElement('div');
+            dot.className = 'dot-bible';
+            cell.appendChild(dot);
+        }
+        calGrid.appendChild(cell);
+    }
+}
+
+function renderAllRankings() {
+    const resList = document.getElementById('resolutionRankList');
+    const bibleList = document.getElementById('bibleRankList');
+    if(!resList || !bibleList) return;
+    
+    const activeUsers = USER_SLOTS.filter(sid => appData.auth && appData.auth[sid]);
+    
+    const resRank = activeUsers.map(sid => {
+        const memberData = appData[sid] || {};
+        const history = memberData.history || {};
+        const streak = calculateStreak(history);
+        let score = 0;
+        Object.values(history).forEach(v => score += v);
+        return { name: appData.auth[sid].name, val: score, streak: streak };
+    }).sort((a,b) => b.val - a.val);
+    
+    resList.innerHTML = "";
+    resRank.forEach((d, i) => {
+        const streakHtml = d.streak > 1 ? `<span style="font-size:0.8rem; color:red;">🔥${d.streak}일</span>` : "";
+        resList.innerHTML += `<div class="rank-card"><div class="rank-num">${i+1}</div><div class="rank-name">${d.name} ${streakHtml}</div><div class="rank-score">${d.val}</div></div>`;
+    });
+
+    const bibleRank = activeUsers.map(sid => {
+        return { name: appData.auth[sid].name, val: calculateTotalBibleRead(sid) };
+    }).sort((a,b) => b.val - a.val);
+    
+    bibleList.innerHTML = "";
+    bibleRank.forEach((d, i) => {
+        bibleList.innerHTML += `<div class="rank-card"><div class="rank-num">${i+1}</div><div class="rank-name">${d.name}</div><div class="rank-score">${d.val}장</div></div>`;
+    });
+}
+
+function updateMyStats() {
+    let bibleCount = 0;
+    if(appData[myName].bible) {
+        Object.values(appData[myName].bible).forEach(dateStr => { if(isInViewYear(dateStr)) bibleCount++; });
+    }
+    let booksDone = 0;
+    if(appData[myName].bibleRounds) { Object.values(appData[myName].bibleRounds).forEach(r => booksDone += r); }
+    const statElem = document.getElementById('myBibleStat'); 
+    if(statElem) statElem.textContent = `올해 ${bibleCount}장 읽음 (완독 ${booksDone}권)`;
+}
+
+/* =================================================================
+   [5] 보조 함수들
+   ================================================================= */
+function getTodayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function isInViewYear(dateStr) {
+    if(!dateStr) return false;
+    return parseInt(dateStr.split('-')[0]) === currentViewYear;
+}
+function calculateStreak(history) {
+    if(!history) return 0;
+    let streak = 0;
+    const now = new Date();
+    for (let i = 0; i < 365; i++) {
+        const d = new Date(now);
+        d.setDate(now.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        if(i === 0) { if(history[dateStr] > 0) streak++; continue; }
+        if(history[dateStr] > 0) streak++; else break;
+    }
+    return streak;
+}
+function calculateTotalBibleRead(slotId) {
+    const memberData = appData[slotId] || {};
+    const bible = memberData.bible || {};
+    const bibleRounds = memberData.bibleRounds || {};
+    let total = 0;
+    for(const [key, dateStr] of Object.entries(bible)) { if(isInViewYear(dateStr)) total++; }
+    BIBLE_DATA.books.forEach(book => { total += ((bibleRounds[book.name] || 0) * book.chapters); });
+    return total;
+}
+function updateDailyHistory(slotId) {
+    const today = getTodayStr();
+    if(!appData[slotId].history) appData[slotId].history = {};
+    let totalDone = 0;
+    (appData[slotId].resolution || []).forEach(item => { item.done.forEach(d => { if(d) totalDone++; }); });
+    appData[slotId].history[today] = totalDone;
+}
+
+function renderLoginScreen() {
+    const loginGrid = document.getElementById('login-grid'); 
+    if(!loginGrid) return;
+    loginGrid.innerHTML = "";
+    USER_SLOTS.forEach((slotId, idx) => {
+        const btn = document.createElement('div');
+        const authData = (appData.auth && appData.auth[slotId]);
+        if(authData) {
+            btn.className = 'login-btn taken';
+            btn.innerHTML = `<span style="font-size:20px;">🔒</span> <span>${authData.name}</span>`;
+        } else {
+            btn.className = 'login-btn';
+            btn.innerHTML = `<span style="opacity:0.5;">+</span> <span class="sub-label">빈 자리<br>${idx+1}</span>`;
+        }
+        btn.onclick = () => window.tryLogin(slotId);
+        loginGrid.appendChild(btn);
+    });
+}
+async function initData() {
+    appData = { period: {start:"", end:""}, messages: [], auth: {} };
+    USER_SLOTS.forEach(sid => appData[sid] = { resolution: [], bible: {}, history: {}, bibleRounds: {} });
+    await saveToServer();
+    renderLoginScreen();
+}
+async function saveToServer() {
+    const statusDiv = document.getElementById('serverStatus');
+    if(statusDiv) statusDiv.textContent = "🟡 저장 중...";
+    try {
+        await setDoc(docRef, { appData: appData, lastDate: new Date().toDateString() });
+        if(statusDiv) statusDiv.textContent = "🟢 저장 완료";
+    } catch(e) {
+        console.error(e);
+        if(statusDiv) statusDiv.textContent = "🔴 저장 실패 (네트워크 확인)";
+    }
+}
+async function resetDailyCheckboxes() {
+    for (let m in appData) {
+        if(appData[m] && appData[m].resolution) { appData[m].resolution.forEach(item => item.done.fill(false)); }
+    }
+    await saveToServer();
+    if(myName) updateUI();
+}
+
+/* =================================================================
+   [6] 실행 및 초기화 (메인)
+   ================================================================= */
+try {
+    // 1. 말씀 표시 (가능한 모든 ID 체크)
+    const verse = DAILY_VERSES[Math.floor(Math.random() * DAILY_VERSES.length)];
+    ['verse-text', 'verseText', 'daily-verse'].forEach(id => {
+        const el = document.getElementById(id); if(el) el.textContent = verse.t;
+    });
+    ['verse-ref', 'verseRef', 'daily-ref'].forEach(id => {
+        const el = document.getElementById(id); if(el) el.textContent = verse.r;
+    });
+
+    // 2. Firebase 초기화 및 연결
+    app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    
+    // ★★★ 가장 중요한 부분: 사물함 이름(ID) 복구 ★★★
+    // 원래 데이터가 들어있는 가장 기본적인 이름 'familyData'로 변경했습니다.
+    docRef = doc(db, "appData", "familyData");
+
+    const statusDiv = document.getElementById('serverStatus');
+    onSnapshot(docRef, (docSnap) => {
+        const splash = document.getElementById('splash-screen');
+        if(splash) {
+             splash.style.opacity = '0';
+             setTimeout(() => splash.style.display = 'none', 500);
+        }
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data.appData) appData = data.appData; else appData = data;
+
+            let needSave = false;
+            if(!appData.messages) { appData.messages = []; needSave = true; }
+            if(!appData.auth) { appData.auth = {}; needSave = true; }
+            USER_SLOTS.forEach(sid => {
+                if(!appData[sid]) { appData[sid] = { resolution: [], bible: {}, history: {}, bibleRounds: {} }; needSave = true; }
+            });
+
+            if (data.lastDate !== new Date().toDateString()) { resetDailyCheckboxes(); }
+            else { if(needSave) saveToServer(); renderLoginScreen(); if(myName) updateUI(); }
+            
+            if(statusDiv) statusDiv.textContent = "🟢 실시간 연동됨";
+            
+            const loginModal = document.getElementById('login-modal');
+            const appContainer = document.getElementById('app-container');
+
+            if(myName) {
+                if(loginModal) loginModal.classList.add('hidden');
+                if(appContainer) appContainer.classList.remove('hidden');
+                updateUI();
+            } else {
+                if(appContainer) appContainer.classList.add('hidden');
+                if(loginModal) loginModal.classList.remove('hidden');
+                renderLoginScreen();
+            }
+        } else { 
+            // 데이터가 없으면 초기화 (만약 이것도 뜨면 이름이 familyData가 아님)
+            initData(); 
+        }
+    }, (error) => { alert("서버 연결 오류:\n" + error.message); if(statusDiv) statusDiv.textContent = "🔴 연결 실패"; });
+    
+    setInterval(() => {
+        if(!appData.alarmTime) return;
+        const now = new Date();
+        const currentHM = now.toTimeString().slice(0, 5);
+        if(currentHM === appData.alarmTime && lastAlarmMinute !== currentHM) {
+            lastAlarmMinute = currentHM;
+            const audio = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+            audio.play().catch(e => console.log("자동 재생 정책으로 소리 차단됨"));
+            alert(`🔔 딩동댕! [${appData.alarmTime}] 입니다.\n우리 가족 약속 시간이에요! ❤️`);
+        }
+    }, 1000);
+
+} catch (e) { 
+    alert("코드 실행 오류:\n" + e.message); 
+    console.error(e);
+}
