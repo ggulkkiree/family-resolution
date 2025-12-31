@@ -171,7 +171,7 @@ window.goTab = function(t, element) {
     if(t==='bible') updateUI();
 }
 
-// [수정됨] 통계 페이지 렌더링 (결단서만 active, 나머지 닫힘)
+// [수정됨] 통계 페이지 렌더링 (결단서와 성경 랭킹 분리)
 function renderStatsPage() {
     const statsDiv = document.getElementById('stats');
     
@@ -202,9 +202,9 @@ function renderStatsPage() {
 
         <div class="accordion">
             <div class="accordion-header" onclick="window.toggleAccordion('accordion-bible')">
-                <span>📖 성경 다독왕</span> <span class="arrow-icon">▼</span>
+                <span>📖 성경 다독왕</span> <span class="arrow-icon" style="transform:rotate(180deg)">▼</span>
             </div>
-            <div id="accordion-bible" class="accordion-content">
+            <div id="accordion-bible" class="accordion-content active">
                 <div style="font-size:12px; color:#666; text-align:center; margin-bottom:10px;" id="bibleYearLabel"></div>
                 <div id="bibleRankList"></div>
             </div>
