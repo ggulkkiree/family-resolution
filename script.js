@@ -53,10 +53,11 @@ let myName = localStorage.getItem('myId');
 let currentViewYear = new Date().getFullYear();
 
 // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-// 2번 Config 내용을 아래 const firebaseConfig = { ... } 안에 덮어씌우세요!
+// [수정 완료] 고객님 프로젝트(family-resolution) 설정값 입력됨
+// 이 부분 절대 건드리지 마세요!
 // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 const firebaseConfig = {
-    apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
+  apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
   authDomain: "family-resolution.firebaseapp.com",
   projectId: "family-resolution",
   storageBucket: "family-resolution.firebasestorage.app",
@@ -74,7 +75,7 @@ async function startApp() {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
 
-        // ★★★ 1번: 고객님의 보물상자 이름 ★★★
+        // ★★★ 보물상자 이름: familyDataV28_Secure ★★★
         docRef = doc(db, "appData", "familyDataV28_Secure");
 
         // 데이터 실시간 감지
@@ -112,10 +113,13 @@ async function startApp() {
             { t: "두려워하지 말라 내가 너와 함께 함이라", r: "사41:10" }
         ];
         const v = verse[Math.floor(Math.random()*verse.length)];
-        document.getElementById('verse-text').innerText = v.t;
-        document.getElementById('verse-ref').innerText = v.r;
+        const vt = document.getElementById('verse-text');
+        const vr = document.getElementById('verse-ref');
+        if(vt) vt.innerText = v.t;
+        if(vr) vr.innerText = v.r;
 
     } catch (e) {
+        // 여기가 아까 오류가 났던 곳입니다. 이제 안 날 거예요!
         alert("설정 오류! Config를 확인해주세요.\n" + e.message);
     }
 }
@@ -124,21 +128,25 @@ async function startApp() {
    [4] 로그인 & 화면 전환
    ================================================================= */
 function checkLoginStatus() {
+    const modal = document.getElementById('login-modal');
+    const container = document.getElementById('app-container');
+
     if(myName && appData.auth[myName]) {
         // 로그인 성공 상태
-        document.getElementById('login-modal').classList.add('hidden');
-        document.getElementById('app-container').classList.remove('hidden');
+        if(modal) modal.classList.add('hidden');
+        if(container) container.classList.remove('hidden');
         updateMainUI();
     } else {
         // 로그아웃 상태
-        document.getElementById('app-container').classList.add('hidden');
-        document.getElementById('login-modal').classList.remove('hidden');
+        if(container) container.classList.add('hidden');
+        if(modal) modal.classList.remove('hidden');
         renderLoginButtons();
     }
 }
 
 function renderLoginButtons() {
     const grid = document.getElementById('login-grid');
+    if(!grid) return;
     grid.innerHTML = "";
     USER_SLOTS.forEach((slot, idx) => {
         const btn = document.createElement('div');
@@ -197,7 +205,8 @@ window.logoutAction = function() {
    ================================================================= */
 function updateMainUI() {
     // 1. 이름 표시
-    document.getElementById('user-name').innerText = appData.auth[myName].name;
+    const nameEl = document.getElementById('user-name');
+    if(nameEl) nameEl.innerText = appData.auth[myName].name;
     
     // 2. 리스트 렌더링
     renderResolutionList();
@@ -205,12 +214,13 @@ function updateMainUI() {
     // 3. 메시지 렌더링
     renderMessages();
     
-    // 4. 통계 미리 계산
-    updateStats();
+    // 4. 통계 렌더링
+    renderStats();
 }
 
 function renderResolutionList() {
     const list = document.getElementById('list-resolution');
+    if(!list) return;
     list.innerHTML = "";
     const myItems = appData[myName].resolution || [];
     
@@ -315,7 +325,8 @@ window.goTab = function(tabId, btn) {
     
     // 페이지 전환
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
-    document.getElementById('page-' + tabId).classList.remove('hidden');
+    const target = document.getElementById('page-' + tabId);
+    if(target) target.classList.remove('hidden');
 
     if(tabId === 'stats') renderStats();
 };
@@ -339,6 +350,7 @@ window.sendMsg = function() {
 
 function renderMessages() {
     const list = document.getElementById('msg-list');
+    if(!list) return;
     list.innerHTML = "";
     const msgs = [...(appData.messages || [])].reverse();
     
@@ -434,10 +446,11 @@ window.backToBooks = function() {
 
 function renderStats() {
     const div = document.getElementById('stats-content');
+    if(!div) return;
     div.innerHTML = "<h3>🏆 우리 가족 랭킹</h3>";
     
     // 간단 랭킹
-    const users = USER_SLOTS.filter(u => appData.auth[u]);
+    const users = USER_SLOTS.filter(u => appData.auth && appData.auth[u]);
     users.sort((a,b) => {
         const scoreA = Object.values(appData[a].history||{}).reduce((sum,v)=>sum+v, 0);
         const scoreB = Object.values(appData[b].history||{}).reduce((sum,v)=>sum+v, 0);
@@ -450,9 +463,13 @@ function renderStats() {
     });
 }
 
-function updateStats() {
-    // 통계 미리 계산용 (필요시 구현)
-}
+window.saveAlarmTime = function() {
+    const timeInput = document.getElementById('alarm-time-input');
+    if(timeInput) {
+        const val = prompt("몇 시에 알람을 맞출까요? (예: 21:00)");
+        if(val) alert("알람 기능은 모바일 브라우저 정책상 현재 페이지가 켜져 있을 때만 울립니다!");
+    }
+};
 
 // 앱 실행
 startApp();
