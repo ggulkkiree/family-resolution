@@ -56,8 +56,13 @@ let currentViewYear = new Date().getFullYear();
 // 2번 Config 내용을 아래 const firebaseConfig = { ... } 안에 덮어씌우세요!
 // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 const firebaseConfig = {
-    // 여기에 2번 내용을 붙여넣으세요.
-    // 예: apiKey: "...", authDomain: "...", ...
+    apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
+  authDomain: "family-resolution.firebaseapp.com",
+  projectId: "family-resolution",
+  storageBucket: "family-resolution.firebasestorage.app",
+  messagingSenderId: "711396068080",
+  appId: "1:711396068080:web:861c41a8259f0b6dca9035",
+  measurementId: "G-RH6E87B4H0"
 };
 
 /* =================================================================
