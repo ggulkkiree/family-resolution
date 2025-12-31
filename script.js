@@ -1,4 +1,39 @@
 /* =================================================================
+   [0] 긴급 스타일 주입 (스크롤 해결사)
+   이 코드는 CSS 파일이 놓친 "스크롤 기능"을 강제로 만들어줍니다.
+   ================================================================= */
+(function fixStyles() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        /* 전체 화면 고정 */
+        html, body { overflow: hidden; height: 100%; margin: 0; padding: 0; }
+        
+        /* 메인 컨테이너가 화면을 꽉 채우고 넘치면 스크롤 */
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* 실제 페이지 내용들이 들어가는 곳 */
+        .page-content, #page-resolution, #page-bible, #page-stats {
+            flex: 1;
+            overflow-y: auto !important; /* 강제 스크롤 */
+            padding-bottom: 100px; /* 하단 탭에 가려지지 않게 여백 */
+            -webkit-overflow-scrolling: touch; /* 모바일 부드러운 스크롤 */
+        }
+        
+        /* 리스트 아이템 스타일 보정 */
+        .resolution-item { margin-bottom: 15px; }
+        
+        /* 통계 화면 강제 높이 확보 */
+        #page-stats { min-height: 100%; display: block !important; }
+    `;
+    document.head.appendChild(style);
+})();
+
+/* =================================================================
    [1] 모듈 불러오기 & 설정
    ================================================================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -78,7 +113,7 @@ let calMonth = new Date().getMonth();
    [3] 기능 함수들 (로직)
    ================================================================= */
 
-// [로그인 및 화면 전환] ID를 login-modal, app-container 등으로 수정함
+// [로그인 및 화면 전환]
 window.tryLogin = function(slotId) {
     const authData = (appData.auth && appData.auth[slotId]) ? appData.auth[slotId] : null;
     
@@ -106,7 +141,6 @@ function loginSuccess(slotId) {
     myName = slotId;
     localStorage.setItem('myId', slotId);
     
-    // 로그인 모달 숨기고 앱 화면 보이기
     const loginModal = document.getElementById('login-modal');
     const appContainer = document.getElementById('app-container');
     if(loginModal) loginModal.classList.add('hidden');
@@ -120,7 +154,6 @@ window.logoutAction = function() {
         localStorage.removeItem('myId');
         myName = null;
         
-        // 화면 전환: 앱 숨기고 로그인 모달 보이기
         const loginModal = document.getElementById('login-modal');
         const appContainer = document.getElementById('app-container');
         if(appContainer) appContainer.classList.add('hidden');
@@ -130,25 +163,29 @@ window.logoutAction = function() {
     }
 };
 
-// [탭 전환] ID를 page-resolution, page-bible 등으로 수정함
+// [탭 전환] - 페이지 숨김/보임 처리 개선
 window.goTab = function(tabName, element) {
-    // 1. 모든 하단 버튼 비활성화
+    // 버튼 활성화
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-    // 2. 클릭한 버튼 활성화
     if(element) element.classList.add('active');
 
-    // 3. 모든 페이지 숨기기 (class 'hidden' 추가)
+    // 페이지 전환
     const pages = ['resolution', 'bible', 'stats'];
     pages.forEach(page => {
         const el = document.getElementById('page-' + page);
-        if(el) el.classList.add('hidden');
+        if(el) {
+            el.classList.add('hidden');
+            el.style.display = 'none'; // 확실하게 숨김
+        }
     });
 
-    // 4. 선택한 페이지만 보이기 (class 'hidden' 제거)
     const target = document.getElementById('page-' + tabName);
-    if(target) target.classList.remove('hidden');
+    if(target) {
+        target.classList.remove('hidden');
+        target.style.display = 'block'; // 확실하게 보임
+    }
     
-    // 5. 페이지별 추가 로직
+    // 통계 페이지는 클릭할 때마다 강제로 새로고침 (분석중 메시지 제거용)
     if(tabName === 'stats') renderStatsPage();
     if(tabName === 'bible') updateUI();
 };
@@ -217,7 +254,6 @@ window.toggleResolution = function(i, si) {
     saveToServer();
 };
 
-// 성경 로직 (기존 유지)
 window.showBibleBooks = function(testament) {
     bibleState.currentTestament = testament;
     renderBibleUI();
@@ -258,7 +294,6 @@ window.finishBookAndReset = function() {
     }
 };
 
-// 메시지 로직
 window.sendMsg = function() {
     const input = document.getElementById('input-msg');
     const text = input.value.trim();
@@ -294,12 +329,12 @@ window.showDateDetail = function(dateStr) {
 };
 
 /* =================================================================
-   [4] 렌더링 함수들 (새 HTML ID 적용)
+   [4] 렌더링 함수들
    ================================================================= */
 function updateUI() {
     if (myName && appData[myName]) {
         const myInfo = appData.auth[myName];
-        const nameDisplay = document.getElementById('user-name'); // 새 ID
+        const nameDisplay = document.getElementById('user-name'); 
         if(nameDisplay) nameDisplay.textContent = myInfo ? myInfo.name : "사용자";
         
         renderMyList();
@@ -320,7 +355,7 @@ function renderMyList() {
     if(!appData[myName].resolution) appData[myName].resolution = [];
     appData[myName].resolution.forEach((item, i) => {
         const li = document.createElement('li');
-        li.className = "resolution-item"; // 스타일용 클래스
+        li.className = "resolution-item"; 
         let stepsHtml = '';
         item.steps.forEach((step, si) => {
             const isDone = item.done[si] ? 'done' : '';
@@ -365,7 +400,6 @@ function renderBibleUI() {
     const chaptersView = document.getElementById('bible-chapters-view');
     if(!mainView) return; 
 
-    // 기존의 hidden-view 클래스 로직 유지
     if(bibleState.currentBook) {
         mainView.classList.add('hidden-view');
         booksView.classList.add('hidden-view');
@@ -428,27 +462,28 @@ function renderBibleChapters() {
     }
 }
 
+// [중요 수정] 통계 페이지 강제 렌더링
 function renderStatsPage() {
-    const statsDiv = document.getElementById('page-stats'); // ID 주의
+    const statsDiv = document.getElementById('page-stats'); 
     if (!statsDiv) return;
     
-    // 통계 컨테이너가 비어있으면 기본 구조 삽입
-    if(statsDiv.innerHTML.trim() === "") {
-         statsDiv.innerHTML = `
-            <div class="card" style="margin-bottom:20px;">
-                <h3>📅 월간 히트맵</h3>
-                <div id="calendar-container"></div>
-            </div>
-            <div class="card" style="margin-bottom:20px;">
-                <h3>🔥 결단서 랭킹</h3>
-                <div id="resolutionRankList"></div>
-            </div>
-            <div class="card">
-                <h3>📖 성경 다독왕</h3>
-                <div id="bibleRankList"></div>
-            </div>
-        `;
-    }
+    // 내용이 있든 없든(analyzing 텍스트가 있든) 무조건 덮어씌웁니다.
+    statsDiv.innerHTML = `
+        <div class="card" style="margin-bottom:20px;">
+            <h3>📅 월간 히트맵</h3>
+            <div id="calendar-container"></div>
+        </div>
+        <div class="card" style="margin-bottom:20px;">
+            <h3>🔥 결단서 랭킹</h3>
+            <div id="resolutionRankList"></div>
+        </div>
+        <div class="card">
+            <h3>📖 성경 다독왕</h3>
+            <div id="bibleRankList"></div>
+        </div>
+    `;
+    
+    // 렌더링 호출
     renderCalendar();
     renderAllRankings();
 }
@@ -596,7 +631,6 @@ function updateDailyHistory(slotId) {
     appData[slotId].history[today] = totalDone;
 }
 
-// [로그인 버튼 그리기] ID: login-grid로 수정
 function renderLoginScreen() {
     const loginGrid = document.getElementById('login-grid'); 
     if(!loginGrid) return;
@@ -644,34 +678,39 @@ async function resetDailyCheckboxes() {
    [6] 실행 및 초기화 (메인)
    ================================================================= */
 try {
-    // 1. 말씀 표시
+    // [중요 수정] 말씀 로딩 로직 강화 (여러 가지 ID 케이스 대응)
+    // HTML에 id="verse-text"가 있든 id="verseText"가 있든 다 찾아서 넣음
     const verse = DAILY_VERSES[Math.floor(Math.random() * DAILY_VERSES.length)];
-    const verseEl = document.getElementById('verse-text'); // ID 확인 필요하지만 안전하게 방어 코드 작성
-    const refEl = document.getElementById('verse-ref');
-    if(verseEl) verseEl.textContent = verse.t;
-    if(refEl) refEl.textContent = verse.r;
+    
+    const possibleVerseIds = ['verse-text', 'verseText', 'daily-verse'];
+    const possibleRefIds = ['verse-ref', 'verseRef', 'daily-ref'];
+    
+    possibleVerseIds.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.textContent = verse.t;
+    });
+    possibleRefIds.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.textContent = verse.r;
+    });
 
-    // 2. Firebase 초기화
+    // Firebase 초기화
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     docRef = doc(db, "appData", "familyDataV28_Secure");
     
-    // 3. 데이터 리스너 연결
     const statusDiv = document.getElementById('serverStatus');
     onSnapshot(docRef, (docSnap) => {
-        // (1) 스플래시 화면 끄기
         const splash = document.getElementById('splash-screen');
         if(splash) {
              splash.style.opacity = '0';
              setTimeout(() => splash.style.display = 'none', 500);
         }
 
-        // (2) 데이터 로드 및 초기화
         if (docSnap.exists()) {
             const data = docSnap.data();
             if (data.appData) appData = data.appData; else appData = data;
 
-            // 정합성 체크
             let needSave = false;
             if(!appData.messages) { appData.messages = []; needSave = true; }
             if(!appData.auth) { appData.auth = {}; needSave = true; }
@@ -684,17 +723,14 @@ try {
             
             if(statusDiv) statusDiv.textContent = "🟢 실시간 연동됨";
             
-            // (3) 로그인 상태 확인 및 화면 전환
             const loginModal = document.getElementById('login-modal');
             const appContainer = document.getElementById('app-container');
 
             if(myName) {
-                // 로그인 상태
                 if(loginModal) loginModal.classList.add('hidden');
                 if(appContainer) appContainer.classList.remove('hidden');
                 updateUI();
             } else {
-                // 로그아웃 상태
                 if(appContainer) appContainer.classList.add('hidden');
                 if(loginModal) loginModal.classList.remove('hidden');
                 renderLoginScreen();
@@ -704,7 +740,6 @@ try {
         }
     }, (error) => { alert("서버 연결 오류:\n" + error.message); if(statusDiv) statusDiv.textContent = "🔴 연결 실패"; });
     
-    // 4. 알람 체크 (매초 실행)
     setInterval(() => {
         if(!appData.alarmTime) return;
         const now = new Date();
