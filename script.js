@@ -1,12 +1,9 @@
 /* =================================================================
-   [1] 모듈 불러오기
+   [1] 모듈 및 데이터
    ================================================================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-/* =================================================================
-   [2] 데이터 설정
-   ================================================================= */
 const BIBLE_DATA = {
     "books": [
         { "name": "창세기", "chapters": 50, "testament": "old" }, { "name": "출애굽기", "chapters": 40, "testament": "old" },
@@ -75,10 +72,11 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 
 /* =================================================================
-   [3] 기능 함수들
+   [2] 기능 함수
    ================================================================= */
 window.tryLogin = function(slotId) {
     const authData = (appData.auth && appData.auth[slotId]) ? appData.auth[slotId] : null;
+
     if (!authData) {
         const newName = prompt("사용할 닉네임을 입력하세요:");
         if(!newName) return;
@@ -173,6 +171,7 @@ window.goTab = function(t, element) {
     if(t==='bible') updateUI();
 }
 
+// [수정됨] 통계 페이지 렌더링 (결단서만 active, 나머지 닫힘)
 function renderStatsPage() {
     const statsDiv = document.getElementById('stats');
     
@@ -479,12 +478,6 @@ async function resetDailyCheckboxes() {
 
 function updateUI() {
     if (myName) {
-        // [안전장치] 내 데이터가 없으면 로그인 화면으로 보냄
-        if (!appData[myName]) {
-            console.error("데이터 로드 실패: 재로그인 필요");
-            return;
-        }
-
         const myInfo = appData.auth[myName];
         document.getElementById('userNameDisplay').textContent = myInfo ? myInfo.name : "사용자";
         if(document.activeElement.tagName !== 'INPUT') {
@@ -497,11 +490,20 @@ function updateUI() {
             const alarmInput = document.getElementById('alarm-time-input');
             if(alarmInput) alarmInput.value = appData.alarmTime;
         }
+    }
+
+    if(document.getElementById('accordion-res')) {
+        renderAllRankings();
+        renderCalendar();
+        renderHabitAnalysis();
         
-        // [중요] 통계 탭이 열려있으면 아코디언 UI를 강제로 그림
-        const statsTab = document.getElementById('stats');
-        if(statsTab && statsTab.classList.contains('active')) {
-            renderStatsPage(); // 여기서 내용이 그려짐
+        const p = appData.period || {};
+        if(p.start && p.end) {
+            document.getElementById('startDateInput').value = p.start;
+            document.getElementById('endDateInput').value = p.end;
+            document.getElementById('rankPeriodLabel').textContent = `(${p.start} ~ ${p.end})`;
+        } else {
+            document.getElementById('rankPeriodLabel').textContent = "(기간 미설정)";
         }
     }
 }
@@ -601,11 +603,7 @@ function renderAllRankings() {
 function renderHabitAnalysis() {
     const container = document.getElementById('habitStatsList');
     if(!container) return;
-    // [안전장치] 데이터 확인
-    if(!myName || !appData[myName] || !appData[myName].resolution) {
-        container.innerHTML = "<div style='text-align:center;color:#999;'>데이터 없음</div>";
-        return;
-    }
+    if(!myName || !appData[myName] || !appData[myName].resolution) return;
     const list = appData[myName].resolution;
     if(list.length === 0) return;
     const flatList = [];
@@ -722,14 +720,7 @@ try {
     onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
-            
-            // [중요] Matryoshka Fix (데이터 구조 자동 감지)
-            if (data.appData) {
-                appData = data.appData; 
-            } else {
-                appData = data; 
-            }
-
+            appData = data.appData || {};
             let needSave = false;
             if(!appData.period) { appData.period = {start:"", end:""}; needSave = true; }
             if(!appData.messages) { appData.messages = []; needSave = true; }
@@ -743,215 +734,3 @@ try {
         } else { initData(); }
     }, (error) => { alert("서버 연결 오류:\n" + error.message); if(statusDiv) statusDiv.textContent = "🔴 연결 실패 (" + error.code + ")"; });
 } catch (e) { alert("코드 실행 오류:\n" + e.message); }
-/* =================================================================
-   [보충] 누락된 렌더링 및 로직 함수들 (이 부분을 꼭 추가하세요!)
-   ================================================================= */
-
-// 1. 나의 결단 목록 그리기
-function renderMyList() {
-    const list = document.getElementById('list-resolution');
-    if(!list) return;
-    list.innerHTML = "";
-    
-    if(!appData[myName].resolution) appData[myName].resolution = [];
-    
-    appData[myName].resolution.forEach((item, i) => {
-        const li = document.createElement('li');
-        
-        // 단계별 체크박스 생성
-        let stepsHtml = '';
-        item.steps.forEach((step, si) => {
-            const isDone = item.done[si] ? 'done' : '';
-            stepsHtml += `
-                <div class="step-item ${isDone}" onclick="window.toggleResolution(${i}, ${si})">
-                    <div class="chk-box"></div>
-                    <span class="step-label">${step}</span>
-                </div>
-            `;
-        });
-
-        li.innerHTML = `
-            <div class="res-content">
-                <div class="res-text" onclick="window.editResolution(${i})">${item.text}</div>
-                <div class="steps">${stepsHtml}</div>
-            </div>
-            <button class="del-btn" onclick="window.deleteResolution(${i})">🗑</button>
-        `;
-        list.appendChild(li);
-    });
-}
-
-// 2. 가족 한마디(메시지) 그리기
-function renderMessages() {
-    const msgList = document.getElementById('msg-list');
-    if(!msgList) return;
-    msgList.innerHTML = "";
-    
-    if(!appData.messages) appData.messages = [];
-    const reversed = [...appData.messages].reverse(); // 최신순 정렬
-
-    reversed.forEach((msg, idx) => {
-        // 원본 배열에서의 인덱스 계산 (삭제를 위해)
-        const originalIdx = appData.messages.length - 1 - idx;
-        const li = document.createElement('li');
-        const isMe = msg.id === myName;
-        
-        li.className = isMe ? "my-msg" : "other-msg";
-        const dateStr = msg.ts ? new Date(msg.ts).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
-        
-        li.innerHTML = `
-            <div class="msg-bubble">
-                <div class="msg-sender">${msg.sender}</div>
-                <div class="msg-text">${msg.text}</div>
-                <div class="msg-info">
-                    ${dateStr} 
-                    ${isMe ? `<span class="msg-del" onclick="window.deleteMsg(${originalIdx})">x</span>` : ""}
-                </div>
-            </div>
-        `;
-        msgList.appendChild(li);
-    });
-}
-
-// 3. 성경 탭 UI 그리기 (메인/목록/챕터 전환)
-function renderBibleUI() {
-    // 현재 상태에 따라 보이는 화면 결정
-    const mainView = document.getElementById('bible-main-view');
-    const booksView = document.getElementById('bible-books-view');
-    const chaptersView = document.getElementById('bible-chapters-view');
-    
-    if(!mainView) return; // HTML 요소가 없으면 중단
-
-    // 기본적으로 모두 숨기고 필요한 것만 보임 (CSS 클래스 활용)
-    // *이 함수는 탭 전환 시 호출되어 상태를 초기화하거나 갱신하는 역할*
-    if(bibleState.currentBook) {
-        // 책을 보고 있던 상태라면
-        mainView.classList.add('hidden-view');
-        booksView.classList.add('hidden-view');
-        chaptersView.classList.remove('hidden-view');
-        renderBibleChapters();
-    } else if(bibleState.currentTestament) {
-        // 목록을 보고 있던 상태라면
-        mainView.classList.add('hidden-view');
-        booksView.classList.remove('hidden-view');
-        chaptersView.classList.add('hidden-view');
-        renderBibleBooks();
-    } else {
-        // 메인 화면
-        mainView.classList.remove('hidden-view');
-        booksView.classList.add('hidden-view');
-        chaptersView.classList.add('hidden-view');
-    }
-}
-
-// 4. 성경 책 목록 그리기 (구약/신약)
-function renderBibleBooks() {
-    const container = document.getElementById('bible-books-grid');
-    if(!container) return;
-    container.innerHTML = "";
-    
-    const targetBooks = BIBLE_DATA.books.filter(b => b.testament === bibleState.currentTestament);
-    
-    targetBooks.forEach(book => {
-        const btn = document.createElement('div');
-        btn.className = 'bible-btn';
-        
-        // 완독 횟수 뱃지
-        const rounds = (appData[myName].bibleRounds && appData[myName].bibleRounds[book.name]) || 0;
-        const badge = rounds > 0 ? `<span class="round-badge">+${rounds}</span>` : "";
-        
-        // 진행률 계산
-        let readCount = 0;
-        for(let i=1; i<=book.chapters; i++) {
-            if(appData[myName].bible && appData[myName].bible[`${book.name}-${i}`]) readCount++;
-        }
-        const isDone = readCount >= book.chapters;
-        if(isDone) btn.classList.add('completed-book'); // CSS 필요 시
-
-        btn.innerHTML = `${book.name} ${badge}`;
-        btn.onclick = () => window.showChapters(book.name);
-        container.appendChild(btn);
-    });
-}
-
-// 5. 성경 장(Chapter) 그리기
-function renderBibleChapters() {
-    const container = document.getElementById('bible-chapters-grid');
-    if(!container) return;
-    container.innerHTML = "";
-    
-    const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
-    if(!book) return;
-
-    for(let i=1; i<=book.chapters; i++) {
-        const key = `${book.name}-${i}`;
-        const isRead = (appData[myName].bible && appData[myName].bible[key]);
-        const isThisYear = isInViewYear(isRead);
-        
-        const label = document.createElement('label');
-        label.className = 'chapter-item';
-        
-        // 체크박스
-        const chk = document.createElement('input');
-        chk.type = "checkbox";
-        chk.checked = isThisYear;
-        chk.onchange = (e) => window.toggleChapter(key, e.target.checked);
-        
-        const span = document.createElement('span');
-        span.textContent = `${i}장`;
-        
-        label.appendChild(chk);
-        label.appendChild(span);
-        container.appendChild(label);
-    }
-}
-
-// 6. 일일 기록 업데이트 (통계용)
-function updateDailyHistory(slotId) {
-    const today = getTodayStr();
-    if(!appData[slotId].history) appData[slotId].history = {};
-    
-    let totalDone = 0;
-    const list = appData[slotId].resolution || [];
-    
-    list.forEach(item => {
-        // 오늘 완료한 체크박스 수 계산 (counts 배열 활용)
-        // 주의: 여기서는 단순화를 위해 '현재 체크된 상태'를 오늘 한 것으로 간주하거나
-        // counts 로직이 있다면 그것을 활용. 
-        // *기존 로직 유지*: toggleResolution에서 counts를 올리고 있음.
-        // 하지만 히트맵에는 '오늘 완료한 총 갯수'가 필요함.
-        
-        // 여기서는 간단히 '현재 완료된 항목 수'의 합계를 저장하거나,
-        // 더 정확히는 toggleResolution에서 이미 history를 +1 / -1 하고 있으므로
-        // 이 함수는 '동기화' 목적으로만 사용.
-        
-        // 현재 상태 기반 재계산 로직:
-        item.done.forEach(d => { if(d) totalDone++; });
-    });
-    
-    // 단순하게 현재 체크된 갯수로 오늘 기록을 덮어쓰기 (가장 오류가 적음)
-    appData[slotId].history[today] = totalDone;
-}
-
-// 7. 내 통계 요약 업데이트 (화면 상단 등)
-function updateMyStats() {
-    // 1. 읽은 성경 장 수 계산
-    let bibleCount = 0;
-    if(appData[myName].bible) {
-        Object.values(appData[myName].bible).forEach(dateStr => {
-            if(isInViewYear(dateStr)) bibleCount++;
-        });
-    }
-    
-    // 2. 완독 권수 계산
-    let booksDone = 0;
-    if(appData[myName].bibleRounds) {
-        Object.values(appData[myName].bibleRounds).forEach(r => booksDone += r);
-    }
-
-    // UI에 반영 (HTML에 해당 ID가 있다고 가정)
-    const bibleStatElem = document.getElementById('myBibleStat'); 
-    if(bibleStatElem) {
-        bibleStatElem.textContent = `올해 ${bibleCount}장 읽음 (완독 ${booksDone}권)`;
-    }
-}
