@@ -1,5 +1,5 @@
 /* =================================================================
-   [1] 중요: 외부 기능 불러오기 (무조건 맨 위에 있어야 함)
+   [1] 중요: 외부 기능 불러오기
    ================================================================= */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -65,7 +65,7 @@ const firebaseConfig = {
   measurementId: "G-RH6E87B4H0"
 };
 
-// 앱 초기화 및 변수 선언
+// 앱 초기화 및 변수
 let app, db, docRef;
 let appData = {};
 let bibleState = { currentTestament: null, currentBook: null };
@@ -73,7 +73,7 @@ let currentViewYear = new Date().getFullYear();
 let myName = localStorage.getItem('myId'); 
 
 /* =================================================================
-   [3] 기능 함수들 (HTML에서 버튼 누를 때 실행되는 친구들)
+   [3] 기능 함수들
    ================================================================= */
 // 로그인
 window.tryLogin = function(slotId) {
@@ -88,7 +88,7 @@ window.tryLogin = function(slotId) {
         
         if(!appData.auth) appData.auth = {};
         appData.auth[slotId] = { name: newName, pin: newPin };
-        appData[slotId] = { resolution: [], bible: {}, history: {} }; // 데이터 초기화
+        appData[slotId] = { resolution: [], bible: {}, history: {}, bibleRounds: {} }; 
         
         saveToServer().then(() => {
             loginSuccess(slotId);
@@ -111,7 +111,6 @@ function loginSuccess(slotId) {
     updateUI();
 }
 
-// 로그아웃
 window.logoutAction = function() {
     if(confirm("로그아웃 하시겠습니까?")) {
         localStorage.removeItem('myId');
@@ -121,7 +120,7 @@ window.logoutAction = function() {
     }
 }
 
-// 설정 (닉네임, 비번 변경)
+// 닉네임/PIN 설정
 window.updateNickname = function() {
     const val = document.getElementById('edit-nickname').value;
     if(!val) return;
@@ -142,20 +141,16 @@ window.updatePin = function() {
     }
 }
 
-// 테마 변경
+// UI 제어
 window.toggleTheme = function() {
     document.body.classList.toggle('dark-mode');
     localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
 }
-
-// 연도 변경
 window.changeYear = function(delta) {
     currentViewYear += delta;
     refreshYearDisplay();
     updateUI(); 
 }
-
-// 탭 이동
 window.goTab = function(t, element) {
     document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
     element.classList.add('active');
@@ -164,7 +159,7 @@ window.goTab = function(t, element) {
     if(t==='stats'||t==='bible') updateUI();
 }
 
-// 결단서 추가
+// 결단서
 window.addItem = function(cat) {
     if(!myName) return;
     const input = document.getElementById(`input-resolution`);
@@ -230,7 +225,7 @@ window.toggleResolution = function(i, si) {
     saveToServer();
 }
 
-// 성경 기능
+// 성경
 window.showBibleBooks = function(testament) {
     bibleState.currentTestament = testament;
     document.getElementById('bible-main-view').classList.add('hidden-view');
@@ -277,6 +272,33 @@ window.toggleChapter = function(key, isChecked) {
     saveToServer();
 }
 
+// [신규] 완독 및 리셋 기능
+window.finishBookAndReset = function() {
+    const bookName = bibleState.currentBook;
+    const book = BIBLE_DATA.books.find(b => b.name === bookName);
+    if(!book) return;
+
+    if(confirm(`🎉 축하합니다!\n'${bookName}'을(를) 정말 완독 처리하시겠습니까?\n\n- 체크박스가 모두 초기화됩니다.\n- 완독 횟수(배지)가 1 증가합니다.`)) {
+        // 1. 배지(회차) 증가
+        if(!appData[myName].bibleRounds) appData[myName].bibleRounds = {};
+        const currentRound = appData[myName].bibleRounds[bookName] || 0;
+        appData[myName].bibleRounds[bookName] = currentRound + 1;
+
+        // 2. 체크박스 초기화
+        for(let i=1; i<=book.chapters; i++) {
+            const key = `${bookName}-${i}`;
+            delete appData[myName].bible[key];
+        }
+
+        // 3. 저장 및 축하
+        confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+        saveToServer();
+        renderBibleChapters(); // 화면 갱신
+        updateMyStats();
+    }
+}
+
+// 기간 설정
 window.savePeriod = function() {
     const s = document.getElementById('startDateInput').value;
     const e = document.getElementById('endDateInput').value;
@@ -286,7 +308,7 @@ window.savePeriod = function() {
     saveToServer().then(() => alert("📅 시즌 기간 설정 완료!"));
 }
 
-// 소통 기능
+// 채팅
 window.sendMsg = function() {
     const input = document.getElementById('input-msg');
     const text = input.value.trim();
@@ -308,7 +330,7 @@ window.deleteMsg = function(idx) {
 }
 
 /* =================================================================
-   [4] 내부 로직 및 렌더링 함수들
+   [4] 로직 및 렌더링
    ================================================================= */
 function getTodayStr() {
     const d = new Date();
@@ -363,7 +385,7 @@ function renderLoginScreen() {
 
 async function initData() {
     appData = { period: {start:"", end:""}, messages: [], auth: {} };
-    USER_SLOTS.forEach(sid => appData[sid] = { resolution: [], bible: {}, history: {} });
+    USER_SLOTS.forEach(sid => appData[sid] = { resolution: [], bible: {}, history: {}, bibleRounds: {} });
     await saveToServer();
     renderLoginScreen();
 }
@@ -438,6 +460,25 @@ function calculateStreak(history) {
     return streak;
 }
 
+// 총 읽은 장수 계산 (현재 체크 + 과거 완독 횟수 * 장수)
+function calculateTotalBibleRead(slotId) {
+    const memberData = appData[slotId] || {};
+    const bible = memberData.bible || {};
+    const bibleRounds = memberData.bibleRounds || {};
+    
+    let total = 0;
+    // 1. 현재 체크된 것
+    for(const [key, dateStr] of Object.entries(bible)) {
+        if(isInViewYear(dateStr)) total++;
+    }
+    // 2. 완독한 것 (배지) 합산
+    BIBLE_DATA.books.forEach(book => {
+        const rounds = bibleRounds[book.name] || 0;
+        total += (rounds * book.chapters);
+    });
+    return total;
+}
+
 function renderAllRankings() {
     const resList = document.getElementById('resolutionRankList');
     resList.innerHTML = "";
@@ -477,18 +518,14 @@ function renderAllRankings() {
     const partsS = startStr.split('-');
     const partsE = endStr.split('-');
     if(partsS.length === 3) {
-        document.getElementById('bibleYearLabel').textContent = `이번 주 (${parseInt(partsS[1])}.${parseInt(partsS[2])}~${parseInt(partsE[1])}.${parseInt(partsE[2])})`;
+        document.getElementById('bibleYearLabel').textContent = `2025년 전체 누적 (완독 포함)`;
     }
     const bibleRank = activeUsers.map(sid => {
-        let count = 0;
-        const memberData = appData[sid] || {};
-        const bible = memberData.bible || {};
         const name = appData.auth[sid].name;
-        for(const [key, dateStr] of Object.entries(bible)) {
-            if(dateStr >= startStr && dateStr <= endStr) count++; 
-        }
-        return { name: name, val: count };
+        const totalVal = calculateTotalBibleRead(sid);
+        return { name: name, val: totalVal };
     }).sort((a,b) => b.val - a.val);
+    
     bibleRank.forEach((d, i) => {
         const div = document.createElement('div');
         div.className = "rank-card";
@@ -566,51 +603,92 @@ function renderBibleUI() {
     if(!document.getElementById('bible-books-view').classList.contains('hidden-view')) renderBibleBooks();
     if(!document.getElementById('bible-chapters-view').classList.contains('hidden-view')) renderBibleChapters();
 }
+
+// [수정] 책 목록에 'N독' 배지 표시
 function renderBibleBooks() {
     const container = document.getElementById('book-grid-container');
     container.innerHTML = '';
     const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
+    const myRounds = (appData[myName] && appData[myName].bibleRounds) ? appData[myName].bibleRounds : {};
+
     BIBLE_DATA.books.filter(b => b.testament === bibleState.currentTestament).forEach(book => {
         const btn = document.createElement('div');
-        btn.className = 'book-btn'; btn.textContent = book.name;
+        btn.className = 'book-btn';
+        
         let readCount = 0;
         for(let i=1; i<=book.chapters; i++) { if(isInViewYear(myBible[`${book.name}-${i}`])) readCount++; }
-        if(readCount === book.chapters) { btn.classList.add('completed'); btn.textContent = `✔️ ${book.name}`; }
-        else if (readCount > 0) { btn.classList.add('in-progress'); }
+        
+        const rounds = myRounds[book.name] || 0;
+        let badgeHtml = "";
+        if(rounds > 0) badgeHtml = `<div style="font-size:10px; color:gold; font-weight:bold;">👑 ${rounds}독</div>`;
+
+        btn.innerHTML = `<div>${book.name}</div>${badgeHtml}`;
+        
+        if(readCount === book.chapters) { 
+            btn.classList.add('completed'); 
+            btn.innerHTML = `<div>✔️ ${book.name}</div>${badgeHtml}`;
+        } else if (readCount > 0) { 
+            btn.classList.add('in-progress'); 
+        }
+        
         btn.onclick = () => window.showChapters(book.name);
         container.appendChild(btn);
     });
 }
+
+// [수정] 챕터 목록 아래에 리셋 버튼 표시
 function renderBibleChapters() {
     const container = document.getElementById('chapter-grid-container');
     container.innerHTML = '';
     const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
     if(!book) return;
     const myBible = (appData[myName] && appData[myName].bible) ? appData[myName].bible : {};
+    
+    let checkedCount = 0;
     for(let i=1; i<=book.chapters; i++) {
         const chapterKey = `${book.name}-${i}`;
         const div = document.createElement('div'); div.className = 'chapter-item';
         const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = `ch-${chapterKey}`;
-        if(isInViewYear(myBible[chapterKey])) checkbox.checked = true;
+        if(isInViewYear(myBible[chapterKey])) { checkbox.checked = true; checkedCount++; }
         checkbox.onchange = (e) => window.toggleChapter(chapterKey, e.target.checked);
         const label = document.createElement('label'); label.htmlFor = `ch-${chapterKey}`; label.textContent = i;
         div.appendChild(checkbox); div.appendChild(label);
         container.appendChild(div);
     }
+
+    // 만약 모든 챕터를 다 읽었다면? '완독 & 리셋' 버튼 추가
+    if(checkedCount === book.chapters) {
+        const resetBtnDiv = document.createElement('div');
+        resetBtnDiv.style.gridColumn = "1 / -1"; 
+        resetBtnDiv.style.marginTop = "20px";
+        resetBtnDiv.innerHTML = `
+            <button onclick="window.finishBookAndReset()" style="width:100%; padding:15px; background:linear-gradient(45deg, #FF9800, #FFC107); border:none; border-radius:12px; color:white; font-weight:bold; font-size:16px; cursor:pointer; box-shadow:0 4px 10px rgba(255,152,0,0.3);">
+                🎉 ${book.name} 완독! (초기화 및 2독 도전)
+            </button>
+        `;
+        container.appendChild(resetBtnDiv);
+    }
 }
+
+// [수정] 통계 계산 시 N독 횟수 포함
 function updateMyStats() {
     if(!appData[myName]) return;
+    
+    // 이번 주 읽은 장수 (단순 계산)
     const bible = appData[myName].bible || {};
     let weeklyCount = 0;
-    let yearlyCount = 0;
     const { startStr, endStr } = getWeekRangeStrings();
     for (const [key, dateStr] of Object.entries(bible)) {
-        if (isInViewYear(dateStr)) yearlyCount++;
         if (dateStr >= startStr && dateStr <= endStr) weeklyCount++;
     }
+    
+    // 올해 누적 장수 (완독 포함)
+    const totalCount = calculateTotalBibleRead(myName);
+
     document.getElementById('myWeeklyBible').textContent = weeklyCount;
-    document.getElementById('myYearlyBible').textContent = yearlyCount;
+    document.getElementById('myYearlyBible').textContent = totalCount;
 }
+
 function renderMessages() {
     const chatList = document.getElementById('chatList');
     if(!chatList) return; 
@@ -636,7 +714,7 @@ function renderMessages() {
 }
 
 /* =================================================================
-   [5] 앱 실행 시작 (초기화)
+   [5] 앱 실행 시작
    ================================================================= */
 try {
     if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
@@ -648,12 +726,10 @@ try {
     }
     refreshYearDisplay();
 
-    // Firebase 앱 시작
     app = initializeApp(firebaseConfig);
     db = getFirestore(app);
     docRef = doc(db, "appData", "familyDataV28_Secure");
     
-    // 데이터 실시간 수신 대기
     const statusDiv = document.getElementById('serverStatus');
     onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -665,7 +741,7 @@ try {
             if(!appData.messages) { appData.messages = []; needSave = true; }
             if(!appData.auth) { appData.auth = {}; needSave = true; }
             USER_SLOTS.forEach(sid => {
-                if(!appData[sid]) { appData[sid] = { resolution: [], bible: {}, history: {} }; needSave = true; }
+                if(!appData[sid]) { appData[sid] = { resolution: [], bible: {}, history: {}, bibleRounds: {} }; needSave = true; }
             });
 
             if (data.lastDate !== new Date().toDateString()) {
@@ -680,11 +756,10 @@ try {
             initData();
         }
     }, (error) => {
-        console.error("Firebase 접속 오류:", error);
-        if(statusDiv) statusDiv.textContent = "🔴 연결 실패 (인터넷 확인)";
+        alert("서버 연결 오류:\n" + error.message);
+        if(statusDiv) statusDiv.textContent = "🔴 연결 실패 (" + error.code + ")";
     });
 
 } catch (e) {
-    console.error("스크립트 실행 중 치명적 오류:", e);
-    alert("앱 실행 중 오류가 발생했습니다. 새로고침 해주세요.");
+    alert("코드 실행 오류:\n" + e.message);
 }
