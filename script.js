@@ -44,18 +44,26 @@ let app, db, docRef;
 let appData = {};
 let bibleState = { currentTestament: null, currentBook: null };
 let myName = localStorage.getItem('myId');
+let currentYear = new Date().getFullYear(); // 성경 통계 기준
 
 // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
 // 2번 Config 붙여넣기 필수!
 // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 const firebaseConfig = {
     apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
-  authDomain: "family-resolution.firebaseapp.com",
-  projectId: "family-resolution",
-  storageBucket: "family-resolution.firebasestorage.app",
-  messagingSenderId: "711396068080",
-  appId: "1:711396068080:web:861c41a8259f0b6dca9035",
-  measurementId: "G-RH6E87B4H0"
+
+  authDomain: "family-resolution.firebaseapp.com",
+
+  projectId: "family-resolution",
+
+  storageBucket: "family-resolution.firebasestorage.app",
+
+  messagingSenderId: "711396068080",
+
+  appId: "1:711396068080:web:861c41a8259f0b6dca9035",
+
+  measurementId: "G-RH6E87B4H0"
+
 };
 
 async function startApp() {
@@ -73,14 +81,13 @@ async function startApp() {
                 appData = data.appData ? data.appData : data;
                 
                 if(!appData.auth) appData.auth = {};
-                // 기간 설정 없을 시 기본값 (현재 연도 전체)
                 if(!appData.period) {
                     const y = new Date().getFullYear();
                     appData.period = { start: `${y}-01-01`, end: `${y}-12-31` };
                 }
                 
                 USER_SLOTS.forEach(slot => {
-                    if(!appData[slot]) appData[slot] = { resolution: [], bible: {}, history: {} };
+                    if(!appData[slot]) appData[slot] = { resolution: [], bible: {}, history: {}, bibleRounds: {} };
                 });
                 checkLoginStatus();
             } else {
@@ -88,7 +95,6 @@ async function startApp() {
             }
         });
 
-        // 말씀
         const verses = [
             { t: "내게 능력 주시는 자 안에서 내가 모든 것을 할 수 있느니라", r: "빌립보서 4:13" },
             { t: "여호와는 나의 목자시니 내게 부족함이 없으리로다", r: "시편 23:1" },
@@ -198,7 +204,6 @@ function renderResolutionList() {
     });
 }
 
-// ★★★ 점수 계산 핵심 로직 (기간 적용) ★★★
 function renderAdvancedStats() {
     const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
     document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
@@ -206,28 +211,25 @@ function renderAdvancedStats() {
     const myHistory = appData[myName].history || {};
     const myBible = appData[myName].bible || {};
     
-    // 1. 기간 내 기록 필터링 (나의 현황용)
+    // [1] 결단서 (기간 필터)
     const validDates = Object.keys(myHistory).filter(d => d >= period.start && d <= period.end);
     
-    let streak = 0;
-    const today = new Date().toISOString().split('T')[0];
-    if(myHistory[today]) streak = 1; // 오늘 했으면 1 (간단 로직)
-
-    // 기간 내 읽은 성경 장수
+    // [2] 성경 (연도 필터 - 무조건 현재 연도)
     let myBibleCount = 0;
+    const yearStr = new Date().getFullYear().toString();
     for(const [key, date] of Object.entries(myBible)) {
-        if(date >= period.start && date <= period.end) myBibleCount++;
+        if(date.startsWith(yearStr)) myBibleCount++;
     }
 
     let successCount = 0;
     validDates.forEach(d => { if(myHistory[d] > 0) successCount++; });
-    const rate = Math.min(100, Math.round(successCount / Math.max(1, new Date().getDate()) * 100)); // 약식 계산
+    const rate = Math.min(100, Math.round(successCount / Math.max(1, new Date().getDate()) * 100));
 
     document.getElementById('stat-rate').innerText = rate + "%";
-    document.getElementById('stat-streak').innerText = streak;
+    document.getElementById('stat-streak').innerText = (myHistory[new Date().toISOString().split('T')[0]]) ? 1 : 0;
     document.getElementById('stat-bible-total').innerText = myBibleCount;
 
-    // 2. Heatmap (이번 달)
+    // Heatmap (이번 달)
     const heatGrid = document.getElementById('heatmap-grid');
     heatGrid.innerHTML = "";
     const now = new Date();
@@ -239,20 +241,18 @@ function renderAdvancedStats() {
         const cell = document.createElement('div');
         cell.className = "heat-day";
         if(val > 0) cell.classList.add("active");
-        if(dateStr === today) cell.style.border = "2px solid #ef4444";
         cell.innerText = d;
         heatGrid.appendChild(cell);
     }
 
-    // 3. 랭킹 (모두 표시, 기간 적용, 점수/장 표시)
+    // 랭킹 (로직 분리)
     const activeUsers = USER_SLOTS.filter(u => appData.auth && appData.auth[u]);
     
-    // 결단서 랭킹
+    // 결단서 랭킹 (기간)
     const resRankEl = document.getElementById('rank-resolution');
     resRankEl.innerHTML = "";
     const resRanking = activeUsers.map(u => {
         const h = appData[u].history || {};
-        // 기간 내 점수 합산
         let score = 0;
         Object.keys(h).forEach(date => {
             if(date >= period.start && date <= period.end) score += h[date];
@@ -261,46 +261,34 @@ function renderAdvancedStats() {
     }).sort((a,b) => b.val - a.val);
 
     resRanking.forEach((r, i) => {
-        resRankEl.innerHTML += `
-            <div class="rank-row">
-                <span>${i+1}. ${r.name}</span>
-                <span class="score">${r.val}점</span>
-            </div>`;
+        resRankEl.innerHTML += `<div class="rank-row"><span>${i+1}. ${r.name}</span><span class="score">${r.val}점</span></div>`;
     });
 
-    // 성경 랭킹
+    // 성경 랭킹 (연도)
     const bibRankEl = document.getElementById('rank-bible');
     bibRankEl.innerHTML = "";
     const bibRanking = activeUsers.map(u => {
         const b = appData[u].bible || {};
         let count = 0;
         Object.values(b).forEach(date => {
-            if(date >= period.start && date <= period.end) count++;
+            if(date.startsWith(yearStr)) count++;
         });
         return { name: appData.auth[u].name, val: count };
     }).sort((a,b) => b.val - a.val);
 
     bibRanking.forEach((r, i) => {
-        bibRankEl.innerHTML += `
-            <div class="rank-row">
-                <span>${i+1}. ${r.name}</span>
-                <span class="score">${r.val}장</span>
-            </div>`;
+        bibRankEl.innerHTML += `<div class="rank-row"><span>${i+1}. ${r.name}</span><span class="score">${r.val}장</span></div>`;
     });
 }
 
-// 기간 설정 함수
 window.setPeriod = function() {
     const current = appData.period || {start:"", end:""};
-    const s = prompt("시작일을 입력하세요 (YYYY-MM-DD)", current.start);
+    const s = prompt("시작일 (YYYY-MM-DD)", current.start);
     if(!s) return;
-    const e = prompt("종료일을 입력하세요 (YYYY-MM-DD)", current.end);
+    const e = prompt("종료일 (YYYY-MM-DD)", current.end);
     if(!e) return;
-    
     appData.period = { start: s, end: e };
-    saveData().then(() => {
-        alert("기간이 설정되었습니다! 랭킹이 이 기간 기준으로 다시 계산됩니다.");
-    });
+    saveData().then(() => alert("기간 설정 완료!"));
 };
 
 window.addItem = function() {
@@ -377,16 +365,13 @@ window.showBibleBooks = function(type) {
     BIBLE_DATA.books.filter(b=>b.testament===type).forEach(book => {
         const div = document.createElement('div');
         div.className = "bible-btn";
-        const period = appData.period || {start:"0000-00-00", end:"9999-99-99"};
-        
-        // 기간 내에 읽은 것만 카운트해서 완료 표시
+        const yearStr = new Date().getFullYear().toString();
         let readCount = 0;
+        // 올해 읽은 것만 카운트해서 완료 배지 표시
         for(let i=1; i<=book.chapters; i++) {
-            const key = `${book.name}-${i}`;
-            const date = appData[myName].bible && appData[myName].bible[key];
-            if(date && date >= period.start && date <= period.end) readCount++;
+            const date = appData[myName].bible && appData[myName].bible[`${book.name}-${i}`];
+            if(date && date.startsWith(yearStr)) readCount++;
         }
-        
         if(readCount >= book.chapters) div.classList.add('completed');
         div.innerText = book.name;
         div.onclick = () => showChapters(book);
@@ -400,30 +385,76 @@ function showChapters(book) {
     document.getElementById('bible-chapters-view').classList.remove('hidden-view');
     document.getElementById('bible-book-title').innerText = book.name;
     
+    renderChaptersGrid();
+}
+
+function renderChaptersGrid() {
+    const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
     const grid = document.getElementById('bible-chapters-grid');
     grid.innerHTML = "";
+    const yearStr = new Date().getFullYear().toString();
+    
+    let allChecked = true;
     for(let i=1; i<=book.chapters; i++) {
         const div = document.createElement('div');
         div.className = "chapter-item";
         const key = `${book.name}-${i}`;
-        const isRead = appData[myName].bible && appData[myName].bible[key];
+        const date = appData[myName].bible && appData[myName].bible[key];
+        const isRead = date && date.startsWith(yearStr);
         if(isRead) div.classList.add('checked');
+        else allChecked = false; // 하나라도 안 읽었으면 false
         
         div.innerText = i;
         div.onclick = () => {
-            const newVal = !isRead;
-            if(newVal) div.classList.add('checked'); else div.classList.remove('checked');
-            window.toggleChapter(key, newVal);
+            window.toggleChapter(key, !isRead);
         };
         grid.appendChild(div);
     }
+    
+    // 완독 버튼 활성화/비활성화
+    const finishBtn = document.getElementById('btn-finish-book');
+    if(allChecked) {
+        finishBtn.classList.remove('disabled');
+        finishBtn.innerText = "이 책 완독하기 🎉";
+    } else {
+        finishBtn.classList.add('disabled');
+        finishBtn.innerText = "모두 읽어야 완독 가능";
+    }
 }
+
+// 전체 선택 / 해제
+window.controlAll = function(turnOn) {
+    const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
+    if(!appData[myName].bible) appData[myName].bible = {};
+    const today = new Date().toISOString().split('T')[0];
+    
+    for(let i=1; i<=book.chapters; i++) {
+        const key = `${book.name}-${i}`;
+        if(turnOn) appData[myName].bible[key] = today;
+        else delete appData[myName].bible[key];
+    }
+    saveData().then(() => renderChaptersGrid());
+};
+
+window.finishBookAndReset = function() {
+    const btn = document.getElementById('btn-finish-book');
+    if(btn.classList.contains('disabled')) return; // 비활성화면 무시
+
+    if(confirm(`'${bibleState.currentBook}'을(를) 완독 처리하시겠습니까?\n체크박스가 초기화되고 'n독' 카운트가 올라갑니다.`)) {
+        if(!appData[myName].bibleRounds) appData[myName].bibleRounds = {};
+        const book = bibleState.currentBook;
+        appData[myName].bibleRounds[book] = (appData[myName].bibleRounds[book] || 0) + 1;
+        
+        // 체크박스 초기화
+        window.controlAll(false);
+    }
+};
 
 window.toggleChapter = function(key, checked) {
     if(!appData[myName].bible) appData[myName].bible = {};
     if(checked) appData[myName].bible[key] = new Date().toISOString().split('T')[0];
     else delete appData[myName].bible[key];
-    saveData();
+    saveData().then(() => renderChaptersGrid());
 };
 
 window.showBibleMain = function() {
@@ -443,13 +474,11 @@ window.goTab = function(tab, btn) {
     
     if(tab==='stats') renderAdvancedStats();
     if(tab==='bible') {
-        const period = appData.period || {start:"0000-00-00", end:"9999-99-99"};
+        const yearStr = new Date().getFullYear().toString();
         let cnt = 0;
         const bible = appData[myName].bible || {};
-        Object.values(bible).forEach(date => {
-             if(date >= period.start && date <= period.end) cnt++;
-        });
-        document.getElementById('myBibleStat').innerText = `시즌 ${cnt}장`;
+        Object.values(bible).forEach(date => { if(date.startsWith(yearStr)) cnt++; });
+        document.getElementById('myBibleStat').innerText = `${yearStr}년: ${cnt}장`;
     }
 };
 
