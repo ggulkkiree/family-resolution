@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Goals V2.1</title>
+    <title>Family Goals V2.2</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,7 +12,7 @@
 
     <div id="splash-screen">
         <div class="splash-content">
-            <div class="logo-circle">✨</div>
+            <div class="logo-circle">🎯</div>
             <h1>FAMILY<br>GOALS</h1>
         </div>
     </div>
@@ -20,8 +20,8 @@
     <div id="login-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Welcome</h2>
-                <p>가족 구성원을 선택해주세요</p>
+                <h2>반가워요!</h2>
+                <p>누구신가요?</p>
             </div>
             <div id="login-grid" class="grid-container"></div>
         </div>
@@ -31,7 +31,7 @@
         
         <header class="glass-header">
             <div class="header-content">
-                <span class="greeting">Hi, <b id="user-name">User</b> 👋</span>
+                <span class="greeting">Hi, <b id="user-name">User</b></span>
                 <div class="header-actions">
                     <button class="icon-btn round-btn" onclick="window.saveAlarmTime()">🔔</button>
                     <button class="icon-btn round-btn" onclick="window.logoutAction()">🚪</button>
@@ -42,15 +42,15 @@
         <main id="main-content">
             
             <div class="verse-card">
-                <div class="verse-badge">Today's Verse</div>
+                <div class="verse-badge">오늘의 말씀</div>
                 <p id="verse-text">Loading...</p>
                 <p id="verse-ref"></p>
             </div>
 
             <div id="page-resolution" class="page active">
                 <div class="section-header">
-                    <span class="title">My Goals</span>
-                    <span class="subtitle">작은 실천이 큰 변화를!</span>
+                    <span class="title">나의 목표</span>
+                    <span class="subtitle">매일매일 꾸준하게!</span>
                 </div>
                 
                 <div class="input-pill">
@@ -61,12 +61,12 @@
                 <ul id="list-resolution"></ul>
                 
                 <div class="section-header" style="margin-top:40px;">
-                    <span class="title">Family Chat</span>
+                    <span class="title">가족 수다방</span>
                 </div>
                 <div class="chat-container">
                     <ul id="msg-list"></ul>
                     <div class="input-pill small">
-                        <input type="text" id="input-msg" placeholder="응원 메시지...">
+                        <input type="text" id="input-msg" placeholder="메시지 입력...">
                         <button onclick="window.sendMsg()" class="send-btn">전송</button>
                     </div>
                 </div>
@@ -75,24 +75,24 @@
             <div id="page-bible" class="page hidden">
                 <div class="bible-header-banner">
                     <div class="section-header">
-                        <span class="title">Bible Reading</span>
+                        <span class="title">성경 읽기</span>
                     </div>
-                    <div id="myBibleStat" class="stat-badge">Loading...</div>
+                    <div id="myBibleStat" class="stat-badge">-</div>
                 </div>
 
                 <div id="bible-main-view">
                     <div class="bible-card old" onclick="window.showBibleBooks('old')">
                         <div class="card-icon">📜</div>
                         <div class="card-text">
-                            <h3>Old Testament</h3>
-                            <p>구약 성경</p>
+                            <h3>구약 (Old)</h3>
+                            <p>39권</p>
                         </div>
                     </div>
                     <div class="bible-card new" onclick="window.showBibleBooks('new')">
                         <div class="card-icon">✝️</div>
                         <div class="card-text">
-                            <h3>New Testament</h3>
-                            <p>신약 성경</p>
+                            <h3>신약 (New)</h3>
+                            <p>27권</p>
                         </div>
                     </div>
                 </div>
@@ -111,15 +111,36 @@
                     </button>
                     <div class="chapter-header-row">
                         <h3 id="bible-book-title" class="page-title"></h3>
-                        <button onclick="window.finishBookAndReset()" class="finish-pill-btn">완독하기 ✨</button>
+                        <button onclick="window.finishBookAndReset()" class="finish-pill-btn">완독 처리</button>
                     </div>
                     <div id="bible-chapters-grid" class="grid-chapters"></div>
                 </div>
             </div>
 
             <div id="page-stats" class="page hidden">
+                
+                <div class="period-card" onclick="window.setPeriod()">
+                    <div class="period-label">🏆 현재 경쟁 기간 (터치하여 변경)</div>
+                    <div class="period-date" id="period-display">기간을 설정해주세요</div>
+                </div>
+
                 <div class="section-header">
-                    <span class="title">Dashboard</span>
+                    <span class="title">전체 순위</span>
+                </div>
+                
+                <div class="ranking-container">
+                    <div class="ranking-box">
+                        <div class="ranking-title">📝 결단서 점수</div>
+                        <div id="rank-resolution"></div>
+                    </div>
+                    <div class="ranking-box">
+                        <div class="ranking-title">📖 성경 점수</div>
+                        <div id="rank-bible"></div>
+                    </div>
+                </div>
+
+                <div class="section-header" style="margin-top:30px;">
+                    <span class="title">나의 현황</span>
                 </div>
                 
                 <div class="stat-card">
@@ -131,35 +152,21 @@
                         <div class="stat-divider"></div>
                         <div class="stat-item">
                             <span class="val" id="stat-streak">0</span>
-                            <span class="label">연속일</span>
+                            <span class="label">연속 성공</span>
                         </div>
                         <div class="stat-divider"></div>
                         <div class="stat-item">
                             <span class="val" id="stat-bible-total">0</span>
-                            <span class="label">성경(장)</span>
+                            <span class="label">읽은 장</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="stat-card">
-                    <h4>📅 Monthly Heatmap</h4>
+                    <h4>📅 이번 달 활동</h4>
                     <div id="heatmap-grid" class="heatmap"></div>
                 </div>
 
-                <div class="section-header" style="margin-top:30px;">
-                    <span class="title">Ranking</span>
-                </div>
-                
-                <div class="ranking-container">
-                    <div class="ranking-box">
-                        <div class="ranking-title">🔥 결단서 왕</div>
-                        <div id="rank-resolution"></div>
-                    </div>
-                    <div class="ranking-box">
-                        <div class="ranking-title">📖 성경 왕</div>
-                        <div id="rank-bible"></div>
-                    </div>
-                </div>
             </div>
 
         </main>
@@ -174,8 +181,8 @@
                 <span class="label">성경</span>
             </button>
             <button class="nav-item" onclick="window.goTab('stats', this)">
-                <i class="fas fa-chart-pie icon"></i>
-                <span class="label">통계</span>
+                <i class="fas fa-chart-simple icon"></i>
+                <span class="label">순위</span>
             </button>
         </nav>
     </div>
