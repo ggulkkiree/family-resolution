@@ -49,7 +49,13 @@ let myName = localStorage.getItem('myId');
 // 2번 Config 붙여넣기 필수!
 // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 const firebaseConfig = {
-    // 여기에 붙여넣으세요...
+    apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
+  authDomain: "family-resolution.firebaseapp.com",
+  projectId: "family-resolution",
+  storageBucket: "family-resolution.firebasestorage.app",
+  messagingSenderId: "711396068080",
+  appId: "1:711396068080:web:861c41a8259f0b6dca9035",
+  measurementId: "G-RH6E87B4H0"
 };
 
 async function startApp() {
