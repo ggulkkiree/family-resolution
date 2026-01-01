@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Goals V2.2</title>
+    <title>Family Goals V2.3</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,7 +12,7 @@
 
     <div id="splash-screen">
         <div class="splash-content">
-            <div class="logo-circle">🎯</div>
+            <div class="logo-circle">⛪️</div>
             <h1>FAMILY<br>GOALS</h1>
         </div>
     </div>
@@ -20,8 +20,8 @@
     <div id="login-modal" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>반가워요!</h2>
-                <p>누구신가요?</p>
+                <h2>Welcome</h2>
+                <p>가족 구성원을 선택해주세요</p>
             </div>
             <div id="login-grid" class="grid-container"></div>
         </div>
@@ -49,8 +49,8 @@
 
             <div id="page-resolution" class="page active">
                 <div class="section-header">
-                    <span class="title">나의 목표</span>
-                    <span class="subtitle">매일매일 꾸준하게!</span>
+                    <span class="title">My Goals</span>
+                    <span class="subtitle">작은 실천이 큰 변화를!</span>
                 </div>
                 
                 <div class="input-pill">
@@ -61,7 +61,7 @@
                 <ul id="list-resolution"></ul>
                 
                 <div class="section-header" style="margin-top:40px;">
-                    <span class="title">가족 수다방</span>
+                    <span class="title">Family Chat</span>
                 </div>
                 <div class="chat-container">
                     <ul id="msg-list"></ul>
@@ -73,26 +73,24 @@
             </div>
 
             <div id="page-bible" class="page hidden">
-                <div class="bible-header-banner">
-                    <div class="section-header">
-                        <span class="title">성경 읽기</span>
-                    </div>
-                    <div id="myBibleStat" class="stat-badge">-</div>
+                <div class="bible-stat-banner">
+                    <div class="bible-stat-label">올해의 성경 통독</div>
+                    <div class="bible-stat-val" id="myBibleStat">0장</div>
                 </div>
 
                 <div id="bible-main-view">
                     <div class="bible-card old" onclick="window.showBibleBooks('old')">
                         <div class="card-icon">📜</div>
                         <div class="card-text">
-                            <h3>구약 (Old)</h3>
-                            <p>39권</p>
+                            <h3>Old Testament</h3>
+                            <p>구약 39권</p>
                         </div>
                     </div>
                     <div class="bible-card new" onclick="window.showBibleBooks('new')">
                         <div class="card-icon">✝️</div>
                         <div class="card-text">
-                            <h3>신약 (New)</h3>
-                            <p>27권</p>
+                            <h3>New Testament</h3>
+                            <p>신약 27권</p>
                         </div>
                     </div>
                 </div>
@@ -109,10 +107,19 @@
                     <button class="nav-back-btn" onclick="window.backToBooks()">
                         <i class="fas fa-chevron-left"></i> 목록
                     </button>
+                    
                     <div class="chapter-header-row">
                         <h3 id="bible-book-title" class="page-title"></h3>
-                        <button onclick="window.finishBookAndReset()" class="finish-pill-btn">완독 처리</button>
+                        <div class="chapter-tools">
+                            <button class="text-btn" onclick="window.controlAll(true)">전체선택</button>
+                            <button class="text-btn" onclick="window.controlAll(false)">해제</button>
+                        </div>
                     </div>
+                    
+                    <button id="btn-finish-book" onclick="window.finishBookAndReset()" class="finish-pill-btn disabled">
+                        이 책 완독하기 🎉
+                    </button>
+
                     <div id="bible-chapters-grid" class="grid-chapters"></div>
                 </div>
             </div>
@@ -120,8 +127,8 @@
             <div id="page-stats" class="page hidden">
                 
                 <div class="period-card" onclick="window.setPeriod()">
-                    <div class="period-label">🏆 현재 경쟁 기간 (터치하여 변경)</div>
-                    <div class="period-date" id="period-display">기간을 설정해주세요</div>
+                    <div class="period-label">🏆 결단서 경쟁 시즌</div>
+                    <div class="period-date" id="period-display">설정 필요</div>
                 </div>
 
                 <div class="section-header">
@@ -130,11 +137,11 @@
                 
                 <div class="ranking-container">
                     <div class="ranking-box">
-                        <div class="ranking-title">📝 결단서 점수</div>
+                        <div class="ranking-title">📝 결단서 (시즌별)</div>
                         <div id="rank-resolution"></div>
                     </div>
                     <div class="ranking-box">
-                        <div class="ranking-title">📖 성경 점수</div>
+                        <div class="ranking-title">📖 성경 (연도별)</div>
                         <div id="rank-bible"></div>
                     </div>
                 </div>
@@ -147,17 +154,12 @@
                     <div class="stat-row">
                         <div class="stat-item">
                             <span class="val" id="stat-rate">0%</span>
-                            <span class="label">성공률</span>
-                        </div>
-                        <div class="stat-divider"></div>
-                        <div class="stat-item">
-                            <span class="val" id="stat-streak">0</span>
-                            <span class="label">연속 성공</span>
+                            <span class="label">목표 성공률</span>
                         </div>
                         <div class="stat-divider"></div>
                         <div class="stat-item">
                             <span class="val" id="stat-bible-total">0</span>
-                            <span class="label">읽은 장</span>
+                            <span class="label">올해 읽음</span>
                         </div>
                     </div>
                 </div>
