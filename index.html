@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Goals 2025</title>
+    <title>Family Goals V2.5</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -67,10 +67,10 @@
             margin-left: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
 
-        /* ★★★ 스크롤 문제 완벽 해결: 여백 200px ★★★ */
+        /* 메인 콘텐츠 */
         #main-content {
             flex: 1; overflow-y: auto; padding: 20px;
-            padding-bottom: 200px;
+            padding-bottom: 200px; /* 스크롤 여유 공간 */
         }
 
         /* 컴포넌트 */
@@ -114,9 +114,7 @@
         #msg-list li b { color: var(--primary); margin-right: 5px; }
 
         /* 성경 */
-        .bible-stat-row {
-            display: flex; gap: 10px; margin-bottom: 20px;
-        }
+        .bible-stat-row { display: flex; gap: 10px; margin-bottom: 20px; }
         .bible-stat-box {
             flex: 1; background: white; padding: 15px; border-radius: 16px; text-align: center;
             box-shadow: var(--shadow-sm); border: 1px solid #e2e8f0;
@@ -179,13 +177,12 @@
         /* 히트맵 */
         .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
         .heat-day { aspect-ratio: 1; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #cbd5e1; transition: all 0.3s; }
-        /* 히트맵 강도 색상 */
-        .heat-day.level-1 { background: #c7d2fe; color: var(--primary); } /* 조금 함 */
-        .heat-day.level-2 { background: #818cf8; color: white; } /* 중간 */
-        .heat-day.level-3 { background: #4338ca; color: white; font-weight: bold; } /* 많이 함 */
+        .heat-day.level-1 { background: #c7d2fe; color: var(--primary); }
+        .heat-day.level-2 { background: #818cf8; color: white; }
+        .heat-day.level-3 { background: #4338ca; color: white; font-weight: bold; }
         .heat-day.today { border: 2px solid var(--accent); }
 
-        .ranking-container { display: flex; gap: 15px; }
+        .ranking-container { display: flex; gap: 15px; margin-bottom: 20px; }
         .ranking-box { flex: 1; background: white; border-radius: 16px; padding: 15px; box-shadow: var(--shadow-sm); }
         .ranking-title { font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
         .rank-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
@@ -325,35 +322,34 @@
             <div id="page-stats" class="page hidden">
                 
                 <div class="period-card" onclick="window.setPeriod()">
-                    <div class="period-label">🏆 결단서 경쟁 시즌 (클릭하여 변경)</div>
+                    <div class="period-label">🏆 결단서 시즌 (터치하여 설정)</div>
                     <div class="period-date" id="period-display">설정 필요</div>
+                </div>
+
+                <div class="section-header">
+                    <span class="title">가족 랭킹 (Top Priority)</span>
+                </div>
+                <div class="ranking-container">
+                    <div class="ranking-box">
+                        <div class="ranking-title">📝 결단서 (시즌)</div>
+                        <div id="rank-resolution"></div>
+                    </div>
+                    <div class="ranking-box">
+                        <div class="ranking-title">📖 성경 (이번주)</div>
+                        <div id="rank-bible"></div>
+                    </div>
                 </div>
 
                 <div class="section-header">
                     <span class="title">목표별 달성도</span>
                 </div>
-                <div class="stat-card" id="goal-breakdown-list">
-                    </div>
+                <div class="stat-card" id="goal-breakdown-list"></div>
 
                 <div class="section-header">
                     <span class="title">이번 달 활동 (Heatmap)</span>
                 </div>
                 <div class="stat-card">
                     <div id="heatmap-grid" class="heatmap"></div>
-                </div>
-
-                <div class="section-header">
-                    <span class="title">가족 랭킹</span>
-                </div>
-                <div class="ranking-container">
-                    <div class="ranking-box">
-                        <div class="ranking-title">📝 결단서</div>
-                        <div id="rank-resolution"></div>
-                    </div>
-                    <div class="ranking-box">
-                        <div class="ranking-title">📖 성경</div>
-                        <div id="rank-bible"></div>
-                    </div>
                 </div>
 
             </div>
@@ -383,17 +379,17 @@
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-        // [완료] 고객님께서 주신 Config를 입력했습니다!
+        // 여기에 Config 붙여넣기 (필수!)
         // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         const firebaseConfig = {
             apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
-            authDomain: "family-resolution.firebaseapp.com",
-            projectId: "family-resolution",
-            storageBucket: "family-resolution.firebasestorage.app",
-            messagingSenderId: "711396068080",
-            appId: "1:711396068080:web:861c41a8259f0b6dca9035",
-            measurementId: "G-RH6E87B4H0"
-        };
+authDomain: "family-resolution.firebaseapp.com",
+projectId: "family-resolution",
+storageBucket: "family-resolution.firebasestorage.app",
+messagingSenderId: "711396068080",
+appId: "1:711396068080:web:861c41a8259f0b6dca9035",
+measurementId: "G-RH6E87B4H0"
+};
 
         const BIBLE_DATA = {
             "books": [
@@ -577,6 +573,7 @@
             });
         }
 
+        // [핵심 로직] 통계 및 랭킹 계산
         function renderAdvancedStats() {
             const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
             document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
@@ -585,12 +582,11 @@
             const myBible = appData[myName].bible || {};
             const today = new Date().toISOString().split('T')[0];
             
-            // 1. 히트맵 & 최대 수행량 계산 (색상 진하기용)
+            // 1. Heatmap & 항목별 그래프
             const heatGrid = document.getElementById('heatmap-grid');
             heatGrid.innerHTML = "";
             const now = new Date();
             const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            
             let maxDone = 0;
             for(let d=1; d<=daysInMonth; d++) {
                 const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -603,7 +599,6 @@
                 const val = myHistory[dateStr] || 0;
                 const cell = document.createElement('div');
                 cell.className = "heat-day";
-                
                 if(val > 0) {
                     const ratio = val / maxDone;
                     if(ratio < 0.4) cell.classList.add("level-1");
@@ -615,7 +610,6 @@
                 heatGrid.appendChild(cell);
             }
 
-            // 2. 항목별 목표 달성도 (추가됨!)
             const goalList = document.getElementById('goal-breakdown-list');
             goalList.innerHTML = "";
             const myGoals = appData[myName].resolution || [];
@@ -631,23 +625,39 @@
                             <span class="goal-name">${g.text}</span>
                             <span class="goal-percent">총 ${totalDone}회</span>
                         </div>
-                        <div class="progress-bg">
-                            <div class="progress-bar" style="width: 100%; opacity: 0.2"></div>
-                        </div>
+                        <div class="progress-bg"><div class="progress-bar" style="width: 100%; opacity: 0.2"></div></div>
                     `;
                     goalList.appendChild(div);
                 });
             }
 
-            // 3. 랭킹 렌더링
+            // 2. 랭킹 렌더링 (여기가 변경됨)
             renderRankings(period);
+        }
+
+        // [중요] 주간 날짜 범위 구하기 (토요일 ~ 금요일)
+        function getWeeklyRange() {
+            const now = new Date();
+            const day = now.getDay(); // 0(일)~6(토)
+            
+            // 기준점: 가장 최근 토요일 (오늘이 토요일이면 오늘)
+            const diff = day === 6 ? 0 : day + 1; 
+            
+            const start = new Date(now);
+            start.setDate(now.getDate() - diff);
+            const startStr = start.toISOString().split('T')[0];
+            
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            const endStr = end.toISOString().split('T')[0];
+            
+            return { start: startStr, end: endStr };
         }
 
         function renderRankings(period) {
             const activeUsers = USER_SLOTS.filter(u => appData.auth && appData.auth[u]);
-            const yearStr = new Date().getFullYear().toString();
-
-            // 결단서 랭킹
+            
+            // (1) 결단서 랭킹: 시즌 기간(appData.period) 기준
             const resRankEl = document.getElementById('rank-resolution');
             resRankEl.innerHTML = "";
             activeUsers.map(u => {
@@ -659,20 +669,24 @@
                 resRankEl.innerHTML += `<div class="rank-row"><span>${i+1}. ${r.name}</span><span class="score">${r.val}점</span></div>`;
             });
 
-            // 성경 랭킹
+            // (2) 성경 랭킹: 이번 주(토~금) 기준
+            const weekRange = getWeeklyRange();
+            document.querySelector('.ranking-title:nth-child(1)').nextElementSibling.parentElement.nextElementSibling.querySelector('.ranking-title').innerText = `📖 성경 (${weekRange.start.slice(5)}~)`;
+
             const bibRankEl = document.getElementById('rank-bible');
             bibRankEl.innerHTML = "";
             activeUsers.map(u => {
                 const b = appData[u].bible || {};
                 let count = 0;
-                Object.values(b).forEach(date => { if(date.startsWith(yearStr)) count++; });
+                Object.values(b).forEach(date => { 
+                    if(date >= weekRange.start && date <= weekRange.end) count++; 
+                });
                 return { name: appData.auth[u].name, val: count };
             }).sort((a,b) => b.val - a.val).forEach((r, i) => {
                 bibRankEl.innerHTML += `<div class="rank-row"><span>${i+1}. ${r.name}</span><span class="score">${r.val}장</span></div>`;
             });
         }
 
-        // 성경 통계 업데이트 (탭 상단)
         function updateBibleStats() {
             const today = new Date().toISOString().split('T')[0];
             const yearStr = new Date().getFullYear().toString();
@@ -680,16 +694,13 @@
             
             let todayCnt = 0;
             let yearCnt = 0;
-
             Object.values(myBible).forEach(date => {
                 if(date === today) todayCnt++;
                 if(date.startsWith(yearStr)) yearCnt++;
             });
 
-            const tEl = document.getElementById('bible-today-count');
-            const yEl = document.getElementById('bible-year-count');
-            if(tEl) tEl.innerText = `+${todayCnt}장`;
-            if(yEl) yEl.innerText = `${yearCnt}장`;
+            document.getElementById('bible-today-count').innerText = `+${todayCnt}장`;
+            document.getElementById('bible-year-count').innerText = `${yearCnt}장`;
         }
 
         window.setPeriod = function() {
@@ -711,7 +722,6 @@
             const steps = parts.length > 1 ? parts.slice(1).map(s=>s.trim()) : ["완료"];
             
             if(!appData[myName].resolution) appData[myName].resolution = [];
-            // counts 배열 초기화 추가
             appData[myName].resolution.push({ 
                 text: title, steps: steps, done: Array(steps.length).fill(false), counts: Array(steps.length).fill(0) 
             });
@@ -724,7 +734,6 @@
             const wasDone = item.done[stepIdx];
             item.done[stepIdx] = !wasDone;
             
-            // 누적 카운트 증가/감소
             if(!item.counts) item.counts = Array(item.steps.length).fill(0);
             if(item.done[stepIdx]) item.counts[stepIdx]++;
             else item.counts[stepIdx] = Math.max(0, item.counts[stepIdx] - 1);
@@ -804,7 +813,6 @@
             document.getElementById('bible-books-view').classList.add('hidden-view');
             document.getElementById('bible-chapters-view').classList.remove('hidden-view');
             document.getElementById('bible-book-title').innerText = book.name;
-            
             renderChaptersGrid();
         }
 
@@ -825,9 +833,7 @@
                 else allChecked = false;
                 
                 div.innerText = i;
-                div.onclick = () => {
-                    window.toggleChapter(key, !isRead);
-                };
+                div.onclick = () => { window.toggleChapter(key, !isRead); };
                 grid.appendChild(div);
             }
             
