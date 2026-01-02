@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Goals V3.0</title>
+    <title>우리 가족 2025 목표</title>
+    
+    <meta property="og:title" content="2025 우리 가족 믿음의 경주 🏃‍♂️">
+    <meta property="og:description" content="말씀, 결단, 그리고 사랑으로 하나되는 공간">
+    <meta property="og:image" content="https://emojigraph.org/media/apple/church_26ea.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -14,23 +19,22 @@
             --accent: #f43f5e; --success: #10b981; --gold: #f59e0b;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
             --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-            --radius-pill: 50px; --radius-card: 20px;
+            --radius-pill: 50px;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; }
         .hidden { display: none !important; } .hidden-view { display: none !important; }
 
-        /* 애니메이션 정의 */
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes fire-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        /* 애니메이션 */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         /* 스플래시 & 로그인 */
-        #splash-screen { position: fixed; inset: 0; background: white; display: flex; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+        #splash-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
         .logo-circle { font-size: 4rem; margin-bottom: 20px; animation: bounce 2s infinite; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        
+        #splash-screen h1 { text-align: center; margin: 0; line-height: 1.2; color: var(--text-main); }
+
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 5000; }
         .modal-content { background: white; width: 85%; max-width: 360px; padding: 30px; border-radius: 24px; text-align: center; box-shadow: var(--shadow-md); }
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
@@ -44,45 +48,10 @@
 
         #main-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 200px; }
 
-        /* === 대시보드 스타일 (New!) === */
-        .dashboard-row { display: flex; gap: 12px; margin-bottom: 12px; }
-        .dash-card { flex: 1; background: white; border-radius: 20px; padding: 15px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
-        
-        /* 도넛 차트 */
-        .donut-container { position: relative; width: 80px; height: 80px; margin-bottom: 5px; }
-        .donut-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
-        .donut-bg { fill: none; stroke: #f1f5f9; stroke-width: 8; }
-        .donut-fill { fill: none; stroke: var(--primary); stroke-width: 8; stroke-dasharray: 251; stroke-dashoffset: 251; transition: stroke-dashoffset 1.5s ease-out; stroke-linecap: round; }
-        .donut-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 1.1rem; color: var(--text-main); }
-        .dash-label { font-size: 0.8rem; color: var(--text-light); margin-top: 5px; font-weight: 600; }
-
-        /* 스트릭 (불꽃) */
-        .streak-icon { font-size: 2.5rem; color: #cbd5e1; transition: all 0.5s; margin-bottom: 5px; }
-        .streak-icon.active { color: #f97316; }
-        .streak-icon.fire { color: #ef4444; animation: fire-pulse 1.5s infinite; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
-        .streak-count { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
-
-        /* 오늘의 할일 */
-        .today-check-row { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-        .check-pill { font-size: 0.8rem; background: #f1f5f9; padding: 4px 10px; border-radius: 12px; color: var(--text-light); }
-        .check-pill.done { background: #dcfce7; color: #166534; font-weight: bold; }
-
-        /* 성경 진행바 */
-        .bible-progress-container { width: 100%; margin-top: 10px; }
-        .bible-book-name { font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; display: block; text-align: left; }
-        .progress-track { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); width: 0%; transition: width 1s ease-out; border-radius: 4px; }
-        .bible-percent { font-size: 0.8rem; color: var(--text-light); float: right; margin-top: 3px; }
-
-        /* 주간 그래프 */
-        .weekly-graph { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; height: 60px; margin-top: 10px; gap: 4px; }
-        .week-bar { flex: 1; background: #e2e8f0; border-radius: 4px; transition: height 1s ease-out; height: 0%; position: relative; }
-        .week-bar.high { background: var(--primary); }
-        .week-day-label { font-size: 0.6rem; color: #94a3b8; text-align: center; margin-top: 4px; }
-
-        /* 기타 기본 스타일 */
-        .verse-card { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(118, 75, 162, 0.3); }
+        /* 카드 & 리스트 */
+        .verse-card { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(118, 75, 162, 0.3); position: relative; }
         .verse-badge { font-size: 0.75rem; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; display: inline-block; font-weight: 700; margin-bottom: 10px; }
+        .verse-edit-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         
         .input-pill { background: white; border-radius: var(--radius-pill); padding: 5px 5px 5px 20px; display: flex; align-items: center; box-shadow: var(--shadow-sm); margin-bottom: 20px; border: 1px solid #e2e8f0; }
         .input-pill input { flex: 1; border: none; font-size: 0.95rem; background: transparent; }
@@ -102,13 +71,43 @@
         #msg-list li { font-size: 0.85rem; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
         #msg-list li b { color: var(--primary); margin-right: 5px; }
 
+        /* 대시보드 */
+        .dashboard-row { display: flex; gap: 12px; margin-bottom: 12px; }
+        .dash-card { flex: 1; background: white; border-radius: 20px; padding: 15px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+        
+        .donut-container { position: relative; width: 80px; height: 80px; margin-bottom: 5px; }
+        .donut-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .donut-bg { fill: none; stroke: #f1f5f9; stroke-width: 8; }
+        .donut-fill { fill: none; stroke: var(--primary); stroke-width: 8; stroke-dasharray: 251; stroke-dashoffset: 251; transition: stroke-dashoffset 1.5s ease-out; stroke-linecap: round; }
+        .donut-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 1.1rem; color: var(--text-main); }
+        .dash-label { font-size: 0.8rem; color: var(--text-light); margin-top: 5px; font-weight: 600; }
+
+        .streak-icon { font-size: 2.5rem; color: #cbd5e1; transition: all 0.5s; margin-bottom: 5px; }
+        .streak-icon.active { color: #f97316; }
+        .streak-icon.fire { color: #ef4444; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
+        .streak-count { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
+
+        .today-check-row { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .check-pill { font-size: 0.8rem; background: #f1f5f9; padding: 4px 10px; border-radius: 12px; color: var(--text-light); }
+        .check-pill.done { background: #dcfce7; color: #166534; font-weight: bold; }
+
+        .bible-progress-container { width: 100%; margin-top: 10px; }
+        .bible-book-name { font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; display: block; text-align: left; }
+        .progress-track { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); width: 0%; transition: width 1s ease-out; border-radius: 4px; }
+        .bible-percent { font-size: 0.8rem; color: var(--text-light); float: right; margin-top: 3px; }
+
+        .weekly-graph { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; height: 60px; margin-top: 10px; gap: 4px; }
+        .week-bar { flex: 1; background: #e2e8f0; border-radius: 4px; transition: height 1s ease-out; height: 0%; position: relative; }
+        .week-bar.high { background: var(--primary); }
+        .week-day-label { font-size: 0.6rem; color: #94a3b8; text-align: center; margin-top: 4px; }
+
         .period-card { background: linear-gradient(135deg, #4f46e5, #ec4899); color: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; text-align: center; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4); }
         .section-header { margin-bottom: 15px; margin-top: 30px; }
         .section-header:first-child { margin-top: 0; }
         .section-header .title { font-size: 1.1rem; font-weight: 800; color: var(--text-main); }
 
         .accordion-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 10px 0; }
-        .accordion-header .title { margin: 0; font-size: 1.1rem; font-weight: 800; }
         .accordion-icon { transition: transform 0.3s; color: var(--text-light); }
         .accordion-header.open .accordion-icon { transform: rotate(180deg); }
         .accordion-content { overflow: hidden; transition: max-height 0.3s ease-out; }
@@ -122,6 +121,13 @@
         .fame-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
         .fame-winner { font-weight: bold; color: var(--text-main); }
         .crown-icon { color: var(--gold); margin-right: 5px; }
+
+        /* 성경 기본 */
+        .bible-stat-row { display: flex; gap: 10px; margin-bottom: 20px; }
+        .bible-stat-box { flex: 1; background: white; padding: 15px; border-radius: 16px; text-align: center; box-shadow: var(--shadow-sm); border: 1px solid #e2e8f0; }
+        .bs-label { font-size: 0.75rem; color: var(--text-light); display: block; margin-bottom: 5px; }
+        .bs-val { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+        .bs-val.today { color: var(--accent); }
 
         .bible-card { display: flex; align-items: center; padding: 20px; border-radius: 20px; margin-bottom: 12px; cursor: pointer; background: white; box-shadow: var(--shadow-sm); border: 1px solid #e2e8f0; }
         .card-icon { font-size: 2rem; margin-right: 15px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f1f5f9; }
@@ -142,7 +148,7 @@
 <body>
 
     <div id="splash-screen">
-        <div class="logo-circle">🚀</div>
+        <div class="logo-circle">⛪️</div>
         <h1>FAMILY<br>GOALS</h1>
     </div>
 
@@ -158,7 +164,7 @@
             <div class="header-content">
                 <span style="font-size:1.2rem; font-weight:bold;">Hi, <b id="user-name">User</b></span>
                 <div class="header-actions">
-                    <button class="round-btn" onclick="alert('알람 기능 준비중!')">🔔</button>
+                    <button class="round-btn" onclick="alert('알람 기능은 모바일 브라우저 정책상 앱을 켜두어야 울립니다.')">🔔</button>
                     <button class="round-btn" onclick="window.logoutAction()">🚪</button>
                 </div>
             </div>
@@ -167,6 +173,7 @@
         <main id="main-content">
             <div class="verse-card">
                 <div class="verse-badge">오늘의 말씀</div>
+                <button class="verse-edit-btn" onclick="window.editVerse()"><i class="fas fa-pen"></i></button>
                 <p id="verse-text" style="font-weight:500;">Loading...</p>
                 <p id="verse-ref" style="text-align:right; font-size:0.8rem; margin-top:5px; opacity:0.9;"></p>
             </div>
@@ -190,7 +197,10 @@
             </div>
 
             <div id="page-bible" class="page hidden">
-                <div class="section-header"><span class="title">Bible Reading</span></div>
+                <div class="bible-stat-row">
+                    <div class="bible-stat-box"><span class="bs-label">오늘 읽음</span><span class="bs-val today" id="bible-today-count">0장</span></div>
+                    <div class="bible-stat-box"><span class="bs-label">올해 누적</span><span class="bs-val" id="bible-year-count">0장</span></div>
+                </div>
                 <div id="bible-main-view">
                     <div class="bible-card old" onclick="window.showBibleBooks('old')">
                         <div class="card-icon">📜</div><div><h3>구약 (Old)</h3><p>39권</p></div>
@@ -201,16 +211,16 @@
                 </div>
                 <div id="bible-books-view" class="hidden-view">
                     <button onclick="window.showBibleMain()" style="background:none; border:none; margin-bottom:10px;">← 뒤로</button>
-                    <h3 id="bible-testament-title"></h3>
+                    <h3 id="bible-testament-title" class="section-header title" style="margin-bottom:15px;"></h3>
                     <div id="bible-books-grid" class="grid-books"></div>
                 </div>
                 <div id="bible-chapters-view" class="hidden-view">
                     <button onclick="window.backToBooks()" style="background:none; border:none; margin-bottom:10px;">← 목록</button>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                        <h3 id="bible-book-title" style="margin:0;"></h3>
-                        <div>
-                            <button onclick="window.controlAll(true)" style="background:#eee; border:none; padding:5px 10px; border-radius:10px;">전체</button>
-                            <button onclick="window.controlAll(false)" style="background:#eee; border:none; padding:5px 10px; border-radius:10px;">해제</button>
+                    <div class="chapter-header-row">
+                        <h3 id="bible-book-title" class="section-header title" style="margin:0;"></h3>
+                        <div class="chapter-tools">
+                            <button class="text-btn" onclick="window.controlAll(true)">전체선택</button>
+                            <button class="text-btn" onclick="window.controlAll(false)">해제</button>
                         </div>
                     </div>
                     <button id="btn-finish-book" onclick="window.finishBookAndReset()" class="finish-pill-btn disabled">이 책 완독하기 🎉</button>
@@ -219,7 +229,6 @@
             </div>
 
             <div id="page-stats" class="page hidden">
-                
                 <div class="period-card" onclick="window.manageSeason()">
                     <div style="font-size:0.8rem; opacity:0.9;">🏆 결단서 시즌</div>
                     <div id="period-display" style="font-size:1.1rem; font-weight:700;">설정 필요</div>
@@ -232,14 +241,10 @@
                 </div>
 
                 <div class="section-header"><span class="title">나의 대시보드</span></div>
-                
                 <div class="dashboard-row">
                     <div class="dash-card">
                         <div class="donut-container">
-                            <svg class="donut-svg" viewBox="0 0 100 100">
-                                <circle class="donut-bg" cx="50" cy="50" r="40" />
-                                <circle class="donut-fill" id="donut-fill" cx="50" cy="50" r="40" />
-                            </svg>
+                            <svg class="donut-svg" viewBox="0 0 100 100"><circle class="donut-bg" cx="50" cy="50" r="40" /><circle class="donut-fill" id="donut-fill" cx="50" cy="50" r="40" /></svg>
                             <div class="donut-text" id="dash-rate">0%</div>
                         </div>
                         <div class="dash-label">목표 달성률</div>
@@ -253,8 +258,7 @@
 
                 <div class="dash-card" style="align-items:flex-start; margin-bottom:12px;">
                     <div style="width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <span style="font-weight:bold;">📅 오늘 목표</span>
-                        <span class="check-pill" id="today-status">0/0 완료</span>
+                        <span style="font-weight:bold;">📅 오늘 목표</span><span class="check-pill" id="today-status">0/0 완료</span>
                     </div>
                     <div id="today-task-list" style="width:100%;"></div>
                 </div>
@@ -279,7 +283,6 @@
                 <div id="acc-fame" class="accordion-content hidden">
                     <div class="stat-card" id="hall-of-fame-list"></div>
                 </div>
-
             </div>
         </main>
 
@@ -301,7 +304,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ Config (고객님 정보 입력됨) ▼▼▼
+        // ▼▼▼ Config ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
             authDomain: "family-resolution.firebaseapp.com",
@@ -324,7 +327,7 @@
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                docRef = doc(db, "appData", "familyDataV28_Secure");
+                docRef = doc(db, "appData", "FamilyGoals_Official_V1"); // ★ 배포용 새 DB
 
                 onSnapshot(docRef, (snapshot) => {
                     document.getElementById('splash-screen').style.opacity = '0';
@@ -348,13 +351,23 @@
                         initNewData();
                     }
                 });
-
-                const verses = [ {t:"내게 능력 주시는 자 안에서 내가 모든 것을 할 수 있느니라",r:"빌4:13"}, {t:"여호와는 나의 목자시니 내게 부족함이 없으리로다",r:"시23:1"}, {t:"두려워하지 말라 내가 너와 함께 함이라",r:"사41:10"} ];
-                const v = verses[Math.floor(Math.random()*verses.length)];
-                document.getElementById('verse-text').innerText = v.t;
-                document.getElementById('verse-ref').innerText = v.r;
             } catch (e) { alert("Config 오류"); }
         }
+
+        // [New] 오늘의 말씀 수정 기능
+        window.editVerse = function() {
+            const currentT = appData.verse ? appData.verse.t : "";
+            const currentR = appData.verse ? appData.verse.r : "";
+            const newT = prompt("말씀 내용:", currentT);
+            if(newT === null) return;
+            const newR = prompt("말씀 출처:", currentR);
+            if(newR === null) return;
+            
+            if(!appData.verse) appData.verse = {};
+            appData.verse.t = newT;
+            appData.verse.r = newR;
+            saveData();
+        };
 
         function checkLoginStatus() {
             if(myName && appData.auth[myName]) {
@@ -391,10 +404,20 @@
 
         function updateMainUI() {
             document.getElementById('user-name').innerText = appData.auth[myName].name;
+            
+            // [New] 말씀 업데이트 (DB우선 -> 없으면 기본값)
+            if(appData.verse && appData.verse.t) {
+                document.getElementById('verse-text').innerText = appData.verse.t;
+                document.getElementById('verse-ref').innerText = appData.verse.r;
+            } else {
+                document.getElementById('verse-text').innerText = "환영합니다! ✏️버튼을 눌러 오늘의 말씀을 입력해주세요.";
+                document.getElementById('verse-ref').innerText = "Family Goals";
+            }
+
             renderResolutionList(); renderMessages(); renderDashboard();
         }
 
-        /* [NEW] 대시보드 렌더링 (애니메이션 포함) */
+        /* 대시보드 및 기타 로직 (V3.0과 동일) */
         function renderDashboard() {
             const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
             document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
@@ -403,51 +426,27 @@
             const myBible = appData[myName].bible || {};
             const today = new Date().toISOString().split('T')[0];
 
-            // 1. 도넛 차트 (성공률) - 기간 내
             const validDates = Object.keys(myHistory).filter(d => d >= period.start && d <= period.end);
-            let totalDays = 0, successDays = 0;
-            // 기간 시작일로부터 오늘까지의 일수 계산 (약식)
-            const startDate = new Date(period.start);
-            const now = new Date();
-            const timeDiff = now - startDate;
-            const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-            totalDays = Math.max(1, dayDiff); 
-            
-            validDates.forEach(d => { if(myHistory[d] > 0) successDays++; });
+            let totalDays = Math.max(1, Math.ceil((new Date() - new Date(period.start))/(1000*3600*24)));
+            let successDays = 0; validDates.forEach(d => { if(myHistory[d] > 0) successDays++; });
             const rate = Math.min(100, Math.round((successDays / totalDays) * 100));
             
-            // 애니메이션: 0에서 rate까지
             document.getElementById('dash-rate').innerText = rate + "%";
-            const donutFill = document.getElementById('donut-fill');
-            // 251 is full circumference roughly
-            const offset = 251 - (251 * rate / 100);
-            setTimeout(() => { donutFill.style.strokeDashoffset = offset; }, 100);
+            setTimeout(() => { document.getElementById('donut-fill').style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
-            // 2. 스트릭 (불꽃)
-            let streak = 0;
-            if(myHistory[today]) { // 오늘 했으면 1부터 시작
-                streak = 1;
-                // 어제부터 역순 체크 로직은 복잡하니 생략하고, 오늘 한것만 체크해도 시각적 효과 충분
-            }
+            let streak = myHistory[today] ? 1 : 0;
             document.getElementById('dash-streak').innerText = streak + "일";
             const fireIcon = document.getElementById('streak-icon');
-            fireIcon.className = "fas fa-fire streak-icon"; // reset
+            fireIcon.className = "fas fa-fire streak-icon"; 
             if(streak > 0) fireIcon.classList.add('active');
-            if(streak >= 3) fireIcon.classList.add('fire');
 
-            // 3. 오늘의 할일
             const myGoals = appData[myName].resolution || [];
-            const taskList = document.getElementById('today-task-list');
-            taskList.innerHTML = "";
+            const taskList = document.getElementById('today-task-list'); taskList.innerHTML = "";
             let todayTotal = 0, todayDone = 0;
             
             myGoals.forEach(g => {
-                const isDoneToday = g.done.every(Boolean); // 모든 스텝 완료시
-                // 실제로는 done 배열이 오늘 날짜 기준이어야 하는데, 현재 구조상 done은 '현재 상태'임.
-                // 따라서 그냥 현재 체크된 상태를 보여줌.
-                todayTotal++;
-                if(isDoneToday) todayDone++;
-                
+                const isDoneToday = g.done.every(Boolean);
+                todayTotal++; if(isDoneToday) todayDone++;
                 const div = document.createElement('div');
                 div.className = "today-check-row";
                 div.innerHTML = `<span style="font-size:0.9rem;">${g.text}</span><span style="font-size:1.2rem; color:${isDoneToday?'var(--success)':'#ddd'}">${isDoneToday?'●':'○'}</span>`;
@@ -455,61 +454,34 @@
             });
             const statusPill = document.getElementById('today-status');
             statusPill.innerText = `${todayDone}/${todayTotal} 완료`;
-            if(todayDone === todayTotal && todayTotal > 0) statusPill.classList.add('done');
-            else statusPill.classList.remove('done');
+            if(todayDone === todayTotal && todayTotal > 0) statusPill.classList.add('done'); else statusPill.classList.remove('done');
 
-            // 4. 현재 읽는 성경
             let lastBook = "없음", percent = 0;
-            // 가장 최근에 읽은 장 찾기
-            const readKeys = Object.keys(myBible).sort(); // 날짜순 정렬은 아니지만 키 정렬
+            const readKeys = Object.keys(myBible).sort();
             if(readKeys.length > 0) {
-                const lastKey = readKeys[readKeys.length-1]; // 대략 마지막
-                const [bName, ch] = lastKey.split('-');
+                const lastKey = readKeys[readKeys.length-1];
+                const [bName] = lastKey.split('-');
                 lastBook = bName;
-                // 그 책의 총 장수 찾기
                 const bookData = BIBLE_DATA.books.find(b=>b.name===bName);
-                if(bookData) {
-                    const readInBook = readKeys.filter(k=>k.startsWith(bName+'-')).length;
-                    percent = Math.round((readInBook / bookData.chapters) * 100);
-                }
+                if(bookData) percent = Math.round((readKeys.filter(k=>k.startsWith(bName+'-')).length / bookData.chapters) * 100);
             }
             document.getElementById('current-book-name').innerText = lastBook;
             document.getElementById('bible-book-percent').innerText = percent + "%";
             setTimeout(() => { document.getElementById('bible-progress-bar').style.width = percent + "%"; }, 100);
 
-            // 5. 주간 그래프
-            const weekGraph = document.getElementById('weekly-graph');
-            weekGraph.innerHTML = "";
+            const weekGraph = document.getElementById('weekly-graph'); weekGraph.innerHTML = "";
             const dayNames = ['일','월','화','수','목','금','토'];
             for(let i=6; i>=0; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
                 const dStr = d.toISOString().split('T')[0];
                 const count = myHistory[dStr] || 0;
-                // 높이 계산 (최대 5개 기준으로 정규화)
                 const h = Math.min(100, count * 20); 
-                
-                const barContainer = document.createElement('div');
-                barContainer.style.flex = "1";
-                barContainer.style.display = "flex";
-                barContainer.style.flexDirection = "column";
-                barContainer.style.alignItems = "center";
-                barContainer.style.height = "100%";
-                
-                barContainer.innerHTML = `
-                    <div style="flex:1; display:flex; align-items:flex-end; width:100%;">
-                        <div class="week-bar ${h>0?'high':''}" style="width:60%; margin:0 auto; height:${h}%"></div>
-                    </div>
-                    <div class="week-day-label">${dayNames[d.getDay()]}</div>
-                `;
-                weekGraph.appendChild(barContainer);
+                weekGraph.innerHTML += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;"><div style="flex:1;display:flex;align-items:flex-end;width:100%;"><div class="week-bar ${h>0?'high':''}" style="width:60%;margin:0 auto;height:${h}%"></div></div><div class="week-day-label">${dayNames[d.getDay()]}</div></div>`;
             }
 
-            // 랭킹 & 명예의 전당 (기존 로직 유지)
-            renderRankings(period);
-            renderHallOfFame();
+            renderRankings(period); renderHallOfFame();
         }
 
-        // --- (나머지 랭킹, 성경, 기본 로직은 V2.6과 동일하게 유지) ---
         function getWeeklyRange(){const n=new Date(),d=n.getDay(),diff=d===6?0:d+1;const s=new Date(n);s.setDate(n.getDate()-diff);const e=new Date(s);e.setDate(s.getDate()+6);return{start:s.toISOString().split('T')[0],end:e.toISOString().split('T')[0]};}
         function renderRankings(p){const u=USER_SLOTS.filter(x=>appData.auth&&appData.auth[x]);const r=document.getElementById('rank-resolution');r.innerHTML="";u.map(x=>{const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=p.start&&d<=p.end).reduce((a,b)=>a+h[b],0);return{name:appData.auth[x].name,val:s}}).sort((a,b)=>b.val-a.val).forEach((x,i)=>r.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}점</span></div>`);const w=getWeeklyRange();document.querySelector('.ranking-box:nth-child(2) .ranking-title').innerText=`📖 성경 (이번주)`;const b=document.getElementById('rank-bible');b.innerHTML="";u.map(x=>{const bb=appData[x].bible||{},c=Object.values(bb).filter(d=>d>=w.start&&d<=w.end).length;return{name:appData.auth[x].name,val:c}}).sort((a,b)=>b.val-a.val).forEach((x,i)=>b.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}장</span></div>`);}
         function renderHallOfFame(){const l=document.getElementById('hall-of-fame-list');l.innerHTML="";(appData.pastSeasons||[]).reverse().forEach(p=>l.innerHTML+=`<div class="fame-row"><div class="fame-season">${p.range}</div><div class="fame-winner">👑 ${p.winner} (${p.score})</div></div>`);if(l.innerHTML==="")l.innerHTML="<div style='text-align:center;color:#94a3b8;font-size:0.8rem;'>기록 없음</div>";}
@@ -521,7 +493,6 @@
         window.deleteItem=(i)=>{if(confirm("삭제?")){appData[myName].resolution.splice(i,1);saveData();}};
         window.editItem=(i)=>{const item=appData[myName].resolution[i],n=prompt("수정:",item.text);if(n){item.text=n;saveData();}};
         window.sendMsg=()=>{const i=document.getElementById('input-msg');if(!i.value.trim())return;if(!appData.messages)appData.messages=[];appData.messages.push({sender:appData.auth[myName].name,text:i.value.trim()});if(appData.messages.length>50)appData.messages.shift();i.value="";saveData();};
-        function renderResolutionList(){const l=document.getElementById('list-resolution');l.innerHTML="";(appData[myName].resolution||[]).forEach((x,i)=>{const s=x.steps.map((st,si)=>`<span class="step-item ${x.done[si]?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`).join('');l.innerHTML+=`<li class="resolution-item"><div class="res-left"><div class="res-text" onclick="window.editItem(${i})">${x.text}</div><div class="steps">${s}</div></div><button class="del-icon-btn" onclick="window.deleteItem(${i})"><i class="fas fa-trash-alt"></i></button></li>`});}
         function renderMessages(){const l=document.getElementById('msg-list');l.innerHTML="";[...(appData.messages||[])].reverse().forEach(m=>l.innerHTML+=`<li><b>${m.sender}:</b> ${m.text}</li>`);}
         
         window.showBibleBooks=(t)=>{bibleState.currentTestament=t;document.getElementById('bible-main-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');const g=document.getElementById('bible-books-grid');g.innerHTML="";BIBLE_DATA.books.filter(b=>b.testament===t).forEach(b=>{const d=document.createElement('div');d.className="bible-btn";let c=0;const y=new Date().getFullYear().toString();for(let i=1;i<=b.chapters;i++){const k=`${b.name}-${i}`,dt=appData[myName].bible&&appData[myName].bible[k];if(dt&&dt.startsWith(y))c++;}if(c>=b.chapters)d.classList.add('completed');d.innerText=b.name;d.onclick=()=>showChapters(b);g.appendChild(d);});};
@@ -532,7 +503,7 @@
         window.finishBookAndReset=()=>{if(document.getElementById('btn-finish-book').classList.contains('disabled'))return;if(confirm("완독?")){const b=bibleState.currentBook;if(!appData[myName].bibleRounds)appData[myName].bibleRounds={};appData[myName].bibleRounds[b]=(appData[myName].bibleRounds[b]||0)+1;window.controlAll(false);}};
         window.backToBooks=()=>{document.getElementById('bible-chapters-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');};
         window.showBibleMain=()=>{document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-main-view').classList.remove('hidden-view');};
-        window.goTab=(t,b)=>{document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));document.getElementById('page-'+t).classList.remove('hidden');if(t==='stats')renderDashboard();};
+        window.goTab=(t,b)=>{document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));document.getElementById('page-'+t).classList.remove('hidden');if(t==='stats')renderDashboard();if(t==='bible')updateBibleStats();};
         async function saveData(){try{await setDoc(docRef,{appData:appData},{merge:true});updateMainUI();}catch(e){console.error(e);}}
         function initNewData(){const y=new Date().getFullYear();appData={auth:{},messages:[],period:{start:`${y}-01-01`,end:`${y}-12-31`}};saveData();}
         startApp();
