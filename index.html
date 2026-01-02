@@ -133,8 +133,11 @@
         .bible-card { display: flex; align-items: center; padding: 20px; border-radius: 20px; margin-bottom: 12px; cursor: pointer; background: white; box-shadow: var(--shadow-sm); border: 1px solid #e2e8f0; }
         .card-icon { font-size: 2rem; margin-right: 15px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f1f5f9; }
         .grid-books { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .bible-btn { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 0; text-align: center; font-size: 0.9rem; cursor: pointer; }
+        
+        /* 성경 버튼 스타일 수정 (이름+n독 표시) */
+        .bible-btn { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 0; text-align: center; font-size: 0.9rem; cursor: pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; }
         .bible-btn.completed { background: #ecfccb; border-color: #84cc16; color: #3f6212; font-weight: 700; }
+        
         .grid-chapters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
         .chapter-item { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 0; text-align: center; cursor: pointer; font-size: 0.9rem; }
         .chapter-item.checked { background: var(--primary); color: white; border-color: var(--primary); font-weight: bold; }
@@ -148,8 +151,8 @@
 </head>
 <body>
 
-    <button onclick="hardReset()" style="position:fixed; top:0; left:0; z-index:99999; width:100%; height:50px; background:red; color:white; font-weight:bold; border:none; border-bottom:2px solid darkred; display:none;" id="reset-btn">
-        🚨 초기화 필요 (터치) 🚨
+    <button onclick="hardReset()" style="position:fixed; top:0; left:0; z-index:99999; width:100%; height:50px; background:red; color:white; font-weight:bold; border:none; border-bottom:2px solid darkred;" id="reset-btn">
+        🚨 에러나면 여기 터치 (초기화) 🚨
     </button>
 
     <div id="splash-screen">
@@ -321,7 +324,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ Config ▼▼▼
+        // ▼▼▼ Config (고객님 정보) ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
             authDomain: "family-resolution.firebaseapp.com",
@@ -344,8 +347,7 @@
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                // V3_2: 최종 완성본 (성경 기록 분리, 스트릭 로직 개선)
-                docRef = doc(db, "appData", "FamilyGoals_Final_V3_2"); 
+                docRef = doc(db, "appData", "FamilyGoals_Final_V3_3"); 
 
                 onSnapshot(docRef, (snapshot) => {
                     document.getElementById('splash-screen').style.opacity = '0';
@@ -363,7 +365,6 @@
                         
                         USER_SLOTS.forEach(slot => {
                             if(!appData[slot]) appData[slot] = { resolution: [], bible: {}, history: {}, bibleRounds: {}, bibleLog: [] };
-                            // [Migration] 기존 유저에게 bibleLog 배열 추가
                             if(!appData[slot].bibleLog) appData[slot].bibleLog = [];
                         });
                         checkLoginStatus();
@@ -456,10 +457,9 @@
                 document.getElementById('verse-ref').innerText = "Family Goals";
             }
             renderResolutionList(); renderMessages(); renderDashboard();
-            updateBibleStats(); // [New] 성경 통계 업데이트 호출
+            updateBibleStats(); 
         }
 
-        /* [수정] 대시보드 로직 */
         function renderDashboard() {
             const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
             document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
@@ -467,7 +467,6 @@
             const myBible = appData[myName].bible || {};
             const today = new Date().toISOString().split('T')[0];
 
-            // 1. 오늘 달성률
             const myGoals = appData[myName].resolution || [];
             let todayTotal = 0, todayDone = 0;
             const taskList = document.getElementById('today-task-list'); taskList.innerHTML = "";
@@ -488,9 +487,8 @@
             document.getElementById('dash-rate').innerText = rate + "%";
             setTimeout(() => { document.getElementById('donut-fill').style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
-            // 2. [수정] 스트릭: 오늘 50% 이상 or 이전 기록 확인 (간단하게 오늘 기준)
-            let streakCount = 0;
-            // (심화: 과거 며칠 연속인지 계산하려면 복잡하니, 일단 "오늘 50% 넘기면 불 들어옴"으로 처리)
+            let streak = myHistory[today] ? 1 : 0;
+            document.getElementById('dash-streak').innerText = streak + "일";
             const fireIcon = document.getElementById('streak-icon');
             const streakLabel = document.getElementById('streak-label');
             fireIcon.className = "fas fa-fire streak-icon"; 
@@ -498,15 +496,13 @@
             if(rate >= 100 && todayTotal > 0) {
                 fireIcon.className = "fas fa-crown streak-icon gold";
                 streakLabel.innerText = "완벽한 하루!";
-                streakCount = 1; // 오늘 성공
             } else if(rate >= 50) {
                 fireIcon.classList.add('active');
                 streakLabel.innerText = "연속 성공 중";
-                streakCount = 1;
             } else {
                 streakLabel.innerText = "50% 이상 도전!";
             }
-            // (실제 며칠 연속인지는 history 뒤져야 함 - 여기선 UI 효과에 집중)
+            
             let realStreak = 0;
             for(let i=0; i<365; i++) {
                 const d = new Date(); d.setDate(d.getDate() - i);
@@ -515,7 +511,6 @@
             }
             document.getElementById('dash-streak').innerText = realStreak + "일";
 
-            // 3. 성경
             let lastBook = "없음", percent = 0;
             const readKeys = Object.keys(myBible).sort();
             if(readKeys.length > 0) {
@@ -529,7 +524,6 @@
             document.getElementById('bible-book-percent').innerText = percent + "%";
             setTimeout(() => { document.getElementById('bible-progress-bar').style.width = percent + "%"; }, 100);
 
-            // 4. 주간 그래프
             const weekGraph = document.getElementById('weekly-graph'); weekGraph.innerHTML = "";
             const dayNames = ['일','월','화','수','목','금','토'];
             for(let i=6; i>=0; i--) {
@@ -544,7 +538,6 @@
 
         function getWeeklyRange(){const n=new Date(),d=n.getDay(),diff=d===6?0:d+1;const s=new Date(n);s.setDate(n.getDate()-diff);const e=new Date(s);e.setDate(s.getDate()+6);return{start:s.toISOString().split('T')[0],end:e.toISOString().split('T')[0]};}
         function renderRankings(p){const u=USER_SLOTS.filter(x=>appData.auth&&appData.auth[x]);const r=document.getElementById('rank-resolution');r.innerHTML="";u.map(x=>{const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=p.start&&d<=p.end).reduce((a,b)=>a+h[b],0);return{name:appData.auth[x].name,val:s}}).sort((a,b)=>b.val-a.val).forEach((x,i)=>r.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}점</span></div>`);const w=getWeeklyRange();document.querySelector('.ranking-box:nth-child(2) .ranking-title').innerText=`📖 성경 (이번주)`;const b=document.getElementById('rank-bible');b.innerHTML="";u.map(x=>{
-            // 성경 랭킹도 이제 bibleLog 기반으로 (정확성 향상)
             const log = appData[x].bibleLog || [];
             const c = log.filter(entry => entry.date >= w.start && entry.date <= w.end).length;
             return{name:appData.auth[x].name,val:c}
@@ -559,26 +552,28 @@
         function renderResolutionList(){const l=document.getElementById('list-resolution');l.innerHTML="";(appData[myName].resolution||[]).forEach((x,i)=>{const s=x.steps.map((st,si)=>`<span class="step-item ${x.done[si]?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`).join('');l.innerHTML+=`<li class="resolution-item"><div class="res-left"><div class="res-text" onclick="window.editItem(${i})">${x.text}</div><div class="steps">${s}</div></div><button class="del-icon-btn" onclick="window.deleteItem(${i})"><i class="fas fa-trash-alt"></i></button></li>`});}
         function renderMessages(){const l=document.getElementById('msg-list');l.innerHTML="";[...(appData.messages||[])].reverse().forEach(m=>l.innerHTML+=`<li><b>${m.sender}:</b> ${m.text}</li>`);}
         
-        window.showBibleBooks=(t)=>{bibleState.currentTestament=t;document.getElementById('bible-main-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');const g=document.getElementById('bible-books-grid');g.innerHTML="";BIBLE_DATA.books.filter(b=>b.testament===t).forEach(b=>{const d=document.createElement('div');d.className="bible-btn";let c=0;const y=new Date().getFullYear().toString();for(let i=1;i<=b.chapters;i++){const k=`${b.name}-${i}`,dt=appData[myName].bible&&appData[myName].bible[k];if(dt&&dt.startsWith(y))c++;}if(c>=b.chapters)d.classList.add('completed');
-        // n독 표시 (new)
+        window.showBibleBooks=(t)=>{bibleState.currentTestament=t;document.getElementById('bible-main-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');const g=document.getElementById('bible-books-grid');g.innerHTML="";
+        BIBLE_DATA.books.filter(b=>b.testament===t).forEach(b=>{const d=document.createElement('div');d.className="bible-btn";let c=0;const y=new Date().getFullYear().toString();for(let i=1;i<=b.chapters;i++){const k=`${b.name}-${i}`,dt=appData[myName].bible&&appData[myName].bible[k];if(dt&&dt.startsWith(y))c++;}if(c>=b.chapters)d.classList.add('completed');
+        // [수정] 책 이름 표시 복구 및 n독 표시
         const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b.name]) || 0;
-        if(round > 0) d.innerHTML += `<br><span style="font-size:0.7rem;color:green;">(${round+1}독 중)</span>`;
+        let html = `<div>${b.name}</div>`;
+        if(round > 0) html += `<div style="font-size:0.75rem; color:#166534; font-weight:bold; margin-top:2px;">🔄 ${round+1}독 도전</div>`;
+        else html += `<div style="font-size:0.7rem; color:#94a3b8;">${b.chapters}장</div>`;
+        d.innerHTML = html;
         d.onclick=()=>showChapters(b);g.appendChild(d);});};
+        
         function showChapters(b){bibleState.currentBook=b.name;document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-chapters-view').classList.remove('hidden-view');document.getElementById('bible-book-title').innerText=b.name;renderChaptersGrid();}
         function renderChaptersGrid(){const b=BIBLE_DATA.books.find(x=>x.name===bibleState.currentBook),g=document.getElementById('bible-chapters-grid'),y=new Date().getFullYear().toString();g.innerHTML="";let all=true;for(let i=1;i<=b.chapters;i++){const d=document.createElement('div');d.className="chapter-item";const k=`${b.name}-${i}`,dt=appData[myName].bible&&appData[myName].bible[k],r=dt&&dt.startsWith(y);if(r)d.classList.add('checked');else all=false;d.innerText=i;d.onclick=()=>window.toggleChapter(k,!r);g.appendChild(d);}const btn=document.getElementById('btn-finish-book');if(all){btn.classList.remove('disabled');btn.innerText="완독하기 🎉";}else{btn.classList.add('disabled');btn.innerText="모두 읽어야 완독 가능";}}
         
-        // [수정] 성경 체크 시 로그(기록장)에도 추가/삭제
         window.toggleChapter=(k,c)=>{
             if(!appData[myName].bible)appData[myName].bible={};
             if(!appData[myName].bibleLog)appData[myName].bibleLog=[];
             const today = new Date().toISOString().split('T')[0];
-            
             if(c) {
-                appData[myName].bible[k] = today; // 체크박스용
-                appData[myName].bibleLog.push({ date: today, key: k }); // 기록장용
+                appData[myName].bible[k] = today; 
+                appData[myName].bibleLog.push({ date: today, key: k });
             } else {
-                delete appData[myName].bible[k]; // 체크박스 해제
-                // 기록장에서 오늘 날짜의 해당 챕터 하나만 지움
+                delete appData[myName].bible[k];
                 const idx = appData[myName].bibleLog.findIndex(x => x.key === k && x.date === today);
                 if(idx > -1) appData[myName].bibleLog.splice(idx, 1);
             }
@@ -590,16 +585,15 @@
             const today=new Date().toISOString().split('T')[0];
             if(!appData[myName].bible)appData[myName].bible={};
             if(!appData[myName].bibleLog)appData[myName].bibleLog=[];
-            
             for(let i=1;i<=b.chapters;i++){
                 const k=`${b.name}-${i}`;
                 if(on) {
-                    if(!appData[myName].bible[k]) { // 안 켜진 것만 켬
+                    if(!appData[myName].bible[k]) { 
                         appData[myName].bible[k]=today;
                         appData[myName].bibleLog.push({ date: today, key: k });
                     }
                 } else {
-                    if(appData[myName].bible[k]) { // 켜진 것만 끔
+                    if(appData[myName].bible[k]) {
                         delete appData[myName].bible[k];
                         const idx = appData[myName].bibleLog.findIndex(x => x.key === k && x.date === today);
                         if(idx > -1) appData[myName].bibleLog.splice(idx, 1);
@@ -609,15 +603,12 @@
             saveData().then(()=>{renderChaptersGrid(); updateBibleStats();});
         };
 
-        // [수정] 완독 시 체크박스만 비우고, 기록장은 유지
         window.finishBookAndReset=()=>{
             if(document.getElementById('btn-finish-book').classList.contains('disabled'))return;
             if(confirm("완독 처리 하시겠습니까?\n체크박스는 초기화되지만, 읽은 기록은 유지됩니다.")){
                 const b=bibleState.currentBook;
                 if(!appData[myName].bibleRounds)appData[myName].bibleRounds={};
                 appData[myName].bibleRounds[b]=(appData[myName].bibleRounds[b]||0)+1;
-                
-                // 체크박스만 비우기 (controlAll(false)랑 다름. 기록은 유지해야 함)
                 const bookData = BIBLE_DATA.books.find(x=>x.name===b);
                 for(let i=1; i<=bookData.chapters; i++) {
                     delete appData[myName].bible[`${b}-${i}`];
@@ -632,20 +623,16 @@
         async function saveData(){try{await setDoc(docRef,{appData:appData},{merge:true});updateMainUI();}catch(e){console.error(e);}}
         function initNewData(){const y=new Date().getFullYear();appData={auth:{},messages:[],period:{start:`${y}-01-01`,end:`${y}-12-31`}};saveData();}
         
-        // [수정] 통계는 이제 bibleLog(기록장)에서 가져옴
         function updateBibleStats() {
             const today = new Date().toISOString().split('T')[0];
             const yearStr = new Date().getFullYear().toString();
             const log = appData[myName].bibleLog || [];
-            
             let todayCnt = 0;
             let yearCnt = 0;
-            
             log.forEach(entry => {
                 if(entry.date === today) todayCnt++;
                 if(entry.date.startsWith(yearStr)) yearCnt++;
             });
-            
             document.getElementById('bible-today-count').innerText = `+${todayCnt}장`;
             document.getElementById('bible-year-count').innerText = `${yearCnt}장`;
         }
