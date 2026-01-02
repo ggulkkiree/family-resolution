@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Goals V2.5</title>
+    <title>Family Goals V2.6</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -16,7 +16,7 @@
             --text-main: #1e293b;
             --text-light: #64748b;
             --accent: #f43f5e;
-            --success: #10b981;
+            --gold: #f59e0b; /* 우승자 컬러 */
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
             --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
             --radius-pill: 50px;
@@ -70,7 +70,7 @@
         /* 메인 콘텐츠 */
         #main-content {
             flex: 1; overflow-y: auto; padding: 20px;
-            padding-bottom: 200px; /* 스크롤 여유 공간 */
+            padding-bottom: 200px;
         }
 
         /* 컴포넌트 */
@@ -166,7 +166,17 @@
         
         .stat-card { background: white; border-radius: 20px; padding: 20px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
         
-        /* 항목별 성취도 그래프 */
+        /* 아코디언 스타일 (New!) */
+        .accordion-header {
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            padding: 10px 0;
+        }
+        .accordion-header .title { margin: 0; font-size: 1.1rem; font-weight: 800; }
+        .accordion-icon { transition: transform 0.3s; color: var(--text-light); }
+        .accordion-header.open .accordion-icon { transform: rotate(180deg); }
+        .accordion-content { overflow: hidden; transition: max-height 0.3s ease-out; }
+        
+        /* 항목별 성취도 */
         .goal-stat-item { margin-bottom: 12px; }
         .goal-label-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
         .goal-name { font-weight: 600; color: var(--text-main); }
@@ -174,12 +184,17 @@
         .progress-bg { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
         .progress-bar { height: 100%; background: var(--primary); border-radius: 4px; }
 
-        /* 히트맵 */
-        .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
-        .heat-day { aspect-ratio: 1; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #cbd5e1; transition: all 0.3s; }
-        .heat-day.level-1 { background: #c7d2fe; color: var(--primary); }
-        .heat-day.level-2 { background: #818cf8; color: white; }
-        .heat-day.level-3 { background: #4338ca; color: white; font-weight: bold; }
+        /* 히트맵 (시인성 개선) */
+        .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .heat-day { 
+            aspect-ratio: 1; border-radius: 6px; background: #e2e8f0; /* 진하게 변경 */
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 0.8rem; color: #94a3b8; transition: all 0.3s;
+            border: 1px solid white; /* 구분선 */
+        }
+        .heat-day.level-1 { background: #c7d2fe; color: var(--primary); border-color: #c7d2fe; }
+        .heat-day.level-2 { background: #818cf8; color: white; border-color: #818cf8; }
+        .heat-day.level-3 { background: #4338ca; color: white; font-weight: bold; border-color: #4338ca; }
         .heat-day.today { border: 2px solid var(--accent); }
 
         .ranking-container { display: flex; gap: 15px; margin-bottom: 20px; }
@@ -187,6 +202,12 @@
         .ranking-title { font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
         .rank-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
         .rank-row .score { font-weight: 700; color: var(--primary); }
+
+        /* 명예의 전당 */
+        .fame-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+        .fame-season { font-size: 0.8rem; color: var(--text-light); }
+        .fame-winner { font-weight: bold; color: var(--text-main); display: flex; align-items: center; gap: 5px; }
+        .crown-icon { color: var(--gold); }
 
         .bottom-nav {
             position: fixed; bottom: 0; width: 100%; height: 80px; background: rgba(255,255,255,0.95);
@@ -249,7 +270,7 @@
                 
                 <ul id="list-resolution"></ul>
                 
-                <div class="section-header">
+                <div class="section-header" style="margin-top:40px;">
                     <span class="title">Family Chat</span>
                 </div>
                 <div class="chat-container">
@@ -277,15 +298,15 @@
                     <div class="bible-card old" onclick="window.showBibleBooks('old')">
                         <div class="card-icon">📜</div>
                         <div class="card-text">
-                            <h3>구약 (Old)</h3>
-                            <p>39권</p>
+                            <h3>Old Testament</h3>
+                            <p>구약 39권</p>
                         </div>
                     </div>
                     <div class="bible-card new" onclick="window.showBibleBooks('new')">
                         <div class="card-icon">✝️</div>
                         <div class="card-text">
-                            <h3>신약 (New)</h3>
-                            <p>27권</p>
+                            <h3>New Testament</h3>
+                            <p>신약 27권</p>
                         </div>
                     </div>
                 </div>
@@ -321,13 +342,13 @@
 
             <div id="page-stats" class="page hidden">
                 
-                <div class="period-card" onclick="window.setPeriod()">
-                    <div class="period-label">🏆 결단서 시즌 (터치하여 설정)</div>
+                <div class="period-card" onclick="window.manageSeason()">
+                    <div class="period-label">🏆 현재 시즌 (클릭하여 마감)</div>
                     <div class="period-date" id="period-display">설정 필요</div>
                 </div>
 
                 <div class="section-header">
-                    <span class="title">가족 랭킹 (Top Priority)</span>
+                    <span class="title">가족 랭킹</span>
                 </div>
                 <div class="ranking-container">
                     <div class="ranking-box">
@@ -340,16 +361,46 @@
                     </div>
                 </div>
 
-                <div class="section-header">
-                    <span class="title">목표별 달성도</span>
-                </div>
-                <div class="stat-card" id="goal-breakdown-list"></div>
-
-                <div class="section-header">
-                    <span class="title">이번 달 활동 (Heatmap)</span>
+                <div class="section-header" style="margin-top:30px;">
+                    <span class="title">나의 현황</span>
                 </div>
                 <div class="stat-card">
-                    <div id="heatmap-grid" class="heatmap"></div>
+                    <div class="stat-row">
+                        <div class="stat-item">
+                            <span class="val" id="stat-rate">0%</span>
+                            <span class="label">목표 성공률</span>
+                        </div>
+                        <div class="stat-divider"></div>
+                        <div class="stat-item">
+                            <span class="val" id="stat-bible-total">0</span>
+                            <span class="label">올해 읽음</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-header" onclick="window.toggleAccordion('acc-goals', this)">
+                    <span class="title">목표별 달성도</span>
+                    <i class="fas fa-chevron-down accordion-icon"></i>
+                </div>
+                <div id="acc-goals" class="accordion-content hidden">
+                    <div class="stat-card" id="goal-breakdown-list"></div>
+                </div>
+
+                <div class="accordion-header" onclick="window.toggleAccordion('acc-heatmap', this)">
+                    <span class="title">이번 달 활동</span>
+                    <i class="fas fa-chevron-down accordion-icon"></i>
+                </div>
+                <div id="acc-heatmap" class="accordion-content hidden">
+                    <div class="stat-card">
+                        <div id="heatmap-grid" class="heatmap"></div>
+                    </div>
+                </div>
+
+                <div class="section-header" style="margin-top:30px;">
+                    <span class="title">👑 명예의 전당</span>
+                </div>
+                <div class="stat-card" id="hall-of-fame-list">
+                    <div style="text-align:center; color:#94a3b8; font-size:0.9rem;">아직 기록이 없습니다.</div>
                 </div>
 
             </div>
@@ -379,17 +430,17 @@
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-        // 여기에 Config 붙여넣기 (필수!)
+        // [완료] 고객님의 Config가 정확하게 입력되었습니다!
         // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         const firebaseConfig = {
             apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
-authDomain: "family-resolution.firebaseapp.com",
-projectId: "family-resolution",
-storageBucket: "family-resolution.firebasestorage.app",
-messagingSenderId: "711396068080",
-appId: "1:711396068080:web:861c41a8259f0b6dca9035",
-measurementId: "G-RH6E87B4H0"
-};
+            authDomain: "family-resolution.firebaseapp.com",
+            projectId: "family-resolution",
+            storageBucket: "family-resolution.firebasestorage.app",
+            messagingSenderId: "711396068080",
+            appId: "1:711396068080:web:861c41a8259f0b6dca9035",
+            measurementId: "G-RH6E87B4H0"
+        };
 
         const BIBLE_DATA = {
             "books": [
@@ -453,6 +504,7 @@ measurementId: "G-RH6E87B4H0"
                             const y = new Date().getFullYear();
                             appData.period = { start: `${y}-01-01`, end: `${y}-12-31` };
                         }
+                        if(!appData.pastSeasons) appData.pastSeasons = []; // 명예의 전당 저장소
                         
                         USER_SLOTS.forEach(slot => {
                             if(!appData[slot]) appData[slot] = { resolution: [], bible: {}, history: {}, bibleRounds: {} };
@@ -573,7 +625,18 @@ measurementId: "G-RH6E87B4H0"
             });
         }
 
-        // [핵심 로직] 통계 및 랭킹 계산
+        // [New] 아코디언 토글
+        window.toggleAccordion = function(id, header) {
+            const content = document.getElementById(id);
+            if(content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                header.classList.add('open');
+            } else {
+                content.classList.add('hidden');
+                header.classList.remove('open');
+            }
+        };
+
         function renderAdvancedStats() {
             const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
             document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
@@ -582,7 +645,7 @@ measurementId: "G-RH6E87B4H0"
             const myBible = appData[myName].bible || {};
             const today = new Date().toISOString().split('T')[0];
             
-            // 1. Heatmap & 항목별 그래프
+            // 1. Heatmap (시인성 개선)
             const heatGrid = document.getElementById('heatmap-grid');
             heatGrid.innerHTML = "";
             const now = new Date();
@@ -631,33 +694,31 @@ measurementId: "G-RH6E87B4H0"
                 });
             }
 
-            // 2. 랭킹 렌더링 (여기가 변경됨)
+            // 2. 랭킹
             renderRankings(period);
+            
+            // 3. 명예의 전당
+            renderHallOfFame();
         }
 
-        // [중요] 주간 날짜 범위 구하기 (토요일 ~ 금요일)
         function getWeeklyRange() {
             const now = new Date();
-            const day = now.getDay(); // 0(일)~6(토)
-            
-            // 기준점: 가장 최근 토요일 (오늘이 토요일이면 오늘)
-            const diff = day === 6 ? 0 : day + 1; 
-            
+            const day = now.getDay(); 
+            let diff = 0;
+            if(day === 6) diff = 0;
+            else diff = day + 1;
             const start = new Date(now);
             start.setDate(now.getDate() - diff);
             const startStr = start.toISOString().split('T')[0];
-            
             const end = new Date(start);
             end.setDate(start.getDate() + 6);
             const endStr = end.toISOString().split('T')[0];
-            
             return { start: startStr, end: endStr };
         }
 
         function renderRankings(period) {
             const activeUsers = USER_SLOTS.filter(u => appData.auth && appData.auth[u]);
             
-            // (1) 결단서 랭킹: 시즌 기간(appData.period) 기준
             const resRankEl = document.getElementById('rank-resolution');
             resRankEl.innerHTML = "";
             activeUsers.map(u => {
@@ -669,7 +730,6 @@ measurementId: "G-RH6E87B4H0"
                 resRankEl.innerHTML += `<div class="rank-row"><span>${i+1}. ${r.name}</span><span class="score">${r.val}점</span></div>`;
             });
 
-            // (2) 성경 랭킹: 이번 주(토~금) 기준
             const weekRange = getWeeklyRange();
             document.querySelector('.ranking-title:nth-child(1)').nextElementSibling.parentElement.nextElementSibling.querySelector('.ranking-title').innerText = `📖 성경 (${weekRange.start.slice(5)}~)`;
 
@@ -687,6 +747,70 @@ measurementId: "G-RH6E87B4H0"
             });
         }
 
+        function renderHallOfFame() {
+            const list = document.getElementById('hall-of-fame-list');
+            list.innerHTML = "";
+            const past = appData.pastSeasons || [];
+            
+            if(past.length === 0) {
+                list.innerHTML = "<div style='text-align:center; color:#94a3b8; font-size:0.9rem;'>아직 기록된 시즌이 없습니다.</div>";
+                return;
+            }
+            
+            past.reverse().forEach(p => {
+                const row = document.createElement('div');
+                row.className = 'fame-row';
+                row.innerHTML = `
+                    <div class="fame-season">${p.range}</div>
+                    <div class="fame-winner"><i class="fas fa-crown crown-icon"></i> ${p.winner} (${p.score}점)</div>
+                `;
+                list.appendChild(row);
+            });
+        }
+
+        // [New] 시즌 관리 (마감 및 우승자 저장)
+        window.manageSeason = function() {
+            const current = appData.period;
+            if(!confirm(`현재 시즌 (${current.start} ~ ${current.end})을 마감하시겠습니까?\n\n마감 시 현재 1등이 '명예의 전당'에 기록됩니다.`)) {
+                // 단순 수정 모드
+                const s = prompt("시작일 수정 (YYYY-MM-DD)", current.start);
+                if(!s) return;
+                const e = prompt("종료일 수정 (YYYY-MM-DD)", current.end);
+                if(!e) return;
+                appData.period = { start: s, end: e };
+                saveData().then(()=>alert("기간이 수정되었습니다."));
+                return;
+            }
+
+            // 우승자 계산
+            const activeUsers = USER_SLOTS.filter(u => appData.auth && appData.auth[u]);
+            const ranking = activeUsers.map(u => {
+                const h = appData[u].history || {};
+                let score = 0;
+                Object.keys(h).forEach(date => { if(date >= current.start && date <= current.end) score += h[date]; });
+                return { name: appData.auth[u].name, val: score };
+            }).sort((a,b) => b.val - a.val);
+
+            const winner = ranking[0];
+            if(winner.val === 0) {
+                alert("점수가 0점이라 기록할 수 없습니다.");
+                return;
+            }
+
+            if(!appData.pastSeasons) appData.pastSeasons = [];
+            appData.pastSeasons.push({
+                range: `${current.start}~${current.end}`,
+                winner: winner.name,
+                score: winner.val
+            });
+
+            const newStart = prompt("새 시즌 시작일:", new Date().toISOString().split('T')[0]);
+            const newEnd = prompt("새 시즌 종료일:", "2024-12-31");
+            
+            appData.period = { start: newStart, end: newEnd };
+            saveData().then(() => alert(`🎉 축하합니다! ${winner.name}님이 명예의 전당에 올랐습니다!`));
+        };
+
         function updateBibleStats() {
             const today = new Date().toISOString().split('T')[0];
             const yearStr = new Date().getFullYear().toString();
@@ -702,16 +826,6 @@ measurementId: "G-RH6E87B4H0"
             document.getElementById('bible-today-count').innerText = `+${todayCnt}장`;
             document.getElementById('bible-year-count').innerText = `${yearCnt}장`;
         }
-
-        window.setPeriod = function() {
-            const current = appData.period || {start:"", end:""};
-            const s = prompt("시작일 (YYYY-MM-DD)", current.start);
-            if(!s) return;
-            const e = prompt("종료일 (YYYY-MM-DD)", current.end);
-            if(!e) return;
-            appData.period = { start: s, end: e };
-            saveData().then(() => alert("기간 설정 완료!"));
-        };
 
         window.addItem = function() {
             const input = document.getElementById('input-resolution');
