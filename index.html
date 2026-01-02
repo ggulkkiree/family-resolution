@@ -28,6 +28,7 @@
 
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); } 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); } }
 
         /* 스플래시 & 로그인 */
         #splash-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
@@ -84,6 +85,7 @@
         .streak-icon { font-size: 2.5rem; color: #cbd5e1; transition: all 0.5s; margin-bottom: 5px; }
         .streak-icon.active { color: #f97316; }
         .streak-icon.fire { color: #ef4444; filter: drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)); }
+        .streak-icon.gold { color: var(--gold); animation: pulse-gold 2s infinite; }
         .streak-count { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
 
         .today-check-row { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
@@ -146,9 +148,14 @@
 </head>
 <body>
 
+    <button onclick="hardReset()" style="position:fixed; top:0; left:0; z-index:99999; width:100%; height:50px; background:red; color:white; font-weight:bold; border:none; border-bottom:2px solid darkred;">
+        🚨 에러나면 여기 터치 (초기화) 🚨
+    </button>
+
     <div id="splash-screen">
         <div class="logo-circle">⛪️</div>
         <h1>FAMILY<br>GOALS</h1>
+        <p id="error-msg" style="margin-top:20px; font-size:0.8rem; color:red;"></p>
     </div>
 
     <div id="login-modal" class="modal-overlay">
@@ -246,12 +253,12 @@
                             <svg class="donut-svg" viewBox="0 0 100 100"><circle class="donut-bg" cx="50" cy="50" r="40" /><circle class="donut-fill" id="donut-fill" cx="50" cy="50" r="40" /></svg>
                             <div class="donut-text" id="dash-rate">0%</div>
                         </div>
-                        <div class="dash-label">목표 달성률</div>
+                        <div class="dash-label">오늘 달성률</div>
                     </div>
                     <div class="dash-card">
                         <i class="fas fa-fire streak-icon" id="streak-icon"></i>
                         <div class="streak-count" id="dash-streak">0일</div>
-                        <div class="dash-label">연속 성공</div>
+                        <div class="dash-label" id="streak-label">연속 성공</div>
                     </div>
                 </div>
 
@@ -299,6 +306,18 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <script>
+    // 전역 치료 함수
+    window.hardReset = function() {
+        if(confirm("정말 모든 데이터를 초기화하시겠습니까?")) {
+            localStorage.clear();
+            alert("초기화 완료. 앱을 다시 시작합니다.");
+            location.reload();
+        }
+    }
+    </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -326,9 +345,8 @@
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                
                 // ★ 배포용 최종 DB (새로 시작)
-                docRef = doc(db, "appData", "FamilyGoals_Final_V3"); 
+                docRef = doc(db, "appData", "FamilyGoals_Final_V3_1"); 
 
                 onSnapshot(docRef, (snapshot) => {
                     document.getElementById('splash-screen').style.opacity = '0';
@@ -351,17 +369,18 @@
                     } else {
                         initNewData();
                     }
+                }, (error) => {
+                    console.error("DB Error:", error);
+                    document.getElementById('error-msg').innerText = "데이터 연결 실패! (권한 또는 네트워크 문제)";
                 });
             } catch (e) { alert("Config 오류"); }
         }
 
-        // [튼튼해진 추가 로직] - 배열이 없어도 죽지 않고 만들어냄
+        // ... (입력 로직 등 동일) ...
         window.addItem = function() {
             const input = document.getElementById('input-resolution');
             const val = input.value.trim();
             if(!val) return;
-            
-            // 안전장치: 내 데이터 공간이 없으면 만듦
             if(!appData[myName]) appData[myName] = { resolution: [], bible: {}, history: {} };
             if(!appData[myName].resolution) appData[myName].resolution = [];
             
@@ -376,18 +395,13 @@
             const input = document.getElementById('input-msg');
             const txt = input.value.trim();
             if(!txt) return;
-            
-            // 안전장치: 메시지함이 없으면 만듦
             if(!appData.messages) appData.messages = [];
-            
             appData.messages.push({ sender: appData.auth[myName].name, text: txt });
             if(appData.messages.length > 50) appData.messages.shift();
             input.value = "";
             saveData();
         };
 
-        // ... (나머지 로직 동일) ...
-        
         window.editVerse = function() {
             const currentT = appData.verse ? appData.verse.t : "";
             const currentR = appData.verse ? appData.verse.r : "";
@@ -446,30 +460,24 @@
             renderResolutionList(); renderMessages(); renderDashboard();
         }
 
-        /* 대시보드 및 기타 로직 (동일) */
+        /* [수정됨] 대시보드 로직 (오늘의 달성률 & 스트릭 개선) */
         function renderDashboard() {
             const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
             document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
             const myHistory = appData[myName].history || {};
             const myBible = appData[myName].bible || {};
             const today = new Date().toISOString().split('T')[0];
-            const validDates = Object.keys(myHistory).filter(d => d >= period.start && d <= period.end);
-            let totalDays = Math.max(1, Math.ceil((new Date() - new Date(period.start))/(1000*3600*24)));
-            let successDays = 0; validDates.forEach(d => { if(myHistory[d] > 0) successDays++; });
-            const rate = Math.min(100, Math.round((successDays / totalDays) * 100));
-            document.getElementById('dash-rate').innerText = rate + "%";
-            setTimeout(() => { document.getElementById('donut-fill').style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
-            let streak = myHistory[today] ? 1 : 0;
-            document.getElementById('dash-streak').innerText = streak + "일";
-            const fireIcon = document.getElementById('streak-icon');
-            fireIcon.className = "fas fa-fire streak-icon"; 
-            if(streak > 0) fireIcon.classList.add('active');
+
+            // 1. 오늘의 달성률 (Check Rate)
             const myGoals = appData[myName].resolution || [];
-            const taskList = document.getElementById('today-task-list'); taskList.innerHTML = "";
             let todayTotal = 0, todayDone = 0;
+            const taskList = document.getElementById('today-task-list'); taskList.innerHTML = "";
+            
             myGoals.forEach(g => {
-                const isDoneToday = g.done.every(Boolean);
-                todayTotal++; if(isDoneToday) todayDone++;
+                const isDoneToday = g.done.every(Boolean); // 모든 단계 완료시
+                todayTotal++; 
+                if(isDoneToday) todayDone++;
+                
                 const div = document.createElement('div');
                 div.className = "today-check-row";
                 div.innerHTML = `<span style="font-size:0.9rem;">${g.text}</span><span style="font-size:1.2rem; color:${isDoneToday?'var(--success)':'#ddd'}">${isDoneToday?'●':'○'}</span>`;
@@ -478,6 +486,36 @@
             const statusPill = document.getElementById('today-status');
             statusPill.innerText = `${todayDone}/${todayTotal} 완료`;
             if(todayDone === todayTotal && todayTotal > 0) statusPill.classList.add('done'); else statusPill.classList.remove('done');
+
+            // 도넛 차트: 오늘 달성률로 변경
+            let rate = 0;
+            if(todayTotal > 0) rate = Math.round((todayDone / todayTotal) * 100);
+            
+            document.getElementById('dash-rate').innerText = rate + "%";
+            setTimeout(() => { document.getElementById('donut-fill').style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
+
+            // 2. 스트릭 (연속 성공) - 오늘 달성률 50% 이상이면 인정
+            // (간단하게 '오늘 체크했는지'를 기준으로 하되, 100%면 왕관)
+            let streak = myHistory[today] > 0 ? 1 : 0; // 히스토리 기반 (기존 로직 유지)
+            
+            const fireIcon = document.getElementById('streak-icon');
+            const streakLabel = document.getElementById('streak-label');
+            fireIcon.className = "fas fa-fire streak-icon"; 
+            
+            if(rate === 100 && todayTotal > 0) {
+                // 100% 달성시 왕관!
+                fireIcon.className = "fas fa-crown streak-icon gold";
+                streakLabel.innerText = "완벽한 하루!";
+            } else if(streak > 0) {
+                // 하나라도 했으면 불꽃
+                fireIcon.classList.add('active');
+                streakLabel.innerText = "연속 성공";
+            } else {
+                streakLabel.innerText = "오늘도 화이팅!";
+            }
+            document.getElementById('dash-streak').innerText = streak + "일";
+
+            // 3. 성경 읽기 현황
             let lastBook = "없음", percent = 0;
             const readKeys = Object.keys(myBible).sort();
             if(readKeys.length > 0) {
@@ -490,6 +528,8 @@
             document.getElementById('current-book-name').innerText = lastBook;
             document.getElementById('bible-book-percent').innerText = percent + "%";
             setTimeout(() => { document.getElementById('bible-progress-bar').style.width = percent + "%"; }, 100);
+
+            // 4. 주간 활동 그래프
             const weekGraph = document.getElementById('weekly-graph'); weekGraph.innerHTML = "";
             const dayNames = ['일','월','화','수','목','금','토'];
             for(let i=6; i>=0; i--) {
@@ -502,6 +542,7 @@
             renderRankings(period); renderHallOfFame();
         }
 
+        // [랭킹] 10개 한 사람이 10점 가져가도록 합산 (수정 없음, 이미 그렇게 됨)
         function getWeeklyRange(){const n=new Date(),d=n.getDay(),diff=d===6?0:d+1;const s=new Date(n);s.setDate(n.getDate()-diff);const e=new Date(s);e.setDate(s.getDate()+6);return{start:s.toISOString().split('T')[0],end:e.toISOString().split('T')[0]};}
         function renderRankings(p){const u=USER_SLOTS.filter(x=>appData.auth&&appData.auth[x]);const r=document.getElementById('rank-resolution');r.innerHTML="";u.map(x=>{const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=p.start&&d<=p.end).reduce((a,b)=>a+h[b],0);return{name:appData.auth[x].name,val:s}}).sort((a,b)=>b.val-a.val).forEach((x,i)=>r.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}점</span></div>`);const w=getWeeklyRange();document.querySelector('.ranking-box:nth-child(2) .ranking-title').innerText=`📖 성경 (이번주)`;const b=document.getElementById('rank-bible');b.innerHTML="";u.map(x=>{const bb=appData[x].bible||{},c=Object.values(bb).filter(d=>d>=w.start&&d<=w.end).length;return{name:appData.auth[x].name,val:c}}).sort((a,b)=>b.val-a.val).forEach((x,i)=>b.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}장</span></div>`);}
         function renderHallOfFame(){const l=document.getElementById('hall-of-fame-list');l.innerHTML="";(appData.pastSeasons||[]).reverse().forEach(p=>l.innerHTML+=`<div class="fame-row"><div class="fame-season">${p.range}</div><div class="fame-winner">👑 ${p.winner} (${p.score})</div></div>`);if(l.innerHTML==="")l.innerHTML="<div style='text-align:center;color:#94a3b8;font-size:0.8rem;'>기록 없음</div>";}
