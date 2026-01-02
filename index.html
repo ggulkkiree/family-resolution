@@ -4,11 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>우리 가족 2025 목표</title>
-    
-    <meta property="og:title" content="2025 우리 가족 믿음의 경주 🏃‍♂️">
-    <meta property="og:description" content="말씀, 결단, 그리고 사랑으로 하나되는 공간">
-    <meta property="og:image" content="https://emojigraph.org/media/apple/church_26ea.png">
-
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -21,11 +16,11 @@
             --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
             --radius-pill: 50px;
         }
-
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; }
         .hidden { display: none !important; } .hidden-view { display: none !important; }
 
+        /* 애니메이션 */
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
@@ -153,6 +148,7 @@
     <div id="splash-screen">
         <div class="logo-circle">⛪️</div>
         <h1>FAMILY<br>GOALS</h1>
+        <p id="error-msg" style="margin-top:20px; font-size:0.8rem; color:red;"></p>
     </div>
 
     <div id="login-modal" class="modal-overlay">
@@ -302,20 +298,21 @@
         </nav>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <script>
-    function hardReset() {
+    // 전역 치료 함수
+    window.hardReset = function() {
         localStorage.clear();
         alert("깨끗하게 청소했습니다! 앱을 다시 켭니다.");
         location.reload();
     }
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ Config ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
             authDomain: "family-resolution.firebaseapp.com",
@@ -338,9 +335,11 @@
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                docRef = doc(db, "appData", "FamilyGoals_Official_V1"); // ★ 배포용 새 DB
+                // ★ 여기가 배포용 최종 DB 이름입니다!
+                docRef = doc(db, "appData", "FamilyGoals_Official_V1");
 
                 onSnapshot(docRef, (snapshot) => {
+                    // 데이터가 오면 스플래시 숨김
                     document.getElementById('splash-screen').style.opacity = '0';
                     setTimeout(()=> document.getElementById('splash-screen').style.display='none', 500);
 
@@ -359,13 +358,19 @@
                         });
                         checkLoginStatus();
                     } else {
+                        // 데이터가 없으면 새로 만듦
                         initNewData();
                     }
+                }, (error) => {
+                    // ★ 에러 발생 시 여기서 멈춥니다!
+                    console.error("DB Error:", error);
+                    document.getElementById('error-msg').innerText = "데이터 연결 실패! (권한 또는 네트워크 문제)";
                 });
             } catch (e) { alert("Config 오류"); }
         }
 
-        // [New] 오늘의 말씀 수정 기능
+        // ... (나머지 로직 동일) ...
+        
         window.editVerse = function() {
             const currentT = appData.verse ? appData.verse.t : "";
             const currentR = appData.verse ? appData.verse.r : "";
@@ -415,8 +420,6 @@
 
         function updateMainUI() {
             document.getElementById('user-name').innerText = appData.auth[myName].name;
-            
-            // [New] 말씀 업데이트 (DB우선 -> 없으면 기본값)
             if(appData.verse && appData.verse.t) {
                 document.getElementById('verse-text').innerText = appData.verse.t;
                 document.getElementById('verse-ref').innerText = appData.verse.r;
@@ -424,11 +427,9 @@
                 document.getElementById('verse-text').innerText = "환영합니다! ✏️버튼을 눌러 오늘의 말씀을 입력해주세요.";
                 document.getElementById('verse-ref').innerText = "Family Goals";
             }
-
             renderResolutionList(); renderMessages(); renderDashboard();
         }
 
-        /* 대시보드 및 기타 로직 (V3.0과 동일) */
         function renderDashboard() {
             const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
             document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
@@ -517,6 +518,21 @@
         window.goTab=(t,b)=>{document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));document.getElementById('page-'+t).classList.remove('hidden');if(t==='stats')renderDashboard();if(t==='bible')updateBibleStats();};
         async function saveData(){try{await setDoc(docRef,{appData:appData},{merge:true});updateMainUI();}catch(e){console.error(e);}}
         function initNewData(){const y=new Date().getFullYear();appData={auth:{},messages:[],period:{start:`${y}-01-01`,end:`${y}-12-31`}};saveData();}
+        
+        function updateBibleStats() {
+            const today = new Date().toISOString().split('T')[0];
+            const yearStr = new Date().getFullYear().toString();
+            const myBible = appData[myName].bible || {};
+            let todayCnt = 0;
+            let yearCnt = 0;
+            Object.values(myBible).forEach(date => {
+                if(date === today) todayCnt++;
+                if(date.startsWith(yearStr)) yearCnt++;
+            });
+            document.getElementById('bible-today-count').innerText = `+${todayCnt}장`;
+            document.getElementById('bible-year-count').innerText = `${yearCnt}장`;
+        }
+
         startApp();
     </script>
 </body>
