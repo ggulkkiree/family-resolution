@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>우리 가족 2025 목표</title>
+    
+    <meta property="og:title" content="2025 우리 가족 믿음의 경주 🏃‍♂️">
+    <meta property="og:description" content="말씀, 결단, 그리고 사랑으로 하나되는 공간">
+    <meta property="og:image" content="https://emojigraph.org/media/apple/church_26ea.png">
+
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -16,11 +21,11 @@
             --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
             --radius-pill: 50px;
         }
+
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; background-color: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; }
         .hidden { display: none !important; } .hidden-view { display: none !important; }
 
-        /* 애니메이션 */
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
@@ -141,14 +146,9 @@
 </head>
 <body>
 
-    <button onclick="hardReset()" style="position:fixed; top:0; left:0; z-index:99999; width:100%; height:50px; background:red; color:white; font-weight:bold; border:none; border-bottom:2px solid darkred;">
-        🚨 여기를 눌러서 에러 고치기 (터치) 🚨
-    </button>
-
     <div id="splash-screen">
         <div class="logo-circle">⛪️</div>
         <h1>FAMILY<br>GOALS</h1>
-        <p id="error-msg" style="margin-top:20px; font-size:0.8rem; color:red;"></p>
     </div>
 
     <div id="login-modal" class="modal-overlay">
@@ -299,20 +299,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
-    <script>
-    // 전역 치료 함수
-    window.hardReset = function() {
-        localStorage.clear();
-        alert("깨끗하게 청소했습니다! 앱을 다시 켭니다.");
-        location.reload();
-    }
-    </script>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // ▼▼▼ Config (고객님 정보) ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
             authDomain: "family-resolution.firebaseapp.com",
@@ -335,11 +326,11 @@
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                // ★ 여기가 배포용 최종 DB 이름입니다!
-                docRef = doc(db, "appData", "FamilyGoals_Official_V1");
+                
+                // ★ 배포용 최종 DB (새로 시작)
+                docRef = doc(db, "appData", "FamilyGoals_Final_V3"); 
 
                 onSnapshot(docRef, (snapshot) => {
-                    // 데이터가 오면 스플래시 숨김
                     document.getElementById('splash-screen').style.opacity = '0';
                     setTimeout(()=> document.getElementById('splash-screen').style.display='none', 500);
 
@@ -358,16 +349,42 @@
                         });
                         checkLoginStatus();
                     } else {
-                        // 데이터가 없으면 새로 만듦
                         initNewData();
                     }
-                }, (error) => {
-                    // ★ 에러 발생 시 여기서 멈춥니다!
-                    console.error("DB Error:", error);
-                    document.getElementById('error-msg').innerText = "데이터 연결 실패! (권한 또는 네트워크 문제)";
                 });
             } catch (e) { alert("Config 오류"); }
         }
+
+        // [튼튼해진 추가 로직] - 배열이 없어도 죽지 않고 만들어냄
+        window.addItem = function() {
+            const input = document.getElementById('input-resolution');
+            const val = input.value.trim();
+            if(!val) return;
+            
+            // 안전장치: 내 데이터 공간이 없으면 만듦
+            if(!appData[myName]) appData[myName] = { resolution: [], bible: {}, history: {} };
+            if(!appData[myName].resolution) appData[myName].resolution = [];
+            
+            appData[myName].resolution.push({ 
+                text: val, steps: ["완료"], done: [false], counts: [0] 
+            });
+            input.value = "";
+            saveData();
+        };
+
+        window.sendMsg = function() {
+            const input = document.getElementById('input-msg');
+            const txt = input.value.trim();
+            if(!txt) return;
+            
+            // 안전장치: 메시지함이 없으면 만듦
+            if(!appData.messages) appData.messages = [];
+            
+            appData.messages.push({ sender: appData.auth[myName].name, text: txt });
+            if(appData.messages.length > 50) appData.messages.shift();
+            input.value = "";
+            saveData();
+        };
 
         // ... (나머지 로직 동일) ...
         
@@ -378,7 +395,6 @@
             if(newT === null) return;
             const newR = prompt("말씀 출처:", currentR);
             if(newR === null) return;
-            
             if(!appData.verse) appData.verse = {};
             appData.verse.t = newT;
             appData.verse.r = newR;
@@ -424,38 +440,33 @@
                 document.getElementById('verse-text').innerText = appData.verse.t;
                 document.getElementById('verse-ref').innerText = appData.verse.r;
             } else {
-                document.getElementById('verse-text').innerText = "환영합니다! ✏️버튼을 눌러 오늘의 말씀을 입력해주세요.";
+                document.getElementById('verse-text').innerText = "환영합니다! ✏️버튼을 눌러 말씀을 입력해주세요.";
                 document.getElementById('verse-ref').innerText = "Family Goals";
             }
             renderResolutionList(); renderMessages(); renderDashboard();
         }
 
+        /* 대시보드 및 기타 로직 (동일) */
         function renderDashboard() {
             const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
             document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
-            
             const myHistory = appData[myName].history || {};
             const myBible = appData[myName].bible || {};
             const today = new Date().toISOString().split('T')[0];
-
             const validDates = Object.keys(myHistory).filter(d => d >= period.start && d <= period.end);
             let totalDays = Math.max(1, Math.ceil((new Date() - new Date(period.start))/(1000*3600*24)));
             let successDays = 0; validDates.forEach(d => { if(myHistory[d] > 0) successDays++; });
             const rate = Math.min(100, Math.round((successDays / totalDays) * 100));
-            
             document.getElementById('dash-rate').innerText = rate + "%";
             setTimeout(() => { document.getElementById('donut-fill').style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
-
             let streak = myHistory[today] ? 1 : 0;
             document.getElementById('dash-streak').innerText = streak + "일";
             const fireIcon = document.getElementById('streak-icon');
             fireIcon.className = "fas fa-fire streak-icon"; 
             if(streak > 0) fireIcon.classList.add('active');
-
             const myGoals = appData[myName].resolution || [];
             const taskList = document.getElementById('today-task-list'); taskList.innerHTML = "";
             let todayTotal = 0, todayDone = 0;
-            
             myGoals.forEach(g => {
                 const isDoneToday = g.done.every(Boolean);
                 todayTotal++; if(isDoneToday) todayDone++;
@@ -467,7 +478,6 @@
             const statusPill = document.getElementById('today-status');
             statusPill.innerText = `${todayDone}/${todayTotal} 완료`;
             if(todayDone === todayTotal && todayTotal > 0) statusPill.classList.add('done'); else statusPill.classList.remove('done');
-
             let lastBook = "없음", percent = 0;
             const readKeys = Object.keys(myBible).sort();
             if(readKeys.length > 0) {
@@ -480,7 +490,6 @@
             document.getElementById('current-book-name').innerText = lastBook;
             document.getElementById('bible-book-percent').innerText = percent + "%";
             setTimeout(() => { document.getElementById('bible-progress-bar').style.width = percent + "%"; }, 100);
-
             const weekGraph = document.getElementById('weekly-graph'); weekGraph.innerHTML = "";
             const dayNames = ['일','월','화','수','목','금','토'];
             for(let i=6; i>=0; i--) {
@@ -490,7 +499,6 @@
                 const h = Math.min(100, count * 20); 
                 weekGraph.innerHTML += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;"><div style="flex:1;display:flex;align-items:flex-end;width:100%;"><div class="week-bar ${h>0?'high':''}" style="width:60%;margin:0 auto;height:${h}%"></div></div><div class="week-day-label">${dayNames[d.getDay()]}</div></div>`;
             }
-
             renderRankings(period); renderHallOfFame();
         }
 
@@ -500,11 +508,10 @@
         window.toggleAccordion=function(id,h){const c=document.getElementById(id);c.classList.toggle('hidden');h.classList.toggle('open');};
         window.manageSeason=function(){const c=appData.period;if(!confirm(`시즌(${c.start}~${c.end}) 마감?`)){const s=prompt("시작일",c.start),e=prompt("종료일",c.end);if(s&&e){appData.period={start:s,end:e};saveData();}return;}const u=USER_SLOTS.filter(x=>appData.auth&&appData.auth[x]),r=u.map(x=>{const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=c.start&&d<=c.end).reduce((a,b)=>a+h[b],0);return{name:appData.auth[x].name,val:s}}).sort((a,b)=>b.val-a.val);if(!appData.pastSeasons)appData.pastSeasons=[];appData.pastSeasons.push({range:`${c.start}~${c.end}`,winner:r[0].name,score:r[0].val});const ns=prompt("새시작",new Date().toISOString().split('T')[0]),ne=prompt("새종료","2024-12-31");appData.period={start:ns,end:ne};saveData().then(()=>alert("시즌 마감됨!"));};
 
-        window.addItem=()=>{const i=document.getElementById('input-resolution');if(!i.value.trim())return;if(!appData[myName].resolution)appData[myName].resolution=[];appData[myName].resolution.push({text:i.value.trim(),steps:["완료"],done:[false],counts:[0]});i.value="";saveData();};
         window.toggleStep=(i,s)=>{const item=appData[myName].resolution[i];item.done[s]=!item.done[s];if(!item.counts)item.counts=Array(item.steps.length).fill(0);if(item.done[s]){item.counts[s]++;if(window.confetti)confetti({particleCount:50,spread:60,origin:{y:0.6}});}else{item.counts[s]=Math.max(0,item.counts[s]-1);}const t=new Date().toISOString().split('T')[0];if(!appData[myName].history)appData[myName].history={};let d=0;appData[myName].resolution.forEach(r=>r.done.forEach(x=>{if(x)d++}));appData[myName].history[t]=d;saveData();};
         window.deleteItem=(i)=>{if(confirm("삭제?")){appData[myName].resolution.splice(i,1);saveData();}};
         window.editItem=(i)=>{const item=appData[myName].resolution[i],n=prompt("수정:",item.text);if(n){item.text=n;saveData();}};
-        window.sendMsg=()=>{const i=document.getElementById('input-msg');if(!i.value.trim())return;if(!appData.messages)appData.messages=[];appData.messages.push({sender:appData.auth[myName].name,text:i.value.trim()});if(appData.messages.length>50)appData.messages.shift();i.value="";saveData();};
+        function renderResolutionList(){const l=document.getElementById('list-resolution');l.innerHTML="";(appData[myName].resolution||[]).forEach((x,i)=>{const s=x.steps.map((st,si)=>`<span class="step-item ${x.done[si]?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`).join('');l.innerHTML+=`<li class="resolution-item"><div class="res-left"><div class="res-text" onclick="window.editItem(${i})">${x.text}</div><div class="steps">${s}</div></div><button class="del-icon-btn" onclick="window.deleteItem(${i})"><i class="fas fa-trash-alt"></i></button></li>`});}
         function renderMessages(){const l=document.getElementById('msg-list');l.innerHTML="";[...(appData.messages||[])].reverse().forEach(m=>l.innerHTML+=`<li><b>${m.sender}:</b> ${m.text}</li>`);}
         
         window.showBibleBooks=(t)=>{bibleState.currentTestament=t;document.getElementById('bible-main-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');const g=document.getElementById('bible-books-grid');g.innerHTML="";BIBLE_DATA.books.filter(b=>b.testament===t).forEach(b=>{const d=document.createElement('div');d.className="bible-btn";let c=0;const y=new Date().getFullYear().toString();for(let i=1;i<=b.chapters;i++){const k=`${b.name}-${i}`,dt=appData[myName].bible&&appData[myName].bible[k];if(dt&&dt.startsWith(y))c++;}if(c>=b.chapters)d.classList.add('completed');d.innerText=b.name;d.onclick=()=>showChapters(b);g.appendChild(d);});};
