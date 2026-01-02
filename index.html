@@ -507,6 +507,15 @@
         async function saveData(){try{await setDoc(docRef,{appData:appData},{merge:true});updateMainUI();}catch(e){console.error(e);}}
         function initNewData(){const y=new Date().getFullYear();appData={auth:{},messages:[],period:{start:`${y}-01-01`,end:`${y}-12-31`}};saveData();}
         startApp();
+<button onclick="hardReset()" style="position:fixed; top:0; left:0; z-index:99999; width:100%; height:50px; background:red; color:white; font-weight:bold;">
+    🚨 여기를 눌러서 에러 고치기 (터치) 🚨
+</button>
+<script>
+function hardReset() {
+    localStorage.clear(); // 기억 삭제
+    alert("깨끗하게 청소했습니다! 앱을 다시 켭니다.");
+    location.reload(); // 새로고침
+}
     </script>
 </body>
 </html>
