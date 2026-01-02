@@ -3,435 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Goals V2.6</title>
+    <title>Family Goals V2.7</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-light: #818cf8;
-            --primary-soft: #e0e7ff;
-            --bg-color: #f8fafc;
-            --text-main: #1e293b;
-            --text-light: #64748b;
-            --accent: #f43f5e;
-            --gold: #f59e0b; /* 우승자 컬러 */
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
-            --radius-pill: 50px;
+            --primary: #4f46e5; --primary-soft: #e0e7ff; --bg-color: #f8fafc;
+            --text-main: #1e293b; --text-light: #64748b; --accent: #f43f5e;
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1); --radius-pill: 50px;
         }
-
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
-        body {
-            margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif;
-            background-color: var(--bg-color); color: var(--text-main);
-            height: 100vh; overflow: hidden;
-        }
+        body { margin: 0; padding: 0; font-family: 'Noto Sans KR', sans-serif; background: var(--bg-color); color: var(--text-main); height: 100vh; overflow: hidden; }
+        .hidden { display: none !important; } .hidden-view { display: none !important; }
 
-        .hidden { display: none !important; }
-        .hidden-view { display: none !important; }
-
-        /* 스플래시 & 로그인 */
-        #splash-screen {
-            position: fixed; inset: 0; background: white;
-            display: flex; justify-content: center; align-items: center; z-index: 9999;
-        }
+        /* 공통 UI */
+        #splash-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
         .logo-circle { font-size: 4rem; margin-bottom: 20px; animation: bounce 2s infinite; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        #splash-screen h1 { text-align: center; margin: 0; line-height: 1.2; color: var(--text-main); }
-
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
-            display: flex; justify-content: center; align-items: center; z-index: 5000;
-        }
-        .modal-content {
-            background: white; width: 85%; max-width: 360px; padding: 30px;
-            border-radius: 24px; text-align: center; box-shadow: var(--shadow-md);
-        }
+        
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 5000; }
+        .modal-content { background: white; width: 85%; max-width: 360px; padding: 25px; border-radius: 24px; box-shadow: var(--shadow-md); max-height: 80vh; overflow-y: auto; }
+        
+        /* 로그인 */
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .login-btn {
-            padding: 15px; border-radius: 16px; border: 1px solid #e2e8f0; background: white;
-            font-weight: 500; cursor: pointer; color: var(--text-main);
-        }
-        .login-btn.taken { background: var(--primary-soft); color: var(--primary); border: none; font-weight: 700; }
+        .login-btn { padding: 15px; border-radius: 16px; border: 1px solid #e2e8f0; background: white; font-weight: 500; cursor: pointer; }
+        .login-btn.taken { background: var(--primary-soft); color: var(--primary); font-weight: 700; border: none; }
 
+        /* 수정 모달 (New!) */
+        .edit-label { font-size: 0.85rem; color: var(--text-light); margin-bottom: 5px; display: block; font-weight: 600; }
+        .edit-input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 15px; font-size: 1rem; }
+        .step-edit-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .step-edit-input { flex: 1; padding: 10px; border: 1px solid #e2e8f0; border-radius: 10px; }
+        .btn-remove-step { color: var(--accent); background: #fee2e2; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-add-step { width: 100%; padding: 10px; background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 12px; color: var(--text-light); cursor: pointer; margin-bottom: 20px; }
+        .modal-actions { display: flex; gap: 10px; }
+        .btn-cancel { flex: 1; padding: 12px; background: #f1f5f9; border: none; border-radius: 12px; cursor: pointer; }
+        .btn-save { flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
+
+        /* 앱 레이아웃 */
         #app-container { display: flex; flex-direction: column; height: 100%; }
-        .glass-header {
-            padding: 15px 20px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
-            position: sticky; top: 0; z-index: 10; border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
+        .glass-header { padding: 15px 20px; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid rgba(0,0,0,0.05); }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .round-btn {
-            width: 36px; height: 36px; border-radius: 50%; background: white; border: 1px solid #e2e8f0;
-            margin-left: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-        }
+        .round-btn { width: 36px; height: 36px; border-radius: 50%; background: white; border: 1px solid #e2e8f0; margin-left: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        #main-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 200px; }
 
-        /* 메인 콘텐츠 */
-        #main-content {
-            flex: 1; overflow-y: auto; padding: 20px;
-            padding-bottom: 200px;
-        }
-
-        /* 컴포넌트 */
-        .verse-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 20px; border-radius: 20px; margin-bottom: 25px;
-            box-shadow: 0 10px 15px -3px rgba(118, 75, 162, 0.3);
-        }
-        .verse-badge { font-size: 0.75rem; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; display: inline-block; font-weight: 700; margin-bottom: 10px; }
-        #verse-text { font-size: 1rem; line-height: 1.6; margin: 0; font-weight: 500; }
-        #verse-ref { text-align: right; font-size: 0.8rem; margin-top: 8px; opacity: 0.8; }
-
-        .input-pill {
-            background: white; border-radius: var(--radius-pill); padding: 5px 5px 5px 20px;
-            display: flex; align-items: center; box-shadow: var(--shadow-sm); margin-bottom: 20px; border: 1px solid #e2e8f0;
-        }
+        /* 카드 & 리스트 */
+        .verse-card { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(118, 75, 162, 0.3); }
+        .input-pill { background: white; border-radius: var(--radius-pill); padding: 5px 5px 5px 20px; display: flex; align-items: center; box-shadow: var(--shadow-sm); margin-bottom: 20px; border: 1px solid #e2e8f0; }
         .input-pill input { flex: 1; border: none; font-size: 0.95rem; background: transparent; }
-        .add-circle-btn {
-            width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: white;
-            border: none; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
-        }
-        .input-pill.small { padding: 4px 4px 4px 15px; margin-top: 10px; }
-        .send-btn { background: var(--text-main); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
-
-        .resolution-item {
-            background: white; border-radius: 16px; padding: 15px; margin-bottom: 12px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: var(--shadow-sm);
-        }
+        .add-circle-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: white; border: none; font-size: 1.4rem; cursor: pointer; }
+        
+        .resolution-item { background: white; border-radius: 16px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .res-left { flex: 1; }
         .res-text { font-weight: 600; font-size: 1rem; color: var(--text-main); margin-bottom: 8px; }
         .steps { display: flex; gap: 6px; flex-wrap: wrap; }
-        .step-item {
-            background: #f1f5f9; padding: 5px 10px; border-radius: 8px; font-size: 0.75rem; color: var(--text-light); cursor: pointer;
-        }
+        .step-item { background: #f1f5f9; padding: 5px 10px; border-radius: 8px; font-size: 0.75rem; color: var(--text-light); cursor: pointer; }
         .step-item.done { background: var(--primary); color: white; }
-        .del-icon-btn { background: none; border: none; color: #cbd5e1; font-size: 1rem; padding: 10px; cursor: pointer; }
+        .edit-icon-btn { background: none; border: none; color: #cbd5e1; font-size: 1rem; padding: 10px; cursor: pointer; } /* 수정 아이콘 */
 
-        .chat-container { background: white; padding: 15px; border-radius: 20px; box-shadow: var(--shadow-sm); }
-        #msg-list li { font-size: 0.85rem; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
-        #msg-list li b { color: var(--primary); margin-right: 5px; }
-
-        /* 성경 */
-        .bible-stat-row { display: flex; gap: 10px; margin-bottom: 20px; }
-        .bible-stat-box {
-            flex: 1; background: white; padding: 15px; border-radius: 16px; text-align: center;
-            box-shadow: var(--shadow-sm); border: 1px solid #e2e8f0;
-        }
-        .bs-label { font-size: 0.75rem; color: var(--text-light); display: block; margin-bottom: 5px; }
-        .bs-val { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
-        .bs-val.today { color: var(--accent); }
-
-        .bible-card {
-            display: flex; align-items: center; padding: 20px; border-radius: 20px; margin-bottom: 12px; cursor: pointer;
-            background: white; box-shadow: var(--shadow-sm); border: 1px solid #e2e8f0;
-        }
-        .bible-card.old .card-icon { background: #fff7ed; }
-        .bible-card.new .card-icon { background: #f5f3ff; }
-        .card-icon { font-size: 2rem; margin-right: 15px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-        .card-text h3 { margin: 0; font-size: 1.1rem; }
-        .card-text p { margin: 2px 0 0 0; color: var(--text-light); font-size: 0.85rem; }
-
-        .grid-books { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .bible-btn { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 0; text-align: center; font-size: 0.9rem; cursor: pointer; }
-        .bible-btn.completed { background: #ecfccb; border-color: #84cc16; color: #3f6212; font-weight: 700; }
-
-        .chapter-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
-        .chapter-tools { display: flex; gap: 10px; }
-        .text-btn { background: #f1f5f9; border: none; padding: 5px 12px; border-radius: 15px; font-size: 0.8rem; cursor: pointer; color: var(--text-light); }
-
-        .finish-pill-btn {
-            width: 100%; background: var(--text-main); color: white; border: none; padding: 12px; border-radius: 16px;
-            font-size: 1rem; margin-bottom: 20px; cursor: pointer; transition: all 0.3s;
-        }
-        .finish-pill-btn.disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
-
+        /* 성경 & 통계 */
+        .bible-card { display: flex; align-items: center; padding: 20px; border-radius: 20px; margin-bottom: 12px; cursor: pointer; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .grid-chapters { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
         .chapter-item { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 0; text-align: center; cursor: pointer; font-size: 0.9rem; }
         .chapter-item.checked { background: var(--primary); color: white; border-color: var(--primary); font-weight: bold; }
-
-        /* 통계 & 기간 */
-        .period-card {
-            background: linear-gradient(135deg, #4f46e5, #ec4899);
-            color: white; padding: 20px; border-radius: 20px; margin-bottom: 25px;
-            text-align: center; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.4);
-        }
-        .period-label { font-size: 0.8rem; opacity: 0.9; margin-bottom: 5px; }
-        .period-date { font-size: 1.1rem; font-weight: 700; }
-
-        .section-header { margin-bottom: 15px; margin-top: 30px; }
-        .section-header:first-child { margin-top: 0; }
-        .section-header .title { font-size: 1.1rem; font-weight: 800; color: var(--text-main); }
         
-        .stat-card { background: white; border-radius: 20px; padding: 20px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+        .stat-card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .heat-day { aspect-ratio: 1; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #cbd5e1; }
+        .heat-day.active { background: var(--primary); color: white; }
         
-        /* 아코디언 스타일 (New!) */
-        .accordion-header {
-            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
-            padding: 10px 0;
-        }
-        .accordion-header .title { margin: 0; font-size: 1.1rem; font-weight: 800; }
-        .accordion-icon { transition: transform 0.3s; color: var(--text-light); }
-        .accordion-header.open .accordion-icon { transform: rotate(180deg); }
-        .accordion-content { overflow: hidden; transition: max-height 0.3s ease-out; }
-        
-        /* 항목별 성취도 */
-        .goal-stat-item { margin-bottom: 12px; }
-        .goal-label-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
-        .goal-name { font-weight: 600; color: var(--text-main); }
-        .goal-percent { color: var(--primary); font-weight: 700; }
-        .progress-bg { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
-        .progress-bar { height: 100%; background: var(--primary); border-radius: 4px; }
-
-        /* 히트맵 (시인성 개선) */
-        .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-        .heat-day { 
-            aspect-ratio: 1; border-radius: 6px; background: #e2e8f0; /* 진하게 변경 */
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 0.8rem; color: #94a3b8; transition: all 0.3s;
-            border: 1px solid white; /* 구분선 */
-        }
-        .heat-day.level-1 { background: #c7d2fe; color: var(--primary); border-color: #c7d2fe; }
-        .heat-day.level-2 { background: #818cf8; color: white; border-color: #818cf8; }
-        .heat-day.level-3 { background: #4338ca; color: white; font-weight: bold; border-color: #4338ca; }
-        .heat-day.today { border: 2px solid var(--accent); }
-
-        .ranking-container { display: flex; gap: 15px; margin-bottom: 20px; }
-        .ranking-box { flex: 1; background: white; border-radius: 16px; padding: 15px; box-shadow: var(--shadow-sm); }
-        .ranking-title { font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
-        .rank-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; }
-        .rank-row .score { font-weight: 700; color: var(--primary); }
-
-        /* 명예의 전당 */
-        .fame-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
-        .fame-season { font-size: 0.8rem; color: var(--text-light); }
-        .fame-winner { font-weight: bold; color: var(--text-main); display: flex; align-items: center; gap: 5px; }
-        .crown-icon { color: var(--gold); }
-
-        .bottom-nav {
-            position: fixed; bottom: 0; width: 100%; height: 80px; background: rgba(255,255,255,0.95);
-            display: flex; justify-content: space-around; padding-bottom: 20px; border-top: 1px solid rgba(0,0,0,0.05); z-index: 100;
-        }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 80px; background: rgba(255,255,255,0.95); display: flex; justify-content: space-around; padding-bottom: 20px; border-top: 1px solid rgba(0,0,0,0.05); z-index: 100; }
         .nav-item { background: none; border: none; color: #94a3b8; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
         .nav-item.active { color: var(--primary); }
-        .nav-item .icon { font-size: 1.4rem; margin-bottom: 4px; }
-        .nav-item .label { font-size: 0.7rem; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <div id="splash-screen">
-        <div class="splash-content">
-            <div class="logo-circle">⛪️</div>
-            <h1>FAMILY<br>GOALS</h1>
-        </div>
+        <div class="logo-circle">⛪️</div>
+        <h1>FAMILY GOALS</h1>
     </div>
 
     <div id="login-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2>Welcome</h2>
-                <p>가족 구성원을 선택해주세요</p>
-            </div>
+            <h2 style="text-align:center;">Welcome</h2>
             <div id="login-grid" class="grid-container"></div>
         </div>
     </div>
 
+    <div id="edit-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">목표 수정하기 ✏️</h3>
+            
+            <label class="edit-label">목표 이름</label>
+            <input type="text" id="edit-title" class="edit-input">
+            
+            <label class="edit-label">세부 단계 (Steps)</label>
+            <div id="edit-steps-container"></div>
+            <button class="btn-add-step" onclick="window.addStepInput()">+ 단계 추가</button>
+            
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="window.closeEditModal()">취소</button>
+                <button class="btn-save" onclick="window.saveEditModal()">저장</button>
+            </div>
+            <button onclick="window.deleteItemFromModal()" style="width:100%; margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer;">삭제하기</button>
+        </div>
+    </div>
+
     <div id="app-container" class="hidden">
-        
         <header class="glass-header">
             <div class="header-content">
-                <span class="greeting">Hi, <b id="user-name">User</b></span>
+                <span style="font-weight:bold; font-size:1.2rem;">Hi, <b id="user-name">User</b></span>
                 <div class="header-actions">
-                    <button class="icon-btn round-btn" onclick="window.saveAlarmTime()">🔔</button>
-                    <button class="icon-btn round-btn" onclick="window.logoutAction()">🚪</button>
+                    <button class="round-btn" onclick="window.saveAlarmTime()">🔔</button>
+                    <button class="round-btn" onclick="window.logoutAction()">🚪</button>
                 </div>
             </div>
         </header>
 
         <main id="main-content">
-            
             <div class="verse-card">
-                <div class="verse-badge">오늘의 말씀</div>
-                <p id="verse-text">Loading...</p>
-                <p id="verse-ref"></p>
+                <div style="font-size:0.8rem; opacity:0.8; margin-bottom:5px;">Today's Verse</div>
+                <p id="verse-text" style="margin:0; font-weight:500;">Loading...</p>
+                <p id="verse-ref" style="text-align:right; font-size:0.8rem; margin-top:5px;"></p>
             </div>
 
             <div id="page-resolution" class="page active">
-                <div class="section-header">
-                    <span class="title">My Goals</span>
-                </div>
-                
+                <h3 style="margin-bottom:10px;">My Goals</h3>
                 <div class="input-pill">
-                    <input type="text" id="input-resolution" placeholder="목표 입력 (예: 매일 운동)">
+                    <input type="text" id="input-resolution" placeholder="새 목표 (예: 매일 운동)">
                     <button onclick="window.addItem()" class="add-circle-btn">+</button>
                 </div>
+                <ul id="list-resolution" style="list-style:none; padding:0;"></ul>
                 
-                <ul id="list-resolution"></ul>
-                
-                <div class="section-header" style="margin-top:40px;">
-                    <span class="title">Family Chat</span>
-                </div>
+                <h3 style="margin-top:40px; margin-bottom:10px;">Family Chat</h3>
                 <div class="chat-container">
-                    <ul id="msg-list"></ul>
-                    <div class="input-pill small">
-                        <input type="text" id="input-msg" placeholder="메시지 입력...">
-                        <button onclick="window.sendMsg()" class="send-btn">전송</button>
+                    <ul id="msg-list" style="list-style:none; padding:0; margin:0;"></ul>
+                    <div class="input-pill small" style="margin-top:10px; padding-left:15px;">
+                        <input type="text" id="input-msg" placeholder="메시지...">
+                        <button onclick="window.sendMsg()" style="background:#333; color:white; border:none; padding:5px 15px; border-radius:20px;">전송</button>
                     </div>
                 </div>
             </div>
 
             <div id="page-bible" class="page hidden">
-                <div class="bible-stat-row">
-                    <div class="bible-stat-box">
-                        <span class="bs-label">오늘 읽음</span>
-                        <span class="bs-val today" id="bible-today-count">0장</span>
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <div class="stat-card" style="flex:1; text-align:center; padding:15px;">
+                        <span style="font-size:0.8rem; color:#888;">오늘 읽음</span><br>
+                        <strong style="font-size:1.3rem; color:var(--primary);" id="bible-today-count">0</strong>
                     </div>
-                    <div class="bible-stat-box">
-                        <span class="bs-label">올해 누적</span>
-                        <span class="bs-val" id="bible-year-count">0장</span>
+                    <div class="stat-card" style="flex:1; text-align:center; padding:15px;">
+                        <span style="font-size:0.8rem; color:#888;">올해 누적</span><br>
+                        <strong style="font-size:1.3rem;" id="bible-year-count">0</strong>
                     </div>
                 </div>
 
                 <div id="bible-main-view">
                     <div class="bible-card old" onclick="window.showBibleBooks('old')">
-                        <div class="card-icon">📜</div>
-                        <div class="card-text">
-                            <h3>Old Testament</h3>
-                            <p>구약 39권</p>
-                        </div>
+                        <div class="card-icon" style="font-size:2rem; margin-right:15px;">📜</div>
+                        <div><h3>구약 (Old)</h3><p style="margin:0; color:#888;">39권</p></div>
                     </div>
                     <div class="bible-card new" onclick="window.showBibleBooks('new')">
-                        <div class="card-icon">✝️</div>
-                        <div class="card-text">
-                            <h3>New Testament</h3>
-                            <p>신약 27권</p>
-                        </div>
+                        <div class="card-icon" style="font-size:2rem; margin-right:15px;">✝️</div>
+                        <div><h3>신약 (New)</h3><p style="margin:0; color:#888;">27권</p></div>
                     </div>
                 </div>
 
                 <div id="bible-books-view" class="hidden-view">
-                    <button class="nav-back-btn" onclick="window.showBibleMain()">
-                        <i class="fas fa-chevron-left"></i> 뒤로
-                    </button>
-                    <h3 id="bible-testament-title" class="section-header title" style="margin-bottom:15px;"></h3>
-                    <div id="bible-books-grid" class="grid-books"></div>
+                    <button onclick="window.showBibleMain()" style="background:none; border:none; margin-bottom:10px;">← 뒤로</button>
+                    <h3 id="bible-testament-title"></h3>
+                    <div id="bible-books-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;"></div>
                 </div>
 
                 <div id="bible-chapters-view" class="hidden-view">
-                    <button class="nav-back-btn" onclick="window.backToBooks()">
-                        <i class="fas fa-chevron-left"></i> 목록
-                    </button>
-                    
-                    <div class="chapter-header-row">
-                        <h3 id="bible-book-title" class="section-header title" style="margin:0;"></h3>
-                        <div class="chapter-tools">
-                            <button class="text-btn" onclick="window.controlAll(true)">전체선택</button>
-                            <button class="text-btn" onclick="window.controlAll(false)">해제</button>
+                    <button onclick="window.backToBooks()" style="background:none; border:none; margin-bottom:10px;">← 목록</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <h3 id="bible-book-title" style="margin:0;"></h3>
+                        <div>
+                            <button onclick="window.controlAll(true)" style="background:#eee; border:none; padding:5px 10px; border-radius:10px;">전체</button>
+                            <button onclick="window.controlAll(false)" style="background:#eee; border:none; padding:5px 10px; border-radius:10px;">해제</button>
                         </div>
                     </div>
-                    
-                    <button id="btn-finish-book" onclick="window.finishBookAndReset()" class="finish-pill-btn disabled">
-                        이 책 완독하기 🎉
-                    </button>
-
+                    <button id="btn-finish-book" onclick="window.finishBookAndReset()" style="width:100%; padding:12px; background:#333; color:white; border:none; border-radius:12px; margin-bottom:20px;">이 책 완독하기 🎉</button>
                     <div id="bible-chapters-grid" class="grid-chapters"></div>
                 </div>
             </div>
 
             <div id="page-stats" class="page hidden">
-                
-                <div class="period-card" onclick="window.manageSeason()">
-                    <div class="period-label">🏆 현재 시즌 (클릭하여 마감)</div>
-                    <div class="period-date" id="period-display">설정 필요</div>
+                <div class="period-card" onclick="window.manageSeason()" style="background:linear-gradient(135deg, #4f46e5, #ec4899); color:white; padding:20px; border-radius:20px; text-align:center; margin-bottom:20px;">
+                    <div style="font-size:0.8rem; opacity:0.8;">🏆 현재 시즌 (클릭하여 마감)</div>
+                    <div id="period-display" style="font-size:1.1rem; font-weight:bold;">설정 필요</div>
                 </div>
 
-                <div class="section-header">
-                    <span class="title">가족 랭킹</span>
-                </div>
-                <div class="ranking-container">
-                    <div class="ranking-box">
-                        <div class="ranking-title">📝 결단서 (시즌)</div>
+                <h3>가족 랭킹</h3>
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <div class="stat-card" style="flex:1;">
+                        <div style="border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">📝 결단서</div>
                         <div id="rank-resolution"></div>
                     </div>
-                    <div class="ranking-box">
-                        <div class="ranking-title">📖 성경 (이번주)</div>
+                    <div class="stat-card" style="flex:1;">
+                        <div style="border-bottom:1px solid #eee; padding-bottom:5px; margin-bottom:10px; font-weight:bold;">📖 성경</div>
                         <div id="rank-bible"></div>
                     </div>
                 </div>
 
-                <div class="section-header" style="margin-top:30px;">
-                    <span class="title">나의 현황</span>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-row">
-                        <div class="stat-item">
-                            <span class="val" id="stat-rate">0%</span>
-                            <span class="label">목표 성공률</span>
-                        </div>
-                        <div class="stat-divider"></div>
-                        <div class="stat-item">
-                            <span class="val" id="stat-bible-total">0</span>
-                            <span class="label">올해 읽음</span>
-                        </div>
-                    </div>
+                <h3>나의 현황</h3>
+                <div class="stat-card" style="display:flex; justify-content:space-around; margin-bottom:20px;">
+                    <div style="text-align:center;"><strong style="font-size:1.4rem; color:var(--primary);" id="stat-rate">0%</strong><br><span style="font-size:0.8rem; color:#888;">성공률</span></div>
+                    <div style="width:1px; background:#eee;"></div>
+                    <div style="text-align:center;"><strong style="font-size:1.4rem; color:var(--primary);" id="stat-bible-total">0</strong><br><span style="font-size:0.8rem; color:#888;">올해 읽음</span></div>
                 </div>
 
-                <div class="accordion-header" onclick="window.toggleAccordion('acc-goals', this)">
-                    <span class="title">목표별 달성도</span>
-                    <i class="fas fa-chevron-down accordion-icon"></i>
+                <div onclick="window.toggleAccordion('acc-goals')" style="display:flex; justify-content:space-between; padding:10px 0; font-weight:bold; cursor:pointer;">
+                    목표별 달성도 <span>▼</span>
                 </div>
-                <div id="acc-goals" class="accordion-content hidden">
-                    <div class="stat-card" id="goal-breakdown-list"></div>
-                </div>
+                <div id="acc-goals" class="hidden"><div class="stat-card" id="goal-breakdown-list"></div></div>
 
-                <div class="accordion-header" onclick="window.toggleAccordion('acc-heatmap', this)">
-                    <span class="title">이번 달 활동</span>
-                    <i class="fas fa-chevron-down accordion-icon"></i>
+                <div onclick="window.toggleAccordion('acc-heatmap')" style="display:flex; justify-content:space-between; padding:10px 0; font-weight:bold; cursor:pointer;">
+                    이번 달 활동 <span>▼</span>
                 </div>
-                <div id="acc-heatmap" class="accordion-content hidden">
-                    <div class="stat-card">
-                        <div id="heatmap-grid" class="heatmap"></div>
-                    </div>
-                </div>
+                <div id="acc-heatmap" class="hidden"><div class="stat-card"><div id="heatmap-grid" class="heatmap"></div></div></div>
 
-                <div class="section-header" style="margin-top:30px;">
-                    <span class="title">👑 명예의 전당</span>
-                </div>
-                <div class="stat-card" id="hall-of-fame-list">
-                    <div style="text-align:center; color:#94a3b8; font-size:0.9rem;">아직 기록이 없습니다.</div>
-                </div>
-
+                <h3 style="margin-top:30px;">👑 명예의 전당</h3>
+                <div class="stat-card" id="hall-of-fame-list"></div>
             </div>
-
         </main>
 
-        <nav class="bottom-nav glass-nav">
-            <button class="nav-item active" onclick="window.goTab('resolution', this)">
-                <i class="fas fa-list-check icon"></i>
-                <span class="label">목표</span>
+        <nav class="bottom-nav" style="position:fixed; bottom:0; width:100%; height:80px; background:rgba(255,255,255,0.95); display:flex; justify-content:space-around; padding-bottom:20px; border-top:1px solid #eee; z-index:100;">
+            <button class="nav-item active" onclick="window.goTab('resolution', this)" style="background:none; border:none; width:100%;">
+                <i class="fas fa-list-check" style="font-size:1.4rem; margin-bottom:4px;"></i><br><span style="font-size:0.7rem;">목표</span>
             </button>
-            <button class="nav-item" onclick="window.goTab('bible', this)">
-                <i class="fas fa-book-open icon"></i>
-                <span class="label">성경</span>
+            <button class="nav-item" onclick="window.goTab('bible', this)" style="background:none; border:none; width:100%;">
+                <i class="fas fa-book-open" style="font-size:1.4rem; margin-bottom:4px;"></i><br><span style="font-size:0.7rem;">성경</span>
             </button>
-            <button class="nav-item" onclick="window.goTab('stats', this)">
-                <i class="fas fa-chart-simple icon"></i>
-                <span class="label">순위</span>
+            <button class="nav-item" onclick="window.goTab('stats', this)" style="background:none; border:none; width:100%;">
+                <i class="fas fa-chart-simple" style="font-size:1.4rem; margin-bottom:4px;"></i><br><span style="font-size:0.7rem;">순위</span>
             </button>
         </nav>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-        // [완료] 고객님의 Config가 정확하게 입력되었습니다!
-        // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        // ▼▼▼ Config 입력란 ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
             authDomain: "family-resolution.firebaseapp.com",
@@ -442,49 +260,14 @@
             measurementId: "G-RH6E87B4H0"
         };
 
-        const BIBLE_DATA = {
-            "books": [
-                { "name": "창세기", "chapters": 50, "testament": "old" }, { "name": "출애굽기", "chapters": 40, "testament": "old" },
-                { "name": "레위기", "chapters": 27, "testament": "old" }, { "name": "민수기", "chapters": 36, "testament": "old" },
-                { "name": "신명기", "chapters": 34, "testament": "old" }, { "name": "여호수아", "chapters": 24, "testament": "old" },
-                { "name": "사사기", "chapters": 21, "testament": "old" }, { "name": "룻기", "chapters": 4, "testament": "old" },
-                { "name": "사무엘상", "chapters": 31, "testament": "old" }, { "name": "사무엘하", "chapters": 24, "testament": "old" },
-                { "name": "열왕기상", "chapters": 22, "testament": "old" }, { "name": "열왕기하", "chapters": 25, "testament": "old" },
-                { "name": "역대상", "chapters": 29, "testament": "old" }, { "name": "역대하", "chapters": 36, "testament": "old" },
-                { "name": "에스라", "chapters": 10, "testament": "old" }, { "name": "느헤미야", "chapters": 13, "testament": "old" },
-                { "name": "에스더", "chapters": 10, "testament": "old" }, { "name": "욥기", "chapters": 42, "testament": "old" },
-                { "name": "시편", "chapters": 150, "testament": "old" }, { "name": "잠언", "chapters": 31, "testament": "old" },
-                { "name": "전도서", "chapters": 12, "testament": "old" }, { "name": "아가", "chapters": 8, "testament": "old" },
-                { "name": "이사야", "chapters": 66, "testament": "old" }, { "name": "예레미야", "chapters": 52, "testament": "old" },
-                { "name": "예레미야애가", "chapters": 5, "testament": "old" }, { "name": "에스겔", "chapters": 48, "testament": "old" },
-                { "name": "다니엘", "chapters": 12, "testament": "old" }, { "name": "호세아", "chapters": 14, "testament": "old" },
-                { "name": "요엘", "chapters": 3, "testament": "old" }, { "name": "아모스", "chapters": 9, "testament": "old" },
-                { "name": "오바댜", "chapters": 1, "testament": "old" }, { "name": "요나", "chapters": 4, "testament": "old" },
-                { "name": "미가", "chapters": 7, "testament": "old" }, { "name": "나훔", "chapters": 3, "testament": "old" },
-                { "name": "하박국", "chapters": 3, "testament": "old" }, { "name": "스바냐", "chapters": 3, "testament": "old" },
-                { "name": "학개", "chapters": 2, "testament": "old" }, { "name": "스가랴", "chapters": 14, "testament": "old" },
-                { "name": "말라기", "chapters": 4, "testament": "old" }, { "name": "마태복음", "chapters": 28, "testament": "new" },
-                { "name": "마가복음", "chapters": 16, "testament": "new" }, { "name": "누가복음", "chapters": 24, "testament": "new" },
-                { "name": "요한복음", "chapters": 21, "testament": "new" }, { "name": "사도행전", "chapters": 28, "testament": "new" },
-                { "name": "로마서", "chapters": 16, "testament": "new" }, { "name": "고린도전서", "chapters": 16, "testament": "new" },
-                { "name": "고린도후서", "chapters": 13, "testament": "new" }, { "name": "갈라디아서", "chapters": 6, "testament": "new" },
-                { "name": "에베소서", "chapters": 6, "testament": "new" }, { "name": "빌립보서", "chapters": 4, "testament": "new" },
-                { "name": "골로새서", "chapters": 4, "testament": "new" }, { "name": "데살로니가전서", "chapters": 5, "testament": "new" },
-                { "name": "데살로니가후서", "chapters": 3, "testament": "new" }, { "name": "디모데전서", "chapters": 6, "testament": "new" },
-                { "name": "디모데후서", "chapters": 4, "testament": "new" }, { "name": "디도서", "chapters": 3, "testament": "new" },
-                { "name": "빌레몬서", "chapters": 1, "testament": "new" }, { "name": "히브리서", "chapters": 13, "testament": "new" },
-                { "name": "야고보서", "chapters": 5, "testament": "new" }, { "name": "베드로전서", "chapters": 5, "testament": "new" },
-                { "name": "베드로후서", "chapters": 3, "testament": "new" }, { "name": "요한1서", "chapters": 5, "testament": "new" },
-                { "name": "요한2서", "chapters": 1, "testament": "new" }, { "name": "요한3서", "chapters": 1, "testament": "new" },
-                { "name": "유다서", "chapters": 1, "testament": "new" }, { "name": "요한계시록", "chapters": 22, "testament": "new" }
-            ]
-        };
+        const BIBLE_DATA = { "books": [ { "name": "창세기", "chapters": 50, "testament": "old" }, { "name": "출애굽기", "chapters": 40, "testament": "old" }, { "name": "레위기", "chapters": 27, "testament": "old" }, { "name": "민수기", "chapters": 36, "testament": "old" }, { "name": "신명기", "chapters": 34, "testament": "old" }, { "name": "여호수아", "chapters": 24, "testament": "old" }, { "name": "사사기", "chapters": 21, "testament": "old" }, { "name": "룻기", "chapters": 4, "testament": "old" }, { "name": "사무엘상", "chapters": 31, "testament": "old" }, { "name": "사무엘하", "chapters": 24, "testament": "old" }, { "name": "열왕기상", "chapters": 22, "testament": "old" }, { "name": "열왕기하", "chapters": 25, "testament": "old" }, { "name": "역대상", "chapters": 29, "testament": "old" }, { "name": "역대하", "chapters": 36, "testament": "old" }, { "name": "에스라", "chapters": 10, "testament": "old" }, { "name": "느헤미야", "chapters": 13, "testament": "old" }, { "name": "에스더", "chapters": 10, "testament": "old" }, { "name": "욥기", "chapters": 42, "testament": "old" }, { "name": "시편", "chapters": 150, "testament": "old" }, { "name": "잠언", "chapters": 31, "testament": "old" }, { "name": "전도서", "chapters": 12, "testament": "old" }, { "name": "아가", "chapters": 8, "testament": "old" }, { "name": "이사야", "chapters": 66, "testament": "old" }, { "name": "예레미야", "chapters": 52, "testament": "old" }, { "name": "예레미야애가", "chapters": 5, "testament": "old" }, { "name": "에스겔", "chapters": 48, "testament": "old" }, { "name": "다니엘", "chapters": 12, "testament": "old" }, { "name": "호세아", "chapters": 14, "testament": "old" }, { "name": "요엘", "chapters": 3, "testament": "old" }, { "name": "아모스", "chapters": 9, "testament": "old" }, { "name": "오바댜", "chapters": 1, "testament": "old" }, { "name": "요나", "chapters": 4, "testament": "old" }, { "name": "미가", "chapters": 7, "testament": "old" }, { "name": "나훔", "chapters": 3, "testament": "old" }, { "name": "하박국", "chapters": 3, "testament": "old" }, { "name": "스바냐", "chapters": 3, "testament": "old" }, { "name": "학개", "chapters": 2, "testament": "old" }, { "name": "스가랴", "chapters": 14, "testament": "old" }, { "name": "말라기", "chapters": 4, "testament": "old" }, { "name": "마태복음", "chapters": 28, "testament": "new" }, { "name": "마가복음", "chapters": 16, "testament": "new" }, { "name": "누가복음", "chapters": 24, "testament": "new" }, { "name": "요한복음", "chapters": 21, "testament": "new" }, { "name": "사도행전", "chapters": 28, "testament": "new" }, { "name": "로마서", "chapters": 16, "testament": "new" }, { "name": "고린도전서", "chapters": 16, "testament": "new" }, { "name": "고린도후서", "chapters": 13, "testament": "new" }, { "name": "갈라디아서", "chapters": 6, "testament": "new" }, { "name": "에베소서", "chapters": 6, "testament": "new" }, { "name": "빌립보서", "chapters": 4, "testament": "new" }, { "name": "골로새서", "chapters": 4, "testament": "new" }, { "name": "데살로니가전서", "chapters": 5, "testament": "new" }, { "name": "데살로니가후서", "chapters": 3, "testament": "new" }, { "name": "디모데전서", "chapters": 6, "testament": "new" }, { "name": "디모데후서", "chapters": 4, "testament": "new" }, { "name": "디도서", "chapters": 3, "testament": "new" }, { "name": "빌레몬서", "chapters": 1, "testament": "new" }, { "name": "히브리서", "chapters": 13, "testament": "new" }, { "name": "야고보서", "chapters": 5, "testament": "new" }, { "name": "베드로전서", "chapters": 5, "testament": "new" }, { "name": "베드로후서", "chapters": 3, "testament": "new" }, { "name": "요한1서", "chapters": 5, "testament": "new" }, { "name": "요한2서", "chapters": 1, "testament": "new" }, { "name": "요한3서", "chapters": 1, "testament": "new" }, { "name": "유다서", "chapters": 1, "testament": "new" }, { "name": "요한계시록", "chapters": 22, "testament": "new" } ] };
         const USER_SLOTS = ["user_1", "user_2", "user_3", "user_4", "user_5", "user_6"];
 
         let app, db, docRef;
         let appData = {};
         let bibleState = { currentTestament: null, currentBook: null };
         let myName = localStorage.getItem('myId');
+        let editIdx = null; // 수정 중인 아이템 인덱스
 
         async function startApp() {
             try {
@@ -504,7 +287,7 @@
                             const y = new Date().getFullYear();
                             appData.period = { start: `${y}-01-01`, end: `${y}-12-31` };
                         }
-                        if(!appData.pastSeasons) appData.pastSeasons = []; // 명예의 전당 저장소
+                        if(!appData.pastSeasons) appData.pastSeasons = [];
                         
                         USER_SLOTS.forEach(slot => {
                             if(!appData[slot]) appData[slot] = { resolution: [], bible: {}, history: {}, bibleRounds: {} };
@@ -515,28 +298,21 @@
                     }
                 });
 
-                const verses = [
-                    { t: "내게 능력 주시는 자 안에서 내가 모든 것을 할 수 있느니라", r: "빌립보서 4:13" },
-                    { t: "여호와는 나의 목자시니 내게 부족함이 없으리로다", r: "시편 23:1" },
-                    { t: "너의 행사를 여호와께 맡기라 그리하면 네가 경영하는 것이 이루어지리라", r: "잠언 16:3" }
-                ];
+                const verses = [ {t:"내게 능력 주시는 자 안에서 내가 모든 것을 할 수 있느니라",r:"빌4:13"}, {t:"여호와는 나의 목자시니 내게 부족함이 없으리로다",r:"시23:1"}, {t:"두려워하지 말라 내가 너와 함께 함이라",r:"사41:10"} ];
                 const v = verses[Math.floor(Math.random()*verses.length)];
                 document.getElementById('verse-text').innerText = v.t;
                 document.getElementById('verse-ref').innerText = v.r;
-            } catch (e) { alert("Config 오류! 코드를 확인하세요."); }
+            } catch (e) { alert("Config 오류"); }
         }
 
         function checkLoginStatus() {
-            const modal = document.getElementById('login-modal');
-            const container = document.getElementById('app-container');
-            
             if(myName && appData.auth[myName]) {
-                if(modal) modal.classList.add('hidden');
-                if(container) container.classList.remove('hidden');
+                document.getElementById('login-modal').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
                 updateMainUI();
             } else {
-                if(container) container.classList.add('hidden');
-                if(modal) modal.classList.remove('hidden');
+                document.getElementById('app-container').classList.add('hidden');
+                document.getElementById('login-modal').classList.remove('hidden');
                 renderLoginButtons();
             }
         }
@@ -548,56 +324,86 @@
                 const btn = document.createElement('div');
                 const user = appData.auth[slot];
                 if(user) {
-                    btn.className = "login-btn taken";
-                    btn.innerHTML = `🔒 ${user.name}`;
+                    btn.className = "login-btn taken"; btn.innerHTML = `🔒 ${user.name}`;
                     btn.onclick = () => tryLogin(slot, user.pin);
                 } else {
-                    btn.className = "login-btn";
-                    btn.innerHTML = `+ New`;
+                    btn.className = "login-btn"; btn.innerHTML = `+ New`;
                     btn.onclick = () => tryRegister(slot);
                 }
                 grid.appendChild(btn);
             });
         }
 
-        window.tryLogin = function(slot, correctPin) {
-            const input = prompt("PIN 번호:");
-            if(input === correctPin) {
-                myName = slot;
-                localStorage.setItem('myId', slot);
-                checkLoginStatus();
-            } else { alert("비밀번호 불일치"); }
-        };
-
-        window.tryRegister = function(slot) {
-            const name = prompt("이름:");
-            if(!name) return;
-            const pin = prompt("비밀번호:");
-            if(!pin) return;
-            appData.auth[slot] = { name: name, pin: pin };
-            if(!appData[slot]) appData[slot] = { resolution: [], bible: {}, history: {} };
-            saveData().then(() => {
-                myName = slot;
-                localStorage.setItem('myId', slot);
-                checkLoginStatus();
-            });
-        };
-
-        window.logoutAction = function() {
-            if(confirm("로그아웃 하시겠습니까?")) {
-                localStorage.removeItem('myId');
-                myName = null;
-                checkLoginStatus();
-            }
-        };
+        window.tryLogin = (s, p) => { if(prompt("PIN:")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호 불일치"); };
+        window.tryRegister = (s) => { const n=prompt("이름:"); if(!n)return; const p=prompt("PIN:"); if(!p)return; appData.auth[s]={name:n,pin:p}; if(!appData[s])appData[s]={resolution:[],bible:{},history:{}}; saveData().then(()=>{myName=s; localStorage.setItem('myId',s); checkLoginStatus();}); };
+        window.logoutAction = () => { if(confirm("로그아웃?")) { localStorage.removeItem('myId'); myName=null; checkLoginStatus(); } };
 
         function updateMainUI() {
             document.getElementById('user-name').innerText = appData.auth[myName].name;
-            renderResolutionList();
-            renderMessages();
-            renderAdvancedStats();
-            updateBibleStats();
+            renderResolutionList(); renderMessages(); renderAdvancedStats(); updateBibleStats();
         }
+
+        /* --- [NEW] 수정 모달 관련 로직 --- */
+        window.openEditModal = function(idx) {
+            editIdx = idx;
+            const item = appData[myName].resolution[idx];
+            document.getElementById('edit-title').value = item.text;
+            
+            const container = document.getElementById('edit-steps-container');
+            container.innerHTML = "";
+            item.steps.forEach(step => {
+                const div = document.createElement('div');
+                div.className = "step-edit-row";
+                div.innerHTML = `<input type="text" class="step-edit-input" value="${step}"><button class="btn-remove-step" onclick="this.parentElement.remove()">x</button>`;
+                container.appendChild(div);
+            });
+            
+            document.getElementById('edit-modal').classList.remove('hidden');
+        };
+
+        window.addStepInput = function() {
+            const div = document.createElement('div');
+            div.className = "step-edit-row";
+            div.innerHTML = `<input type="text" class="step-edit-input" placeholder="새 단계"><button class="btn-remove-step" onclick="this.parentElement.remove()">x</button>`;
+            document.getElementById('edit-steps-container').appendChild(div);
+        };
+
+        window.closeEditModal = function() {
+            document.getElementById('edit-modal').classList.add('hidden');
+            editIdx = null;
+        };
+
+        window.saveEditModal = function() {
+            const newTitle = document.getElementById('edit-title').value.trim();
+            if(!newTitle) return alert("목표 이름을 입력하세요.");
+            
+            const stepInputs = document.querySelectorAll('.step-edit-input');
+            const newSteps = [];
+            stepInputs.forEach(input => { if(input.value.trim()) newSteps.push(input.value.trim()); });
+            if(newSteps.length === 0) newSteps.push("완료");
+
+            const item = appData[myName].resolution[editIdx];
+            
+            // 단계가 바뀌면 체크박스 배열 재조정
+            if(item.steps.length !== newSteps.length) {
+                item.done = new Array(newSteps.length).fill(false);
+                item.counts = new Array(newSteps.length).fill(0);
+            }
+            item.text = newTitle;
+            item.steps = newSteps;
+
+            saveData().then(() => {
+                closeEditModal();
+            });
+        };
+
+        window.deleteItemFromModal = function() {
+            if(confirm("정말 삭제하시겠습니까?")) {
+                appData[myName].resolution.splice(editIdx, 1);
+                saveData().then(() => closeEditModal());
+            }
+        };
+        /* -------------------------------- */
 
         function renderResolutionList() {
             const list = document.getElementById('list-resolution');
@@ -616,414 +422,153 @@
 
                 li.innerHTML = `
                     <div class="res-left">
-                        <div class="res-text" onclick="window.editItem(${idx})">${item.text}</div>
+                        <div class="res-text">${item.text}</div>
                         <div class="steps">${stepsHtml}</div>
                     </div>
-                    <button class="del-icon-btn" onclick="window.deleteItem(${idx})"><i class="fas fa-trash-alt"></i></button>
+                    <button class="edit-icon-btn" onclick="window.openEditModal(${idx})"><i class="fas fa-pen"></i></button>
                 `;
                 list.appendChild(li);
             });
         }
 
-        // [New] 아코디언 토글
-        window.toggleAccordion = function(id, header) {
-            const content = document.getElementById(id);
-            if(content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                header.classList.add('open');
-            } else {
-                content.classList.add('hidden');
-                header.classList.remove('open');
-            }
-        };
-
-        function renderAdvancedStats() {
-            const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
-            document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
-
-            const myHistory = appData[myName].history || {};
-            const myBible = appData[myName].bible || {};
-            const today = new Date().toISOString().split('T')[0];
-            
-            // 1. Heatmap (시인성 개선)
-            const heatGrid = document.getElementById('heatmap-grid');
-            heatGrid.innerHTML = "";
-            const now = new Date();
-            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            let maxDone = 0;
-            for(let d=1; d<=daysInMonth; d++) {
-                const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                if(myHistory[dateStr] && myHistory[dateStr] > maxDone) maxDone = myHistory[dateStr];
-            }
-            if(maxDone === 0) maxDone = 1;
-
-            for(let d=1; d<=daysInMonth; d++) {
-                const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const val = myHistory[dateStr] || 0;
-                const cell = document.createElement('div');
-                cell.className = "heat-day";
-                if(val > 0) {
-                    const ratio = val / maxDone;
-                    if(ratio < 0.4) cell.classList.add("level-1");
-                    else if(ratio < 0.7) cell.classList.add("level-2");
-                    else cell.classList.add("level-3");
-                }
-                if(dateStr === today) cell.classList.add("today");
-                cell.innerText = d;
-                heatGrid.appendChild(cell);
-            }
-
-            const goalList = document.getElementById('goal-breakdown-list');
-            goalList.innerHTML = "";
-            const myGoals = appData[myName].resolution || [];
-            if(myGoals.length === 0) {
-                goalList.innerHTML = "<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>등록된 목표가 없습니다.</p>";
-            } else {
-                myGoals.forEach(g => {
-                    const totalDone = (g.counts || []).reduce((a,b)=>a+b, 0);
-                    const div = document.createElement('div');
-                    div.className = "goal-stat-item";
-                    div.innerHTML = `
-                        <div class="goal-label-row">
-                            <span class="goal-name">${g.text}</span>
-                            <span class="goal-percent">총 ${totalDone}회</span>
-                        </div>
-                        <div class="progress-bg"><div class="progress-bar" style="width: 100%; opacity: 0.2"></div></div>
-                    `;
-                    goalList.appendChild(div);
-                });
-            }
-
-            // 2. 랭킹
-            renderRankings(period);
-            
-            // 3. 명예의 전당
-            renderHallOfFame();
-        }
-
-        function getWeeklyRange() {
-            const now = new Date();
-            const day = now.getDay(); 
-            let diff = 0;
-            if(day === 6) diff = 0;
-            else diff = day + 1;
-            const start = new Date(now);
-            start.setDate(now.getDate() - diff);
-            const startStr = start.toISOString().split('T')[0];
-            const end = new Date(start);
-            end.setDate(start.getDate() + 6);
-            const endStr = end.toISOString().split('T')[0];
-            return { start: startStr, end: endStr };
-        }
-
-        function renderRankings(period) {
-            const activeUsers = USER_SLOTS.filter(u => appData.auth && appData.auth[u]);
-            
-            const resRankEl = document.getElementById('rank-resolution');
-            resRankEl.innerHTML = "";
-            activeUsers.map(u => {
-                const h = appData[u].history || {};
-                let score = 0;
-                Object.keys(h).forEach(date => { if(date >= period.start && date <= period.end) score += h[date]; });
-                return { name: appData.auth[u].name, val: score };
-            }).sort((a,b) => b.val - a.val).forEach((r, i) => {
-                resRankEl.innerHTML += `<div class="rank-row"><span>${i+1}. ${r.name}</span><span class="score">${r.val}점</span></div>`;
-            });
-
-            const weekRange = getWeeklyRange();
-            document.querySelector('.ranking-title:nth-child(1)').nextElementSibling.parentElement.nextElementSibling.querySelector('.ranking-title').innerText = `📖 성경 (${weekRange.start.slice(5)}~)`;
-
-            const bibRankEl = document.getElementById('rank-bible');
-            bibRankEl.innerHTML = "";
-            activeUsers.map(u => {
-                const b = appData[u].bible || {};
-                let count = 0;
-                Object.values(b).forEach(date => { 
-                    if(date >= weekRange.start && date <= weekRange.end) count++; 
-                });
-                return { name: appData.auth[u].name, val: count };
-            }).sort((a,b) => b.val - a.val).forEach((r, i) => {
-                bibRankEl.innerHTML += `<div class="rank-row"><span>${i+1}. ${r.name}</span><span class="score">${r.val}장</span></div>`;
-            });
-        }
-
-        function renderHallOfFame() {
-            const list = document.getElementById('hall-of-fame-list');
-            list.innerHTML = "";
-            const past = appData.pastSeasons || [];
-            
-            if(past.length === 0) {
-                list.innerHTML = "<div style='text-align:center; color:#94a3b8; font-size:0.9rem;'>아직 기록된 시즌이 없습니다.</div>";
-                return;
-            }
-            
-            past.reverse().forEach(p => {
-                const row = document.createElement('div');
-                row.className = 'fame-row';
-                row.innerHTML = `
-                    <div class="fame-season">${p.range}</div>
-                    <div class="fame-winner"><i class="fas fa-crown crown-icon"></i> ${p.winner} (${p.score}점)</div>
-                `;
-                list.appendChild(row);
-            });
-        }
-
-        // [New] 시즌 관리 (마감 및 우승자 저장)
-        window.manageSeason = function() {
-            const current = appData.period;
-            if(!confirm(`현재 시즌 (${current.start} ~ ${current.end})을 마감하시겠습니까?\n\n마감 시 현재 1등이 '명예의 전당'에 기록됩니다.`)) {
-                // 단순 수정 모드
-                const s = prompt("시작일 수정 (YYYY-MM-DD)", current.start);
-                if(!s) return;
-                const e = prompt("종료일 수정 (YYYY-MM-DD)", current.end);
-                if(!e) return;
-                appData.period = { start: s, end: e };
-                saveData().then(()=>alert("기간이 수정되었습니다."));
-                return;
-            }
-
-            // 우승자 계산
-            const activeUsers = USER_SLOTS.filter(u => appData.auth && appData.auth[u]);
-            const ranking = activeUsers.map(u => {
-                const h = appData[u].history || {};
-                let score = 0;
-                Object.keys(h).forEach(date => { if(date >= current.start && date <= current.end) score += h[date]; });
-                return { name: appData.auth[u].name, val: score };
-            }).sort((a,b) => b.val - a.val);
-
-            const winner = ranking[0];
-            if(winner.val === 0) {
-                alert("점수가 0점이라 기록할 수 없습니다.");
-                return;
-            }
-
-            if(!appData.pastSeasons) appData.pastSeasons = [];
-            appData.pastSeasons.push({
-                range: `${current.start}~${current.end}`,
-                winner: winner.name,
-                score: winner.val
-            });
-
-            const newStart = prompt("새 시즌 시작일:", new Date().toISOString().split('T')[0]);
-            const newEnd = prompt("새 시즌 종료일:", "2024-12-31");
-            
-            appData.period = { start: newStart, end: newEnd };
-            saveData().then(() => alert(`🎉 축하합니다! ${winner.name}님이 명예의 전당에 올랐습니다!`));
-        };
-
-        function updateBibleStats() {
-            const today = new Date().toISOString().split('T')[0];
-            const yearStr = new Date().getFullYear().toString();
-            const myBible = appData[myName].bible || {};
-            
-            let todayCnt = 0;
-            let yearCnt = 0;
-            Object.values(myBible).forEach(date => {
-                if(date === today) todayCnt++;
-                if(date.startsWith(yearStr)) yearCnt++;
-            });
-
-            document.getElementById('bible-today-count').innerText = `+${todayCnt}장`;
-            document.getElementById('bible-year-count').innerText = `${yearCnt}장`;
-        }
-
         window.addItem = function() {
             const input = document.getElementById('input-resolution');
-            const val = input.value.trim();
-            if(!val) return;
-            const parts = val.split('/');
-            const title = parts[0].trim();
-            const steps = parts.length > 1 ? parts.slice(1).map(s=>s.trim()) : ["완료"];
-            
+            if(!input.value.trim()) return;
+            // 초기 추가는 간단하게, 수정은 팝업으로
             if(!appData[myName].resolution) appData[myName].resolution = [];
-            appData[myName].resolution.push({ 
-                text: title, steps: steps, done: Array(steps.length).fill(false), counts: Array(steps.length).fill(0) 
-            });
+            appData[myName].resolution.push({ text: input.value.trim(), steps: ["완료"], done: [false], counts: [0] });
             input.value = "";
             saveData();
         };
 
         window.toggleStep = function(itemIdx, stepIdx) {
             const item = appData[myName].resolution[itemIdx];
-            const wasDone = item.done[stepIdx];
-            item.done[stepIdx] = !wasDone;
-            
-            if(!item.counts) item.counts = Array(item.steps.length).fill(0);
-            if(item.done[stepIdx]) item.counts[stepIdx]++;
-            else item.counts[stepIdx] = Math.max(0, item.counts[stepIdx] - 1);
-
-            if(item.done[stepIdx] && window.confetti) confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+            item.done[stepIdx] = !item.done[stepIdx];
+            if(!item.counts) item.counts = new Array(item.steps.length).fill(0);
+            if(item.done[stepIdx]) {
+                item.counts[stepIdx]++;
+                if(window.confetti) confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+            } else {
+                item.counts[stepIdx] = Math.max(0, item.counts[stepIdx] - 1);
+            }
             
             const today = new Date().toISOString().split('T')[0];
             if(!appData[myName].history) appData[myName].history = {};
             let totalDone = 0;
             appData[myName].resolution.forEach(r => r.done.forEach(d => { if(d) totalDone++; }));
             appData[myName].history[today] = totalDone;
+            saveData();
+        };
+
+        window.toggleAccordion = function(id) {
+            document.getElementById(id).classList.toggle('hidden');
+        };
+
+        function renderAdvancedStats() {
+            const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
+            document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
             
-            saveData();
-        };
+            // 랭킹
+            const activeUsers = USER_SLOTS.filter(u => appData.auth && appData.auth[u]);
+            const resRankEl = document.getElementById('rank-resolution'); resRankEl.innerHTML = "";
+            activeUsers.map(u => {
+                const h = appData[u].history || {};
+                let score = 0;
+                Object.keys(h).forEach(d => { if(d >= period.start && d <= period.end) score += h[d]; });
+                return { name: appData.auth[u].name, val: score };
+            }).sort((a,b)=>b.val-a.val).forEach((r,i)=> resRankEl.innerHTML += `<div class="rank-row"><span>${i+1}.${r.name}</span><span class="score">${r.val}점</span></div>`);
 
-        window.deleteItem = function(idx) {
-            if(confirm("이 목표를 삭제할까요?")) {
-                appData[myName].resolution.splice(idx, 1);
-                saveData();
+            // 성경랭킹 (이번주)
+            const bibRankEl = document.getElementById('rank-bible'); bibRankEl.innerHTML = "";
+            const now=new Date(), day=now.getDay(), diff=day===6?0:day+1;
+            const s=new Date(now); s.setDate(now.getDate()-diff); const sStr=s.toISOString().split('T')[0];
+            const e=new Date(s); e.setDate(s.getDate()+6); const eStr=e.toISOString().split('T')[0];
+            
+            activeUsers.map(u => {
+                const b = appData[u].bible || {};
+                let c = 0;
+                Object.values(b).forEach(d => { if(d>=sStr && d<=eStr) c++; });
+                return { name: appData.auth[u].name, val: c };
+            }).sort((a,b)=>b.val-a.val).forEach((r,i)=> bibRankEl.innerHTML += `<div class="rank-row"><span>${i+1}.${r.name}</span><span class="score">${r.val}장</span></div>`);
+
+            // 히트맵
+            const heatGrid = document.getElementById('heatmap-grid'); heatGrid.innerHTML = "";
+            const days = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+            const today = now.toISOString().split('T')[0];
+            const myH = appData[myName].history || {};
+            for(let d=1; d<=days; d++) {
+                const dStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const val = myH[dStr] || 0;
+                const cell = document.createElement('div'); cell.className = "heat-day";
+                if(val>0) cell.classList.add(val>5?"level-3":val>2?"level-2":"level-1");
+                if(dStr===today) cell.classList.add("today");
+                cell.innerText = d;
+                heatGrid.appendChild(cell);
             }
-        };
 
-        window.editItem = function(idx) {
-            const item = appData[myName].resolution[idx];
-            const newText = prompt("목표 수정:", item.text);
-            if(newText) { item.text = newText; saveData(); }
-        };
+            // 목표별 달성도
+            const goalList = document.getElementById('goal-breakdown-list'); goalList.innerHTML = "";
+            (appData[myName].resolution||[]).forEach(g => {
+               const t = (g.counts||[]).reduce((a,b)=>a+b,0);
+               goalList.innerHTML += `<div class="goal-stat-item"><div class="goal-label-row"><span class="goal-name">${g.text}</span><span class="goal-percent">${t}회</span></div><div class="progress-bg"><div class="progress-bar" style="width:${Math.min(100,t*2)}%"></div></div></div>`;
+            });
 
-        window.sendMsg = function() {
-            const input = document.getElementById('input-msg');
-            const txt = input.value.trim();
-            if(!txt) return;
-            if(!appData.messages) appData.messages = [];
-            appData.messages.push({ sender: appData.auth[myName].name, text: txt });
-            if(appData.messages.length > 50) appData.messages.shift();
-            input.value = "";
-            saveData();
-        };
-
-        function renderMessages() {
-            const list = document.getElementById('msg-list');
-            list.innerHTML = "";
-            [...(appData.messages||[])].reverse().forEach(m => {
-                const li = document.createElement('li');
-                li.innerHTML = `<b>${m.sender}:</b> ${m.text}`;
-                list.appendChild(li);
+            // 명예의 전당
+            const hallList = document.getElementById('hall-of-fame-list'); hallList.innerHTML = "";
+            (appData.pastSeasons||[]).reverse().forEach(p => {
+                hallList.innerHTML += `<div class="fame-row"><div class="fame-season">${p.range}</div><div class="fame-winner">👑 ${p.winner} (${p.score})</div></div>`;
             });
         }
 
-        window.showBibleBooks = function(type) {
-            bibleState.currentTestament = type;
-            document.getElementById('bible-main-view').classList.add('hidden-view');
-            document.getElementById('bible-books-view').classList.remove('hidden-view');
+        window.manageSeason = function() {
+            const c = appData.period;
+            if(!confirm(`시즌(${c.start}~${c.end})을 마감하고 우승자를 기록할까요?`)) {
+                const ns = prompt("시작일 수정", c.start); if(ns) appData.period.start = ns;
+                const ne = prompt("종료일 수정", c.end); if(ne) appData.period.end = ne;
+                saveData(); return;
+            }
+            const users = USER_SLOTS.filter(u=>appData.auth&&appData.auth[u]);
+            const rank = users.map(u => {
+                const h = appData[u].history||{};
+                let s = 0; Object.keys(h).forEach(d=>{if(d>=c.start&&d<=c.end)s+=h[d]});
+                return {name:appData.auth[u].name, val:s};
+            }).sort((a,b)=>b.val-a.val);
             
-            const grid = document.getElementById('bible-books-grid');
-            grid.innerHTML = "";
-            document.getElementById('bible-testament-title').innerText = type==='old'?"구약":"신약";
+            if(!appData.pastSeasons) appData.pastSeasons=[];
+            appData.pastSeasons.push({range:`${c.start}~${c.end}`, winner:rank[0].name, score:rank[0].val});
             
-            BIBLE_DATA.books.filter(b=>b.testament===type).forEach(book => {
-                const div = document.createElement('div');
-                div.className = "bible-btn";
-                const yearStr = new Date().getFullYear().toString();
-                let readCount = 0;
-                for(let i=1; i<=book.chapters; i++) {
-                    const date = appData[myName].bible && appData[myName].bible[`${book.name}-${i}`];
-                    if(date && date.startsWith(yearStr)) readCount++;
-                }
-                if(readCount >= book.chapters) div.classList.add('completed');
-                div.innerText = book.name;
-                div.onclick = () => showChapters(book);
-                grid.appendChild(div);
-            });
-        };
-
-        function showChapters(book) {
-            bibleState.currentBook = book.name;
-            document.getElementById('bible-books-view').classList.add('hidden-view');
-            document.getElementById('bible-chapters-view').classList.remove('hidden-view');
-            document.getElementById('bible-book-title').innerText = book.name;
-            renderChaptersGrid();
+            const nextS = prompt("새 시즌 시작일:", new Date().toISOString().split('T')[0]);
+            const nextE = prompt("새 시즌 종료일:", "2024-12-31");
+            appData.period = {start:nextS, end:nextE};
+            saveData().then(()=>alert("시즌 마감 완료!"));
         }
 
-        function renderChaptersGrid() {
-            const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
-            const grid = document.getElementById('bible-chapters-grid');
-            grid.innerHTML = "";
-            const yearStr = new Date().getFullYear().toString();
-            
-            let allChecked = true;
-            for(let i=1; i<=book.chapters; i++) {
-                const div = document.createElement('div');
-                div.className = "chapter-item";
-                const key = `${book.name}-${i}`;
-                const date = appData[myName].bible && appData[myName].bible[key];
-                const isRead = date && date.startsWith(yearStr);
-                if(isRead) div.classList.add('checked');
-                else allChecked = false;
-                
-                div.innerText = i;
-                div.onclick = () => { window.toggleChapter(key, !isRead); };
-                grid.appendChild(div);
-            }
-            
-            const finishBtn = document.getElementById('btn-finish-book');
-            if(allChecked) {
-                finishBtn.classList.remove('disabled');
-                finishBtn.innerText = "이 책 완독하기 🎉";
-            } else {
-                finishBtn.classList.add('disabled');
-                finishBtn.innerText = "모두 읽어야 완독 가능";
-            }
+        /* 성경 로직 생략 (기존과 동일) */
+        function updateBibleStats() {
+            const today=new Date().toISOString().split('T')[0], y=new Date().getFullYear().toString();
+            const b=appData[myName].bible||{};
+            let tC=0, yC=0;
+            Object.values(b).forEach(d=>{if(d===today)tC++; if(d.startsWith(y))yC++;});
+            document.getElementById('bible-today-count').innerText = `+${tC}장`;
+            document.getElementById('bible-year-count').innerText = `${yC}장`;
         }
+        window.showBibleBooks=(t)=>{bibleState.currentTestament=t; document.getElementById('bible-main-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view'); const g=document.getElementById('bible-books-grid'); g.innerHTML=""; BIBLE_DATA.books.filter(b=>b.testament===t).forEach(b=>{const d=document.createElement('div'); d.className="bible-btn"; let rc=0; for(let i=1;i<=b.chapters;i++){const k=`${b.name}-${i}`; if(appData[myName].bible&&appData[myName].bible[k])rc++;} if(rc>=b.chapters)d.classList.add('completed'); d.innerText=b.name; d.onclick=()=>showChapters(b); g.appendChild(d);});};
+        function showChapters(b){bibleState.currentBook=b.name; document.getElementById('bible-books-view').classList.add('hidden-view'); document.getElementById('bible-chapters-view').classList.remove('hidden-view'); document.getElementById('bible-book-title').innerText=b.name; renderChaptersGrid();}
+        function renderChaptersGrid(){const b=BIBLE_DATA.books.find(x=>x.name===bibleState.currentBook); const g=document.getElementById('bible-chapters-grid'); g.innerHTML=""; let all=true; for(let i=1;i<=b.chapters;i++){const d=document.createElement('div'); d.className="chapter-item"; const k=`${b.name}-${i}`; const r=appData[myName].bible&&appData[myName].bible[k]; if(r)d.classList.add('checked'); else all=false; d.innerText=i; d.onclick=()=>window.toggleChapter(k,!r); g.appendChild(d);} const btn=document.getElementById('btn-finish-book'); if(all){btn.classList.remove('disabled'); btn.innerText="이 책 완독하기 🎉";}else{btn.classList.add('disabled'); btn.innerText="모두 읽어야 완독 가능";}}
+        window.toggleChapter=(k,c)=>{if(!appData[myName].bible)appData[myName].bible={}; if(c)appData[myName].bible[k]=new Date().toISOString().split('T')[0]; else delete appData[myName].bible[k]; saveData().then(()=>renderChaptersGrid());};
+        window.controlAll=(on)=>{const b=BIBLE_DATA.books.find(x=>x.name===bibleState.currentBook); if(!appData[myName].bible)appData[myName].bible={}; const t=new Date().toISOString().split('T')[0]; for(let i=1;i<=b.chapters;i++){const k=`${b.name}-${i}`; if(on)appData[myName].bible[k]=t; else delete appData[myName].bible[k];} saveData().then(()=>renderChaptersGrid());};
+        window.finishBookAndReset=()=>{const btn=document.getElementById('btn-finish-book'); if(btn.classList.contains('disabled'))return; if(confirm("완독 처리 하시겠습니까?")) { if(!appData[myName].bibleRounds)appData[myName].bibleRounds={}; const b=bibleState.currentBook; appData[myName].bibleRounds[b]=(appData[myName].bibleRounds[b]||0)+1; window.controlAll(false); }};
+        window.backToBooks=()=>{document.getElementById('bible-chapters-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view');};
+        window.showBibleMain=()=>{document.getElementById('bible-books-view').classList.add('hidden-view'); document.getElementById('bible-main-view').classList.remove('hidden-view');};
 
-        window.controlAll = function(turnOn) {
-            const book = BIBLE_DATA.books.find(b => b.name === bibleState.currentBook);
-            if(!appData[myName].bible) appData[myName].bible = {};
-            const today = new Date().toISOString().split('T')[0];
-            
-            for(let i=1; i<=book.chapters; i++) {
-                const key = `${book.name}-${i}`;
-                if(turnOn) appData[myName].bible[key] = today;
-                else delete appData[myName].bible[key];
-            }
-            saveData().then(() => renderChaptersGrid());
-        };
+        /* 채팅 & 기타 */
+        window.sendMsg=()=>{const i=document.getElementById('input-msg'); if(!i.value.trim())return; if(!appData.messages)appData.messages=[]; appData.messages.push({sender:appData.auth[myName].name, text:i.value.trim()}); if(appData.messages.length>50)appData.messages.shift(); i.value=""; saveData();};
+        function renderMessages(){const l=document.getElementById('msg-list'); l.innerHTML=""; [...(appData.messages||[])].reverse().forEach(m=>{const li=document.createElement('li'); li.innerHTML=`<b>${m.sender}:</b> ${m.text}`; l.appendChild(li);});}
+        window.saveAlarmTime=()=>{alert("알람 기능 준비중 🔔");};
+        window.goTab=(t,b)=>{document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden')); document.getElementById('page-'+t).classList.remove('hidden'); if(t==='stats')renderAdvancedStats(); if(t==='bible')updateBibleStats();};
 
-        window.finishBookAndReset = function() {
-            const btn = document.getElementById('btn-finish-book');
-            if(btn.classList.contains('disabled')) return; 
-
-            if(confirm(`'${bibleState.currentBook}'을(를) 완독 처리하시겠습니까?\n체크박스가 초기화되고 'n독' 카운트가 올라갑니다.`)) {
-                if(!appData[myName].bibleRounds) appData[myName].bibleRounds = {};
-                const book = bibleState.currentBook;
-                appData[myName].bibleRounds[book] = (appData[myName].bibleRounds[book] || 0) + 1;
-                window.controlAll(false);
-            }
-        };
-
-        window.toggleChapter = function(key, checked) {
-            if(!appData[myName].bible) appData[myName].bible = {};
-            if(checked) appData[myName].bible[key] = new Date().toISOString().split('T')[0];
-            else delete appData[myName].bible[key];
-            saveData().then(() => renderChaptersGrid());
-        };
-
-        window.showBibleMain = function() {
-            document.getElementById('bible-books-view').classList.add('hidden-view');
-            document.getElementById('bible-main-view').classList.remove('hidden-view');
-        };
-        window.backToBooks = function() {
-            document.getElementById('bible-chapters-view').classList.add('hidden-view');
-            document.getElementById('bible-books-view').classList.remove('hidden-view');
-        };
-
-        window.goTab = function(tab, btn) {
-            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-            btn.classList.add('active');
-            document.querySelectorAll('.page').forEach(e => e.classList.add('hidden'));
-            document.getElementById('page-'+tab).classList.remove('hidden');
-            
-            if(tab==='stats') renderAdvancedStats();
-            if(tab==='bible') updateBibleStats();
-        };
-
-        window.saveAlarmTime = function() { alert("알람 기능 준비중 🔔"); };
-
-        async function saveData() {
-            try { await setDoc(docRef, { appData: appData }, { merge: true }); updateMainUI(); }
-            catch(e) { console.error(e); }
-        }
-
-        function initNewData() {
-            const y = new Date().getFullYear();
-            appData = { auth: {}, messages: [], period: { start: `${y}-01-01`, end: `${y}-12-31` } };
-            saveData();
-        }
+        async function saveData() { try { await setDoc(docRef, { appData: appData }, { merge: true }); updateMainUI(); } catch(e) { console.error(e); } }
+        function initNewData() { const y=new Date().getFullYear(); appData={auth:{}, messages:[], period:{start:`${y}-01-01`, end:`${y}-12-31`}}; saveData(); }
 
         startApp();
     </script>
