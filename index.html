@@ -32,14 +32,18 @@
 
     <div id="app-container" class="hidden">
         <header class="glass-header">
-            <div class="header-content">
-                <span style="font-size:1.2rem; font-weight:bold;">Hi, <b id="user-name">User</b></span>
-                <div class="header-actions">
-                    <button class="round-btn" onclick="alert('알람 기능은 모바일 브라우저 정책상 앱을 켜두어야 울립니다.')">🔔</button>
-                    <button class="round-btn" onclick="window.logoutAction()">🚪</button>
-                </div>
-            </div>
-        </header>
+    <div class="header-content">
+        <span style="font-size:1.2rem; font-weight:bold;">
+            Hi, <b id="user-name">User</b>
+            <button class="text-btn" onclick="window.editProfile()" style="margin-left:5px; font-size:1rem; padding:5px;">⚙️</button>
+        </span>
+        <div class="header-actions">
+            <button class="round-btn" onclick="alert('알람 기능은 모바일 브라우저 정책상 앱을 켜두어야 울립니다.')">🔔</button>
+            <button class="round-btn" onclick="window.logoutAction()">🚪</button>
+        </div>
+    </div>
+</header>
+
 
         <main id="main-content">
             <div class="verse-card">
