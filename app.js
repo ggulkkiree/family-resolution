@@ -158,48 +158,47 @@ function updateMainUI() {
         document.getElementById('verse-ref').innerText = "Family Goals 2026";
     }
     renderResolutionList(); 
-    renderFamilyGoals(); // 새로 추가된 가족 목표 렌더링 함수 호출
+    renderFamilyGoals();
     renderMessages(); 
     renderDashboard();
     updateBibleStats(); 
 }
 
-// ▼▼▼ [새로 추가된 함수] 가족 목표 렌더링 ▼▼▼
+// ▼▼▼ [수정됨] 가족 목표 렌더링 (간섭 금지 모드) ▼▼▼
 function renderFamilyGoals() {
     const container = document.getElementById('family-goals-container');
     if(!container) return;
     container.innerHTML = "";
 
     USER_SLOTS.forEach((slot, idx) => {
-        if(slot === myName) return; // 내 목표는 위에 있으니까 건너뜀
-        if(!appData.auth[slot]) return; // 가입 안 한 슬롯 건너뜀
+        if(slot === myName) return; 
+        if(!appData.auth[slot]) return; 
 
         const user = appData.auth[slot];
         const goals = appData[slot].resolution || [];
         const total = goals.length;
-        const doneCount = goals.filter(g => g.done && g.done.every(Boolean)).length;
 
         const card = document.createElement('div');
         card.className = "family-card";
         
-        // 카드 헤더 (이름 + 요약)
+        // 카드 헤더: 달성률을 숨기고 'N개의 목표'로만 표시
         let html = `
             <div class="family-header" onclick="window.toggleFamilyList('fam-list-${idx}')">
                 <span class="family-name">${user.name}</span>
-                <span class="family-summary">${doneCount}/${total} 완료</span>
+                <span class="family-summary">${total}개의 목표</span>
             </div>
             <ul id="fam-list-${idx}" class="family-goal-list">
         `;
 
-        // 목표 리스트 (숨겨짐)
+        // 목표 리스트: 성공/실패 여부(체크박스, 취소선)를 모두 제거하고 텍스트만 표시
         if(total === 0) {
             html += `<li class="family-goal-item" style="color:#94a3b8;">등록된 목표가 없습니다.</li>`;
         } else {
             goals.forEach(g => {
-                const isDone = g.done && g.done.every(Boolean);
+                // 성공 여부(isDone) 체크 로직 제거
                 html += `
-                    <li class="family-goal-item ${isDone ? 'fg-done' : ''}">
-                        <span class="fg-bullet">${isDone ? '●' : '○'}</span>
+                    <li class="family-goal-item">
+                        <span class="fg-bullet" style="color:#cbd5e1;">•</span>
                         <span>${g.text}</span>
                     </li>
                 `;
@@ -211,13 +210,11 @@ function renderFamilyGoals() {
     });
 }
 
-// 가족 리스트 토글 함수
 window.toggleFamilyList = function(id) {
     const list = document.getElementById(id);
     if(list.classList.contains('show')) {
         list.classList.remove('show');
     } else {
-        // 다른 건 닫고 얘만 열기 (선택사항)
         document.querySelectorAll('.family-goal-list').forEach(l => l.classList.remove('show'));
         list.classList.add('show');
     }
