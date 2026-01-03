@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// ▼▼▼ Firebase Config ▼▼▼
 const firebaseConfig = {
     apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
     authDomain: "family-resolution.firebaseapp.com",
@@ -19,7 +18,7 @@ let app, db, docRef;
 let appData = {};
 let bibleState = { currentTestament: null, currentBook: null };
 let myName = localStorage.getItem('myId');
-let rangeStart = null; // 범위 선택 시작점
+let rangeStart = null; 
 
 async function startApp() {
     try {
@@ -63,13 +62,11 @@ function getTodayDate() {
     return kstDate.toISOString().split('T')[0];
 }
 
-// ▼▼▼ 새로운 기능: 프로필 수정 ▼▼▼
 window.editProfile = function() {
     if(!myName || !appData.auth[myName]) return;
     const curName = appData.auth[myName].name;
     const curPin = appData.auth[myName].pin;
     
-    // 비밀번호 확인
     const inputPin = prompt(`정보를 수정하려면 현재 비밀번호(${curPin})를 입력하세요.`);
     if(inputPin !== curPin) { alert("비밀번호가 틀렸습니다."); return; }
 
@@ -83,7 +80,6 @@ window.editProfile = function() {
     saveData().then(() => alert("정보가 수정되었습니다."));
 };
 
-// ▼▼▼ 기존 기능들 ▼▼▼
 window.addItem = function() {
     const input = document.getElementById('input-resolution');
     const val = input.value.trim();
@@ -161,9 +157,71 @@ function updateMainUI() {
         document.getElementById('verse-text').innerText = "환영합니다! ✏️버튼을 눌러 말씀을 입력해주세요.";
         document.getElementById('verse-ref').innerText = "Family Goals 2026";
     }
-    renderResolutionList(); renderMessages(); renderDashboard();
+    renderResolutionList(); 
+    renderFamilyGoals(); // 새로 추가된 가족 목표 렌더링 함수 호출
+    renderMessages(); 
+    renderDashboard();
     updateBibleStats(); 
 }
+
+// ▼▼▼ [새로 추가된 함수] 가족 목표 렌더링 ▼▼▼
+function renderFamilyGoals() {
+    const container = document.getElementById('family-goals-container');
+    if(!container) return;
+    container.innerHTML = "";
+
+    USER_SLOTS.forEach((slot, idx) => {
+        if(slot === myName) return; // 내 목표는 위에 있으니까 건너뜀
+        if(!appData.auth[slot]) return; // 가입 안 한 슬롯 건너뜀
+
+        const user = appData.auth[slot];
+        const goals = appData[slot].resolution || [];
+        const total = goals.length;
+        const doneCount = goals.filter(g => g.done && g.done.every(Boolean)).length;
+
+        const card = document.createElement('div');
+        card.className = "family-card";
+        
+        // 카드 헤더 (이름 + 요약)
+        let html = `
+            <div class="family-header" onclick="window.toggleFamilyList('fam-list-${idx}')">
+                <span class="family-name">${user.name}</span>
+                <span class="family-summary">${doneCount}/${total} 완료</span>
+            </div>
+            <ul id="fam-list-${idx}" class="family-goal-list">
+        `;
+
+        // 목표 리스트 (숨겨짐)
+        if(total === 0) {
+            html += `<li class="family-goal-item" style="color:#94a3b8;">등록된 목표가 없습니다.</li>`;
+        } else {
+            goals.forEach(g => {
+                const isDone = g.done && g.done.every(Boolean);
+                html += `
+                    <li class="family-goal-item ${isDone ? 'fg-done' : ''}">
+                        <span class="fg-bullet">${isDone ? '●' : '○'}</span>
+                        <span>${g.text}</span>
+                    </li>
+                `;
+            });
+        }
+        html += `</ul>`;
+        card.innerHTML = html;
+        container.appendChild(card);
+    });
+}
+
+// 가족 리스트 토글 함수
+window.toggleFamilyList = function(id) {
+    const list = document.getElementById(id);
+    if(list.classList.contains('show')) {
+        list.classList.remove('show');
+    } else {
+        // 다른 건 닫고 얘만 열기 (선택사항)
+        document.querySelectorAll('.family-goal-list').forEach(l => l.classList.remove('show'));
+        list.classList.add('show');
+    }
+};
 
 function renderDashboard() {
     const period = appData.period || { start: "2026-01-01", end: "2026-12-31" };
@@ -265,7 +323,6 @@ let html = `<div>${b.name}</div>`; if(round > 0) html += `<div style="font-size:
 d.innerHTML = html; d.onclick=()=>showChapters(b);g.appendChild(d);});};
 
 function showChapters(b){bibleState.currentBook=b.name;document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-chapters-view').classList.remove('hidden-view');document.getElementById('bible-book-title').innerText=b.name;
-    // 범위 선택 버튼 추가
     const tools = document.querySelector('.chapter-tools');
     tools.innerHTML = `
         <button class="text-btn" onclick="window.toggleRangeMode()" id="btn-range" style="color:#4f46e5; margin-right:5px;">⚡️범위선택</button>
@@ -276,10 +333,9 @@ function showChapters(b){bibleState.currentBook=b.name;document.getElementById('
     renderChaptersGrid();
 }
 
-// ▼▼▼ 새로운 기능: 범위 선택 (Range Select) ▼▼▼
 window.toggleRangeMode = function() {
     if(rangeStart === null) {
-        rangeStart = -1; // 모드 활성화 상태 (-1: 대기중)
+        rangeStart = -1; 
         alert("시작할 장을 누르고, 끝날 장을 누르면 사이가 모두 체크됩니다.");
         document.getElementById('btn-range').style.fontWeight = "bold";
         document.getElementById('btn-range').innerText = "⚡️선택중...";
@@ -292,7 +348,6 @@ window.toggleRangeMode = function() {
 };
 
 function renderChaptersGrid(){const b=BIBLE_DATA.books.find(x=>x.name===bibleState.currentBook),g=document.getElementById('bible-chapters-grid'),y=new Date().getFullYear().toString();g.innerHTML="";let all=true;for(let i=1;i<=b.chapters;i++){const d=document.createElement('div');d.className="chapter-item";const k=`${b.name}-${i}`,dt=appData[myName].bible&&appData[myName].bible[k],r=dt&&dt.startsWith(y);if(r)d.classList.add('checked');else all=false;d.innerText=i;
-    // 범위 선택 중일 때 스타일 처리
     if(rangeStart && rangeStart > 0 && i === rangeStart) d.classList.add('range-start');
     d.onclick=()=>window.toggleChapter(i, k, !r); g.appendChild(d);}const btn=document.getElementById('btn-finish-book');if(all){btn.classList.remove('disabled');btn.innerText="완독하기 🎉";}else{btn.classList.add('disabled');btn.innerText="모두 읽어야 완독 가능";}
 }
@@ -301,19 +356,14 @@ window.toggleChapter=(chapNum, k, c)=>{
     if(!appData[myName].bible)appData[myName].bible={};
     if(!appData[myName].bibleLog)appData[myName].bibleLog=[];
     const today = getTodayDate();
-
-    // 범위 선택 로직
     if(rangeStart !== null) {
         if(rangeStart === -1) {
-            // 1. 시작점 선택
             rangeStart = chapNum;
             renderChaptersGrid();
         } else {
-            // 2. 끝점 선택 -> 일괄 체크
             const start = Math.min(rangeStart, chapNum);
             const end = Math.max(rangeStart, chapNum);
             const bName = bibleState.currentBook;
-            
             for(let i=start; i<=end; i++) {
                 const key = `${bName}-${i}`;
                 if(!appData[myName].bible[key]) {
@@ -322,7 +372,7 @@ window.toggleChapter=(chapNum, k, c)=>{
                 }
             }
             saveData().then(() => {
-                rangeStart = null; // 모드 종료
+                rangeStart = null;
                 document.getElementById('btn-range').style.fontWeight = "normal";
                 document.getElementById('btn-range').innerText = "⚡️범위선택";
                 renderChaptersGrid();
@@ -331,8 +381,6 @@ window.toggleChapter=(chapNum, k, c)=>{
         }
         return;
     }
-
-    // 일반 단일 클릭 로직
     if(c) {
         appData[myName].bible[k] = today; 
         appData[myName].bibleLog.push({ date: today, key: k });
