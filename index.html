@@ -31,7 +31,7 @@
         @keyframes pulse-gold { 0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(245, 158, 11, 0)); } 50% { transform: scale(1.1); filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.6)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(245, 158, 11, 0)); } }
 
         /* 스플래시 & 로그인 */
-        #splash-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        #splash-screen { position: fixed; inset: 0; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.5s; }
         .logo-circle { font-size: 4rem; margin-bottom: 20px; animation: bounce 2s infinite; }
         #splash-screen h1 { text-align: center; margin: 0; line-height: 1.2; color: var(--text-main); }
 
@@ -46,7 +46,7 @@
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .round-btn { width: 36px; height: 36px; border-radius: 50%; background: white; border: 1px solid #e2e8f0; margin-left: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        #main-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 200px; }
+        #main-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px; }
 
         /* 카드 & 리스트 */
         .verse-card { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 20px; margin-bottom: 25px; box-shadow: 0 10px 15px -3px rgba(118, 75, 162, 0.3); position: relative; }
@@ -55,7 +55,8 @@
         
         .input-pill { background: white; border-radius: var(--radius-pill); padding: 5px 5px 5px 20px; display: flex; align-items: center; box-shadow: var(--shadow-sm); margin-bottom: 20px; border: 1px solid #e2e8f0; }
         .input-pill input { flex: 1; border: none; font-size: 0.95rem; background: transparent; }
-        .add-circle-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: white; border: none; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .add-circle-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: white; border: none; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+        .add-circle-btn:active { transform: scale(0.9); }
         .input-pill.small { padding: 4px 4px 4px 15px; margin-top: 10px; }
         .send-btn { background: var(--text-main); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; }
 
@@ -134,7 +135,6 @@
         .card-icon { font-size: 2rem; margin-right: 15px; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #f1f5f9; }
         .grid-books { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         
-        /* 성경 버튼 스타일 수정 (이름+n독 표시) */
         .bible-btn { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 0; text-align: center; font-size: 0.9rem; cursor: pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; }
         .bible-btn.completed { background: #ecfccb; border-color: #84cc16; color: #3f6212; font-weight: 700; }
         
@@ -151,19 +151,16 @@
 </head>
 <body>
 
-    <button onclick="hardReset()" style="position:fixed; top:0; left:0; z-index:99999; width:100%; height:50px; background:red; color:white; font-weight:bold; border:none; border-bottom:2px solid darkred;" id="reset-btn">
-        🚨 에러나면 여기 터치 (초기화) 🚨
-    </button>
-
     <div id="splash-screen">
         <div class="logo-circle">⛪️</div>
-        <h1>FAMILY<br>GOALS</h1>
+        <h1>FAMILY<br>GOALS<br><span style="font-size:1rem; font-weight:400; color:#64748b;">2025</span></h1>
         <p id="error-msg" style="margin-top:20px; font-size:0.8rem; color:red;"></p>
     </div>
 
     <div id="login-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 style="margin-top:0;">Welcome!</h2>
+            <h2 style="margin-top:0;">2025 Start!</h2>
+            <p style="font-size:0.85rem; color:#64748b; margin-bottom:20px;">새로운 마음으로 등록해주세요</p>
             <div id="login-grid" class="grid-container"></div>
         </div>
     </div>
@@ -190,7 +187,7 @@
             <div id="page-resolution" class="page active">
                 <div class="section-header"><span class="title">My Goals</span></div>
                 <div class="input-pill">
-                    <input type="text" id="input-resolution" placeholder="목표 입력 (예: 운동하기)">
+                    <input type="text" id="input-resolution" placeholder="목표 입력 (예: 매일 운동하기)">
                     <button onclick="window.addItem()" class="add-circle-btn">+</button>
                 </div>
                 <ul id="list-resolution" style="padding:0;"></ul>
@@ -199,7 +196,7 @@
                 <div class="chat-container">
                     <ul id="msg-list" style="padding:0; margin:0; list-style:none;"></ul>
                     <div class="input-pill small" style="margin-top:10px; padding-left:15px;">
-                        <input type="text" id="input-msg" placeholder="메시지...">
+                        <input type="text" id="input-msg" placeholder="응원의 한마디...">
                         <button onclick="window.sendMsg()" class="send-btn">전송</button>
                     </div>
                 </div>
@@ -295,36 +292,26 @@
             </div>
         </main>
 
-        <nav class="bottom-nav" style="position:fixed; bottom:0; width:100%; height:80px; background:rgba(255,255,255,0.95); display:flex; justify-content:space-around; padding-bottom:20px; border-top:1px solid #eee; z-index:100;">
-            <button class="nav-item active" onclick="window.goTab('resolution', this)" style="background:none; border:none; width:100%;">
-                <i class="fas fa-list-check" style="font-size:1.4rem; margin-bottom:4px;"></i><br><span style="font-size:0.7rem;">목표</span>
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="window.goTab('resolution', this)">
+                <i class="fas fa-list-check" style="font-size:1.4rem; margin-bottom:4px;"></i><span style="font-size:0.7rem;">목표</span>
             </button>
-            <button class="nav-item" onclick="window.goTab('bible', this)" style="background:none; border:none; width:100%;">
-                <i class="fas fa-book-open" style="font-size:1.4rem; margin-bottom:4px;"></i><br><span style="font-size:0.7rem;">성경</span>
+            <button class="nav-item" onclick="window.goTab('bible', this)">
+                <i class="fas fa-book-open" style="font-size:1.4rem; margin-bottom:4px;"></i><span style="font-size:0.7rem;">성경</span>
             </button>
-            <button class="nav-item" onclick="window.goTab('stats', this)" style="background:none; border:none; width:100%;">
-                <i class="fas fa-chart-pie" style="font-size:1.4rem; margin-bottom:4px;"></i><br><span style="font-size:0.7rem;">대시보드</span>
+            <button class="nav-item" onclick="window.goTab('stats', this)">
+                <i class="fas fa-chart-pie" style="font-size:1.4rem; margin-bottom:4px;"></i><span style="font-size:0.7rem;">대시보드</span>
             </button>
         </nav>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
-    <script>
-    window.hardReset = function() {
-        if(confirm("정말 모든 데이터를 초기화하시겠습니까?")) {
-            localStorage.clear();
-            alert("초기화 완료. 앱을 다시 시작합니다.");
-            location.reload();
-        }
-    }
-    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ▼▼▼ Config (고객님 정보) ▼▼▼
+        // ▼▼▼ Firebase Config ▼▼▼
         const firebaseConfig = {
             apiKey: "AIzaSyD0Vorv3SFatQuC7OCYHPA-Nok4DlqonrI",
             authDomain: "family-resolution.firebaseapp.com",
@@ -347,7 +334,8 @@
             try {
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
-                docRef = doc(db, "appData", "FamilyGoals_Final_V3_3"); 
+                // 2025년 공식 출범을 위해 문서 ID를 변경하여 초기화 (Clean Start)
+                docRef = doc(db, "appData", "FamilyGoals_2025_Official"); 
 
                 onSnapshot(docRef, (snapshot) => {
                     document.getElementById('splash-screen').style.opacity = '0';
@@ -366,28 +354,43 @@
                         USER_SLOTS.forEach(slot => {
                             if(!appData[slot]) appData[slot] = { resolution: [], bible: {}, history: {}, bibleRounds: {}, bibleLog: [] };
                             if(!appData[slot].bibleLog) appData[slot].bibleLog = [];
+                            if(!appData[slot].resolution) appData[slot].resolution = [];
                         });
                         checkLoginStatus();
                     } else {
+                        // DB 문서가 없으면(최초 실행) 새로 생성
                         initNewData();
                     }
                 }, (error) => {
                     console.error("DB Error:", error);
-                    document.getElementById('error-msg').innerText = "데이터 연결 실패! (권한 또는 네트워크 문제)";
-                    document.getElementById('reset-btn').style.display = "block";
+                    document.getElementById('error-msg').innerText = "데이터 연결 실패! 인터넷을 확인해주세요.";
                 });
             } catch (e) { alert("Config 오류"); }
         }
 
+        // ▼▼▼ 기능 함수들 ▼▼▼
+        
+        // 1. 목표 추가 (안전장치 강화)
         window.addItem = function() {
             const input = document.getElementById('input-resolution');
             const val = input.value.trim();
             if(!val) return;
-            if(!appData[myName]) appData[myName] = { resolution: [], bible: {}, history: {} };
+            
+            // 데이터 안전성 검사
+            if(!myName || !appData[myName]) {
+                alert("사용자 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+                return;
+            }
             if(!appData[myName].resolution) appData[myName].resolution = [];
-            appData[myName].resolution.push({ text: val, steps: ["완료"], done: [false], counts: [0] });
+
+            appData[myName].resolution.push({ 
+                text: val, 
+                steps: ["완료"], 
+                done: [false], 
+                counts: [0] 
+            });
             input.value = "";
-            saveData();
+            saveData().catch(err => alert("저장 실패: " + err));
         };
 
         window.sendMsg = function() {
@@ -414,6 +417,7 @@
             saveData();
         };
 
+        // ▼▼▼ 로그인/UI 관리 ▼▼▼
         function checkLoginStatus() {
             if(myName && appData.auth[myName]) {
                 document.getElementById('login-modal').classList.add('hidden');
@@ -443,9 +447,9 @@
             });
         }
 
-        window.tryLogin = (s, p) => { if(prompt("PIN:")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호 불일치"); };
-        window.tryRegister = (s) => { const n=prompt("이름:"); if(!n)return; const p=prompt("PIN:"); if(!p)return; appData.auth[s]={name:n,pin:p}; if(!appData[s])appData[s]={resolution:[],bible:{},history:{}}; saveData().then(()=>{myName=s; localStorage.setItem('myId',s); checkLoginStatus();}); };
-        window.logoutAction = () => { if(confirm("로그아웃?")) { localStorage.removeItem('myId'); myName=null; checkLoginStatus(); } };
+        window.tryLogin = (s, p) => { if(prompt("설정한 비밀번호(PIN)를 입력하세요:")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호 불일치"); };
+        window.tryRegister = (s) => { const n=prompt("사용할 이름을 입력하세요:"); if(!n)return; const p=prompt("비밀번호(PIN)를 설정하세요:"); if(!p)return; appData.auth[s]={name:n,pin:p}; if(!appData[s])appData[s]={resolution:[],bible:{},history:{}}; saveData().then(()=>{myName=s; localStorage.setItem('myId',s); checkLoginStatus();}); };
+        window.logoutAction = () => { if(confirm("로그아웃 하시겠습니까?")) { localStorage.removeItem('myId'); myName=null; checkLoginStatus(); } };
 
         function updateMainUI() {
             document.getElementById('user-name').innerText = appData.auth[myName].name;
@@ -454,14 +458,15 @@
                 document.getElementById('verse-ref').innerText = appData.verse.r;
             } else {
                 document.getElementById('verse-text').innerText = "환영합니다! ✏️버튼을 눌러 말씀을 입력해주세요.";
-                document.getElementById('verse-ref').innerText = "Family Goals";
+                document.getElementById('verse-ref').innerText = "Family Goals 2025";
             }
             renderResolutionList(); renderMessages(); renderDashboard();
             updateBibleStats(); 
         }
 
+        // ▼▼▼ 대시보드 로직 ▼▼▼
         function renderDashboard() {
-            const period = appData.period || { start: "2024-01-01", end: "2024-12-31" };
+            const period = appData.period || { start: "2025-01-01", end: "2025-12-31" };
             document.getElementById('period-display').innerText = `${period.start} ~ ${period.end}`;
             const myHistory = appData[myName].history || {};
             const myBible = appData[myName].bible || {};
@@ -471,7 +476,7 @@
             let todayTotal = 0, todayDone = 0;
             const taskList = document.getElementById('today-task-list'); taskList.innerHTML = "";
             myGoals.forEach(g => {
-                const isDoneToday = g.done.every(Boolean);
+                const isDoneToday = g.done && g.done.every(Boolean);
                 todayTotal++; if(isDoneToday) todayDone++;
                 const div = document.createElement('div');
                 div.className = "today-check-row";
@@ -488,7 +493,6 @@
             setTimeout(() => { document.getElementById('donut-fill').style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
             let streak = myHistory[today] ? 1 : 0;
-            document.getElementById('dash-streak').innerText = streak + "일";
             const fireIcon = document.getElementById('streak-icon');
             const streakLabel = document.getElementById('streak-label');
             fireIcon.className = "fas fa-fire streak-icon"; 
@@ -503,6 +507,7 @@
                 streakLabel.innerText = "50% 이상 도전!";
             }
             
+            // 실제 연속 일수 계산
             let realStreak = 0;
             for(let i=0; i<365; i++) {
                 const d = new Date(); d.setDate(d.getDate() - i);
@@ -511,6 +516,7 @@
             }
             document.getElementById('dash-streak').innerText = realStreak + "일";
 
+            // 성경 진행도
             let lastBook = "없음", percent = 0;
             const readKeys = Object.keys(myBible).sort();
             if(readKeys.length > 0) {
@@ -524,18 +530,20 @@
             document.getElementById('bible-book-percent').innerText = percent + "%";
             setTimeout(() => { document.getElementById('bible-progress-bar').style.width = percent + "%"; }, 100);
 
+            // 주간 그래프
             const weekGraph = document.getElementById('weekly-graph'); weekGraph.innerHTML = "";
             const dayNames = ['일','월','화','수','목','금','토'];
             for(let i=6; i>=0; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
                 const dStr = d.toISOString().split('T')[0];
                 const count = myHistory[dStr] || 0;
-                const h = Math.min(100, count * 20); 
+                const h = Math.min(100, count * 25); 
                 weekGraph.innerHTML += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;"><div style="flex:1;display:flex;align-items:flex-end;width:100%;"><div class="week-bar ${h>0?'high':''}" style="width:60%;margin:0 auto;height:${h}%"></div></div><div class="week-day-label">${dayNames[d.getDay()]}</div></div>`;
             }
             renderRankings(period); renderHallOfFame();
         }
 
+        // 랭킹 & 기타
         function getWeeklyRange(){const n=new Date(),d=n.getDay(),diff=d===6?0:d+1;const s=new Date(n);s.setDate(n.getDate()-diff);const e=new Date(s);e.setDate(s.getDate()+6);return{start:s.toISOString().split('T')[0],end:e.toISOString().split('T')[0]};}
         function renderRankings(p){const u=USER_SLOTS.filter(x=>appData.auth&&appData.auth[x]);const r=document.getElementById('rank-resolution');r.innerHTML="";u.map(x=>{const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=p.start&&d<=p.end).reduce((a,b)=>a+h[b],0);return{name:appData.auth[x].name,val:s}}).sort((a,b)=>b.val-a.val).forEach((x,i)=>r.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}점</span></div>`);const w=getWeeklyRange();document.querySelector('.ranking-box:nth-child(2) .ranking-title').innerText=`📖 성경 (이번주)`;const b=document.getElementById('rank-bible');b.innerHTML="";u.map(x=>{
             const log = appData[x].bibleLog || [];
@@ -544,7 +552,8 @@
         }).sort((a,b)=>b.val-a.val).forEach((x,i)=>b.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}장</span></div>`);}
         function renderHallOfFame(){const l=document.getElementById('hall-of-fame-list');l.innerHTML="";(appData.pastSeasons||[]).reverse().forEach(p=>l.innerHTML+=`<div class="fame-row"><div class="fame-season">${p.range}</div><div class="fame-winner">👑 ${p.winner} (${p.score})</div></div>`);if(l.innerHTML==="")l.innerHTML="<div style='text-align:center;color:#94a3b8;font-size:0.8rem;'>기록 없음</div>";}
         window.toggleAccordion=function(id,h){const c=document.getElementById(id);c.classList.toggle('hidden');h.classList.toggle('open');};
-        window.manageSeason=function(){const c=appData.period;if(!confirm(`시즌(${c.start}~${c.end}) 마감?`)){const s=prompt("시작일",c.start),e=prompt("종료일",c.end);if(s&&e){appData.period={start:s,end:e};saveData();}return;}const u=USER_SLOTS.filter(x=>appData.auth&&appData.auth[x]),r=u.map(x=>{const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=c.start&&d<=c.end).reduce((a,b)=>a+h[b],0);return{name:appData.auth[x].name,val:s}}).sort((a,b)=>b.val-a.val);if(!appData.pastSeasons)appData.pastSeasons=[];appData.pastSeasons.push({range:`${c.start}~${c.end}`,winner:r[0].name,score:r[0].val});const ns=prompt("새시작",new Date().toISOString().split('T')[0]),ne=prompt("새종료","2024-12-31");appData.period={start:ns,end:ne};saveData().then(()=>alert("시즌 마감됨!"));};
+        
+        window.manageSeason=function(){const c=appData.period;if(!confirm(`시즌(${c.start}~${c.end}) 마감?`)){const s=prompt("시작일",c.start),e=prompt("종료일",c.end);if(s&&e){appData.period={start:s,end:e};saveData();}return;}const u=USER_SLOTS.filter(x=>appData.auth&&appData.auth[x]),r=u.map(x=>{const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=c.start&&d<=c.end).reduce((a,b)=>a+h[b],0);return{name:appData.auth[x].name,val:s}}).sort((a,b)=>b.val-a.val);if(!appData.pastSeasons)appData.pastSeasons=[];if(r.length>0)appData.pastSeasons.push({range:`${c.start}~${c.end}`,winner:r[0].name,score:r[0].val});const ns=prompt("새시작",new Date().toISOString().split('T')[0]),ne=prompt("새종료","2025-12-31");appData.period={start:ns,end:ne};saveData().then(()=>alert("시즌 마감됨!"));};
 
         window.toggleStep=(i,s)=>{const item=appData[myName].resolution[i];item.done[s]=!item.done[s];if(!item.counts)item.counts=Array(item.steps.length).fill(0);if(item.done[s]){item.counts[s]++;if(window.confetti)confetti({particleCount:50,spread:60,origin:{y:0.6}});}else{item.counts[s]=Math.max(0,item.counts[s]-1);}const t=new Date().toISOString().split('T')[0];if(!appData[myName].history)appData[myName].history={};let d=0;appData[myName].resolution.forEach(r=>r.done.forEach(x=>{if(x)d++}));appData[myName].history[t]=d;saveData();};
         window.deleteItem=(i)=>{if(confirm("삭제?")){appData[myName].resolution.splice(i,1);saveData();}};
@@ -552,9 +561,9 @@
         function renderResolutionList(){const l=document.getElementById('list-resolution');l.innerHTML="";(appData[myName].resolution||[]).forEach((x,i)=>{const s=x.steps.map((st,si)=>`<span class="step-item ${x.done[si]?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`).join('');l.innerHTML+=`<li class="resolution-item"><div class="res-left"><div class="res-text" onclick="window.editItem(${i})">${x.text}</div><div class="steps">${s}</div></div><button class="del-icon-btn" onclick="window.deleteItem(${i})"><i class="fas fa-trash-alt"></i></button></li>`});}
         function renderMessages(){const l=document.getElementById('msg-list');l.innerHTML="";[...(appData.messages||[])].reverse().forEach(m=>l.innerHTML+=`<li><b>${m.sender}:</b> ${m.text}</li>`);}
         
+        // 성경 기능
         window.showBibleBooks=(t)=>{bibleState.currentTestament=t;document.getElementById('bible-main-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');const g=document.getElementById('bible-books-grid');g.innerHTML="";
         BIBLE_DATA.books.filter(b=>b.testament===t).forEach(b=>{const d=document.createElement('div');d.className="bible-btn";let c=0;const y=new Date().getFullYear().toString();for(let i=1;i<=b.chapters;i++){const k=`${b.name}-${i}`,dt=appData[myName].bible&&appData[myName].bible[k];if(dt&&dt.startsWith(y))c++;}if(c>=b.chapters)d.classList.add('completed');
-        // [수정] 책 이름 표시 복구 및 n독 표시
         const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b.name]) || 0;
         let html = `<div>${b.name}</div>`;
         if(round > 0) html += `<div style="font-size:0.75rem; color:#166534; font-weight:bold; margin-top:2px;">🔄 ${round+1}독 도전</div>`;
