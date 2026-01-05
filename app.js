@@ -164,7 +164,6 @@ function updateMainUI() {
     updateBibleStats(); 
 }
 
-// ▼▼▼ [수정됨] 가족 목표 렌더링 (간섭 금지 모드) ▼▼▼
 function renderFamilyGoals() {
     const container = document.getElementById('family-goals-container');
     if(!container) return;
@@ -181,7 +180,6 @@ function renderFamilyGoals() {
         const card = document.createElement('div');
         card.className = "family-card";
         
-        // 카드 헤더: 달성률을 숨기고 'N개의 목표'로만 표시
         let html = `
             <div class="family-header" onclick="window.toggleFamilyList('fam-list-${idx}')">
                 <span class="family-name">${user.name}</span>
@@ -190,12 +188,10 @@ function renderFamilyGoals() {
             <ul id="fam-list-${idx}" class="family-goal-list">
         `;
 
-        // 목표 리스트: 성공/실패 여부(체크박스, 취소선)를 모두 제거하고 텍스트만 표시
         if(total === 0) {
             html += `<li class="family-goal-item" style="color:#94a3b8;">등록된 목표가 없습니다.</li>`;
         } else {
             goals.forEach(g => {
-                // 성공 여부(isDone) 체크 로직 제거
                 html += `
                     <li class="family-goal-item">
                         <span class="fg-bullet" style="color:#cbd5e1;">•</span>
@@ -283,15 +279,36 @@ function renderDashboard() {
     document.getElementById('bible-book-percent').innerText = percent + "%";
     setTimeout(() => { document.getElementById('bible-progress-bar').style.width = percent + "%"; }, 100);
 
+    // ▼▼▼ [수정됨] 일~토 고정 그래프 로직 ▼▼▼
     const weekGraph = document.getElementById('weekly-graph'); weekGraph.innerHTML = "";
     const dayNames = ['일','월','화','수','목','금','토'];
-    for(let i=6; i>=0; i--) {
-        const d = new Date(kstNow); d.setDate(d.getDate() - i);
+    
+    // 1. 이번 주 일요일(시작점) 계산
+    const dayOfWeek = kstNow.getDay(); // 오늘 요일 (0:일 ~ 6:토)
+    const sunday = new Date(kstNow);
+    sunday.setDate(kstNow.getDate() - dayOfWeek);
+
+    // 2. 일요일부터 토요일까지 7일 반복
+    for(let i=0; i<7; i++) {
+        const d = new Date(sunday);
+        d.setDate(sunday.getDate() + i);
         const dStr = d.toISOString().split('T')[0];
+        
         const count = myHistory[dStr] || 0;
         const h = Math.min(100, count * 25); 
-        weekGraph.innerHTML += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;"><div style="flex:1;display:flex;align-items:flex-end;width:100%;"><div class="week-bar ${h>0?'high':''}" style="width:60%;margin:0 auto;height:${h}%"></div></div><div class="week-day-label">${dayNames[d.getDay()]}</div></div>`;
+        
+        // 오늘 날짜인지 확인 (강조용 선택 사항, 여기선 기본 색상 유지)
+        const isToday = (dStr === today);
+
+        weekGraph.innerHTML += `
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;">
+                <div style="flex:1;display:flex;align-items:flex-end;width:100%;">
+                    <div class="week-bar ${h>0?'high':''}" style="width:60%;margin:0 auto;height:${h}%; ${isToday ? 'opacity:0.8;' : ''}"></div>
+                </div>
+                <div class="week-day-label" style="${isToday ? 'font-weight:bold;color:var(--primary);' : ''}">${dayNames[i]}</div>
+            </div>`;
     }
+    
     renderRankings(period); renderHallOfFame();
 }
 
@@ -328,7 +345,38 @@ function showChapters(b){bibleState.currentBook=b.name;document.getElementById('
     `;
     rangeStart = null; 
     renderChaptersGrid();
+    
+    // ▼▼▼ [추가됨] 완독 취소 버튼 표시 로직 ▼▼▼
+    const existingBtn = document.getElementById('btn-undo-finish');
+    if(existingBtn) existingBtn.remove(); // 중복 방지
+
+    const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0;
+    if(round > 0) {
+        const undoBtn = document.createElement('button');
+        undoBtn.id = "btn-undo-finish";
+        undoBtn.className = "text-btn";
+        undoBtn.style.cssText = "display:block; width:100%; color:#ef4444; margin-bottom:10px; font-size:0.85rem;";
+        undoBtn.innerText = `🔄 완독 취소 (현재 ${round}회 -> ${round-1}회로 수정)`;
+        undoBtn.onclick = window.undoFinishBook;
+        document.getElementById('btn-finish-book').before(undoBtn);
+    }
 }
+
+// ▼▼▼ [추가됨] 완독 취소 함수 ▼▼▼
+window.undoFinishBook = function() {
+    const b = bibleState.currentBook;
+    if(!confirm(`'${b}' 완독 기록을 1회 차감하시겠습니까?\n(읽음 횟수와 점수만 수정됩니다)`)) return;
+    
+    if(appData[myName].bibleRounds && appData[myName].bibleRounds[b] > 0) {
+        appData[myName].bibleRounds[b]--;
+        if(appData[myName].bibleRounds[b] === 0) delete appData[myName].bibleRounds[b];
+        saveData().then(() => {
+            alert("수정되었습니다.");
+            showChapters(b); // 화면 갱신
+            updateBibleStats();
+        });
+    }
+};
 
 window.toggleRangeMode = function() {
     if(rangeStart === null) {
