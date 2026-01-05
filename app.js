@@ -321,15 +321,67 @@ window.editItem=(i)=>{const item=appData[myName].resolution[i],n=prompt("수정:
 function renderResolutionList(){const l=document.getElementById('list-resolution');l.innerHTML="";(appData[myName].resolution||[]).forEach((x,i)=>{const s=x.steps.map((st,si)=>`<span class="step-item ${x.done[si]?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`).join('');l.innerHTML+=`<li class="resolution-item"><div class="res-left"><div class="res-text" onclick="window.editItem(${i})">${x.text}</div><div class="steps">${s}</div></div><button class="del-icon-btn" onclick="window.deleteItem(${i})"><i class="fas fa-trash-alt"></i></button></li>`});}
 function renderMessages(){const l=document.getElementById('msg-list');l.innerHTML="";[...(appData.messages||[])].reverse().forEach(m=>l.innerHTML+=`<li><b>${m.sender}:</b> ${m.text}</li>`);}
 
-window.showBibleBooks=(t)=>{bibleState.currentTestament=t;document.getElementById('bible-main-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');const g=document.getElementById('bible-books-grid');g.innerHTML="";
-BIBLE_DATA.books.filter(b=>b.testament===t).forEach(b=>{const d=document.createElement('div');d.className="bible-btn";let c=0;const y=new Date().getFullYear().toString();for(let i=1;i<=b.chapters;i++){const k=`${b.name}-${i}`,dt=appData[myName].bible&&appData[myName].bible[k];if(dt&&dt.startsWith(y))c++;}if(c>=b.chapters)d.classList.add('completed');
-const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b.name]) || 0;
-let html = `<div>${b.name}</div>`; if(round > 0) html += `<div style="font-size:0.75rem; color:#166534; font-weight:bold; margin-top:2px;">🔄 ${round+1}독 도전</div>`; else html += `<div style="font-size:0.7rem; color:#94a3b8;">${b.chapters}장</div>`;
-d.innerHTML = html; d.onclick=()=>showChapters(b);g.appendChild(d);});};
+window.showBibleBooks=(t)=>{
+    bibleState.currentTestament=t;
+    document.getElementById('bible-main-view').classList.add('hidden-view');
+    document.getElementById('bible-books-view').classList.remove('hidden-view');
+    const g=document.getElementById('bible-books-grid');
+    g.innerHTML="";
+    
+    BIBLE_DATA.books.filter(b=>b.testament===t).forEach(b=>{
+        const d=document.createElement('div');
+        d.className="bible-btn";
+        
+        let c=0;
+        const y=new Date().getFullYear().toString();
+        for(let i=1;i<=b.chapters;i++){
+            const k=`${b.name}-${i}`,dt=appData[myName].bible&&appData[myName].bible[k];
+            if(dt&&dt.startsWith(y))c++;
+        }
+        if(c>=b.chapters) d.classList.add('completed');
+
+        const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b.name]) || 0;
+        let html = `<div>${b.name}</div>`;
+        
+        if(round > 0) {
+            html += `<div class="round-badge" onclick="event.stopPropagation(); window.updateRoundCount('${b.name}')" style="font-size:0.75rem; color:#166534; font-weight:bold; margin-top:2px; background:#dcfce7; padding:2px 6px; border-radius:8px;">🔄 ${round+1}독 도전</div>`;
+        } else {
+            html += `<div style="font-size:0.7rem; color:#94a3b8;">${b.chapters}장</div>`;
+        }
+        
+        d.innerHTML = html;
+        d.onclick=()=>showChapters(b);
+        g.appendChild(d);
+    });
+};
+
+window.updateRoundCount = function(bookName) {
+    const current = (appData[myName].bibleRounds && appData[myName].bibleRounds[bookName]) || 0;
+    const input = prompt(`'${bookName}' 완독 횟수를 수정합니다.\n(현재 ${current}회 완료 상태)\n\n원하는 횟수(완료한 횟수)를 입력하세요.\n예: 1회독 완료 후 2회독 중이라면 '1' 입력`, current);
+    
+    if(input === null) return;
+    const num = parseInt(input);
+    if(isNaN(num) || num < 0) {
+        alert("올바른 숫자를 입력해주세요.");
+        return;
+    }
+
+    if(!appData[myName].bibleRounds) appData[myName].bibleRounds = {};
+    
+    if(num === 0) {
+        delete appData[myName].bibleRounds[bookName];
+    } else {
+        appData[myName].bibleRounds[bookName] = num;
+    }
+    
+    saveData().then(() => {
+        alert("수정되었습니다.");
+        showBibleBooks(bibleState.currentTestament);
+    });
+};
 
 function showChapters(b){bibleState.currentBook=b.name;document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-chapters-view').classList.remove('hidden-view');document.getElementById('bible-book-title').innerText=b.name;
     
-    // ▼▼▼ [수정됨] 상단 툴 버튼 이름 변경 및 분리 ▼▼▼
     const tools = document.querySelector('.chapter-tools');
     tools.innerHTML = `
         <button class="text-btn" onclick="window.toggleRangeMode()" id="btn-range" style="color:#4f46e5; margin-right:5px;">⚡️범위선택</button>
@@ -339,10 +391,18 @@ function showChapters(b){bibleState.currentBook=b.name;document.getElementById('
     rangeStart = null; 
     renderChaptersGrid();
     
-    // ▼▼▼ [수정됨] 하단 완독 취소 버튼 분리 ▼▼▼
     const existingBtn = document.getElementById('btn-undo-finish');
     if(existingBtn) existingBtn.remove(); 
+    
+    // ▼▼▼ [새로 추가된 버튼] 책 기록 완전 초기화 ▼▼▼
+    const resetBtn = document.createElement('button');
+    resetBtn.className = "text-btn";
+    resetBtn.style.cssText = "display:block; width:100%; color:white; background:#ef4444; margin-top:30px; margin-bottom:10px; font-weight:bold; font-size:0.9rem; padding:15px; border-radius:12px;";
+    resetBtn.innerText = `🗑️ 이 책 기록 초기화 (0부터 다시)`;
+    resetBtn.onclick = window.resetBookHistory;
+    document.getElementById('bible-chapters-grid').after(resetBtn); // 목록 아래에 추가
 
+    // 기존 완독 취소 버튼 유지 (혹시 필요할 수 있으니)
     const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0;
     if(round > 0) {
         const undoBtn = document.createElement('button');
@@ -354,6 +414,37 @@ function showChapters(b){bibleState.currentBook=b.name;document.getElementById('
         document.getElementById('btn-finish-book').before(undoBtn);
     }
 }
+
+// ▼▼▼ [새로 추가된 함수] 책 기록 완전 초기화 (날짜 무시 삭제) ▼▼▼
+window.resetBookHistory = function() {
+    const b = bibleState.currentBook;
+    if(!confirm(`⚠️ 정말로 '${b}'의 모든 기록을 삭제하시겠습니까?\n\n- 읽은 날짜, 횟수, 점수가 모두 사라집니다.\n- 되돌릴 수 없습니다.`)) return;
+    
+    // 1. bible 객체에서 해당 책 관련 키 삭제
+    if(appData[myName].bible) {
+        Object.keys(appData[myName].bible).forEach(key => {
+            if(key.startsWith(b + "-")) {
+                delete appData[myName].bible[key];
+            }
+        });
+    }
+
+    // 2. bibleLog 배열에서 해당 책 관련 로그 삭제 (날짜 무시하고 키로만 검색)
+    if(appData[myName].bibleLog) {
+        appData[myName].bibleLog = appData[myName].bibleLog.filter(entry => !entry.key.startsWith(b + "-"));
+    }
+
+    // 3. 완독 횟수 삭제
+    if(appData[myName].bibleRounds && appData[myName].bibleRounds[b]) {
+        delete appData[myName].bibleRounds[b];
+    }
+
+    saveData().then(() => {
+        alert(`${b} 기록이 초기화되었습니다.`);
+        showChapters(b); 
+        updateBibleStats();
+    });
+};
 
 window.undoFinishBook = function() {
     const b = bibleState.currentBook;
@@ -429,7 +520,35 @@ window.toggleChapter=(chapNum, k, c)=>{
     saveData().then(()=>{renderChaptersGrid(); updateBibleStats();});
 };
 
-window.controlAll=(on)=>{const b=BIBLE_DATA.books.find(x=>x.name===bibleState.currentBook);const today=getTodayDate();if(!appData[myName].bible)appData[myName].bible={};if(!appData[myName].bibleLog)appData[myName].bibleLog=[];for(let i=1;i<=b.chapters;i++){const k=`${b.name}-${i}`;if(on){if(!appData[myName].bible[k]){appData[myName].bible[k]=today;appData[myName].bibleLog.push({date:today,key:k});}}else{if(appData[myName].bible[k]){delete appData[myName].bible[k];const idx=appData[myName].bibleLog.findIndex(x=>x.key===k&&x.date===today);if(idx>-1)appData[myName].bibleLog.splice(idx,1);}}}saveData().then(()=>{renderChaptersGrid(); updateBibleStats();});};
+window.controlAll=(on)=>{
+    const b=BIBLE_DATA.books.find(x=>x.name===bibleState.currentBook);
+    const today=getTodayDate();
+    
+    if(!on) {
+        if(!confirm("⚠️ 경고 ⚠️\n체크를 비우면 '오늘 읽은 기록'도 함께 삭제됩니다.\n\n단순히 n회독을 위해 비우려는 거라면,\n이 버튼 말고 '완독하기' 버튼을 누르거나\n그냥 다시 '전체선택'을 누르세요.\n\n정말 기록을 지우시겠습니까?")) return;
+    }
+
+    if(!appData[myName].bible)appData[myName].bible={};
+    if(!appData[myName].bibleLog)appData[myName].bibleLog=[];
+    
+    for(let i=1;i<=b.chapters;i++){
+        const k=`${b.name}-${i}`;
+        if(on){
+            if(!appData[myName].bible[k]){
+                appData[myName].bible[k]=today;
+                appData[myName].bibleLog.push({date:today,key:k});
+            }
+        }else{
+            if(appData[myName].bible[k]){
+                delete appData[myName].bible[k];
+                const idx=appData[myName].bibleLog.findIndex(x=>x.key===k&&x.date===today);
+                if(idx>-1)appData[myName].bibleLog.splice(idx,1);
+            }
+        }
+    }
+    saveData().then(()=>{renderChaptersGrid(); updateBibleStats();});
+};
+
 window.finishBookAndReset=()=>{if(document.getElementById('btn-finish-book').classList.contains('disabled'))return;if(confirm("완독 처리 하시겠습니까?\n체크박스는 초기화되지만, 읽은 기록은 유지됩니다.")){const b=bibleState.currentBook;if(!appData[myName].bibleRounds)appData[myName].bibleRounds={};appData[myName].bibleRounds[b]=(appData[myName].bibleRounds[b]||0)+1;const bookData=BIBLE_DATA.books.find(x=>x.name===b);for(let i=1;i<=bookData.chapters;i++){delete appData[myName].bible[`${b}-${i}`];}saveData().then(()=>{renderChaptersGrid(); updateBibleStats();});}};
 window.backToBooks=()=>{document.getElementById('bible-chapters-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');};
 window.showBibleMain=()=>{document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-main-view').classList.remove('hidden-view');};
