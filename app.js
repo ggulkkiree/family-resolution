@@ -279,36 +279,27 @@ function renderDashboard() {
     document.getElementById('bible-book-percent').innerText = percent + "%";
     setTimeout(() => { document.getElementById('bible-progress-bar').style.width = percent + "%"; }, 100);
 
-    // ▼▼▼ [수정됨] 일~토 고정 그래프 로직 ▼▼▼
     const weekGraph = document.getElementById('weekly-graph'); weekGraph.innerHTML = "";
     const dayNames = ['일','월','화','수','목','금','토'];
     
-    // 1. 이번 주 일요일(시작점) 계산
-    const dayOfWeek = kstNow.getDay(); // 오늘 요일 (0:일 ~ 6:토)
+    const dayOfWeek = kstNow.getDay(); 
     const sunday = new Date(kstNow);
     sunday.setDate(kstNow.getDate() - dayOfWeek);
 
-    // 2. 일요일부터 토요일까지 7일 반복
     for(let i=0; i<7; i++) {
         const d = new Date(sunday);
         d.setDate(sunday.getDate() + i);
         const dStr = d.toISOString().split('T')[0];
-        
         const count = myHistory[dStr] || 0;
         const h = Math.min(100, count * 25); 
-        
-        // 오늘 날짜인지 확인 (강조용 선택 사항, 여기선 기본 색상 유지)
         const isToday = (dStr === today);
 
         weekGraph.innerHTML += `
             <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;">
-                <div style="flex:1;display:flex;align-items:flex-end;width:100%;">
-                    <div class="week-bar ${h>0?'high':''}" style="width:60%;margin:0 auto;height:${h}%; ${isToday ? 'opacity:0.8;' : ''}"></div>
-                </div>
+                <div style="flex:1;display:flex;align-items:flex-end;width:100%;"><div class="week-bar ${h>0?'high':''}" style="width:60%;margin:0 auto;height:${h}%; ${isToday ? 'opacity:0.8;' : ''}"></div></div>
                 <div class="week-day-label" style="${isToday ? 'font-weight:bold;color:var(--primary);' : ''}">${dayNames[i]}</div>
             </div>`;
     }
-    
     renderRankings(period); renderHallOfFame();
 }
 
@@ -337,32 +328,33 @@ let html = `<div>${b.name}</div>`; if(round > 0) html += `<div style="font-size:
 d.innerHTML = html; d.onclick=()=>showChapters(b);g.appendChild(d);});};
 
 function showChapters(b){bibleState.currentBook=b.name;document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-chapters-view').classList.remove('hidden-view');document.getElementById('bible-book-title').innerText=b.name;
+    
+    // ▼▼▼ [수정됨] 상단 툴 버튼 이름 변경 및 분리 ▼▼▼
     const tools = document.querySelector('.chapter-tools');
     tools.innerHTML = `
         <button class="text-btn" onclick="window.toggleRangeMode()" id="btn-range" style="color:#4f46e5; margin-right:5px;">⚡️범위선택</button>
-        <button class="text-btn" onclick="window.controlAll(true)">전체</button>
-        <button class="text-btn" onclick="window.controlAll(false)">해제</button>
+        <button class="text-btn" onclick="window.controlAll(true)">전체선택</button>
+        <button class="text-btn" onclick="window.controlAll(false)" style="color:#64748b;">체크비움</button> 
     `;
     rangeStart = null; 
     renderChaptersGrid();
     
-    // ▼▼▼ [추가됨] 완독 취소 버튼 표시 로직 ▼▼▼
+    // ▼▼▼ [수정됨] 하단 완독 취소 버튼 분리 ▼▼▼
     const existingBtn = document.getElementById('btn-undo-finish');
-    if(existingBtn) existingBtn.remove(); // 중복 방지
+    if(existingBtn) existingBtn.remove(); 
 
     const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0;
     if(round > 0) {
         const undoBtn = document.createElement('button');
         undoBtn.id = "btn-undo-finish";
         undoBtn.className = "text-btn";
-        undoBtn.style.cssText = "display:block; width:100%; color:#ef4444; margin-bottom:10px; font-size:0.85rem;";
-        undoBtn.innerText = `🔄 완독 취소 (현재 ${round}회 -> ${round-1}회로 수정)`;
+        undoBtn.style.cssText = "display:block; width:100%; color:#ef4444; margin-bottom:10px; font-weight:bold; font-size:0.9rem; padding:10px; border:1px solid #fee2e2; border-radius:10px; background:#fef2f2;";
+        undoBtn.innerText = `🚫 완독 기록 취소 (현재 ${round}회 → ${round-1}회)`;
         undoBtn.onclick = window.undoFinishBook;
         document.getElementById('btn-finish-book').before(undoBtn);
     }
 }
 
-// ▼▼▼ [추가됨] 완독 취소 함수 ▼▼▼
 window.undoFinishBook = function() {
     const b = bibleState.currentBook;
     if(!confirm(`'${b}' 완독 기록을 1회 차감하시겠습니까?\n(읽음 횟수와 점수만 수정됩니다)`)) return;
@@ -372,7 +364,7 @@ window.undoFinishBook = function() {
         if(appData[myName].bibleRounds[b] === 0) delete appData[myName].bibleRounds[b];
         saveData().then(() => {
             alert("수정되었습니다.");
-            showChapters(b); // 화면 갱신
+            showChapters(b); 
             updateBibleStats();
         });
     }
