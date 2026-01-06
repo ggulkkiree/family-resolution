@@ -226,14 +226,20 @@ function renderDashboard() {
     const myGoals = appData[myName].resolution || [];
     let todayTotal = 0, todayDone = 0;
     const taskList = document.getElementById('today-task-list'); taskList.innerHTML = "";
+    
+    // ▼▼▼ [수정됨] 대시보드 - 오늘 날짜 체크 확인 ▼▼▼
     myGoals.forEach(g => {
-        const isDoneToday = g.done && g.done.every(Boolean);
-        todayTotal++; if(isDoneToday) todayDone++;
+        // 날짜가 오늘 날짜와 일치해야 완료된 것으로 간주
+        const isDoneToday = g.done && g.done.every(val => val === today);
+        
+        todayTotal++; 
+        if(isDoneToday) todayDone++;
         const div = document.createElement('div');
         div.className = "today-check-row";
         div.innerHTML = `<span style="font-size:0.9rem;">${g.text}</span><span style="font-size:1.2rem; color:${isDoneToday?'var(--success)':'#ddd'}">${isDoneToday?'●':'○'}</span>`;
         taskList.appendChild(div);
     });
+
     const statusPill = document.getElementById('today-status');
     statusPill.innerText = `${todayDone}/${todayTotal} 완료`;
     if(todayDone === todayTotal && todayTotal > 0) statusPill.classList.add('done'); else statusPill.classList.remove('done');
@@ -314,11 +320,63 @@ function renderRankings(p){const u=USER_SLOTS.filter(x=>appData.auth&&appData.au
 function renderHallOfFame(){const l=document.getElementById('hall-of-fame-list');l.innerHTML="";(appData.pastSeasons||[]).reverse().forEach(p=>l.innerHTML+=`<div class="fame-row"><div class="fame-season">${p.range}</div><div class="fame-winner">👑 ${p.winner} (${p.score})</div></div>`);if(l.innerHTML==="")l.innerHTML="<div style='text-align:center;color:#94a3b8;font-size:0.8rem;'>기록 없음</div>";}
 window.toggleAccordion=function(id,h){const c=document.getElementById(id);c.classList.toggle('hidden');h.classList.toggle('open');};
 window.manageSeason=function(){const c=appData.period;if(!confirm(`시즌(${c.start}~${c.end}) 마감?`)){const s=prompt("시작일",c.start),e=prompt("종료일",c.end);if(s&&e){appData.period={start:s,end:e};saveData();}return;}const u=USER_SLOTS.filter(x=>appData.auth&&appData.auth[x]),r=u.map(x=>{const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=c.start&&d<=c.end).reduce((a,b)=>a+h[b],0);return{name:appData.auth[x].name,val:s}}).sort((a,b)=>b.val-a.val);if(!appData.pastSeasons)appData.pastSeasons=[];if(r.length>0)appData.pastSeasons.push({range:`${c.start}~${c.end}`,winner:r[0].name,score:r[0].val});const ns=prompt("새시작",getTodayDate()),ne=prompt("새종료","2026-12-31");appData.period={start:ns,end:ne};saveData().then(()=>alert("시즌 마감됨!"));};
-window.toggleStep=(i,s)=>{const item=appData[myName].resolution[i];item.done[s]=!item.done[s];if(!item.counts)item.counts=Array(item.steps.length).fill(0);if(item.done[s]){item.counts[s]++;if(window.confetti)confetti({particleCount:50,spread:60,origin:{y:0.6}});}else{item.counts[s]=Math.max(0,item.counts[s]-1);}
-const t=getTodayDate(); if(!appData[myName].history)appData[myName].history={};let d=0;appData[myName].resolution.forEach(r=>r.done.forEach(x=>{if(x)d++}));appData[myName].history[t]=d;saveData();};
+
+// ▼▼▼ [수정됨] 매일 초기화되는 체크 로직 (날짜 저장 방식) ▼▼▼
+window.toggleStep=(i,s)=>{
+    const item=appData[myName].resolution[i];
+    const today = getTodayDate();
+    
+    // 기존 불리언(true/false)이나 옛날 날짜면 -> 완료 안 된 상태
+    // 오늘 날짜("2026-01-06")와 같아야 -> 완료된 상태
+    const isAlreadyDone = (item.done[s] === today);
+
+    if(!item.counts) item.counts = Array(item.steps.length).fill(0);
+
+    if(isAlreadyDone) {
+        // 체크 해제 (날짜 지움)
+        item.done[s] = ""; 
+        item.counts[s] = Math.max(0, item.counts[s]-1);
+    } else {
+        // 체크 완료 (오늘 날짜 저장)
+        item.done[s] = today;
+        item.counts[s]++;
+        if(window.confetti) confetti({particleCount:50,spread:60,origin:{y:0.6}});
+    }
+
+    if(!appData[myName].history) appData[myName].history={};
+    
+    // 히스토리 점수 계산 (오늘 완료된 것만 카운트)
+    let d=0;
+    appData[myName].resolution.forEach(r => {
+        r.done.forEach(x => {
+            if(x === today) d++;
+        });
+    });
+    appData[myName].history[today]=d;
+    
+    saveData();
+};
+
 window.deleteItem=(i)=>{if(confirm("삭제?")){appData[myName].resolution.splice(i,1);saveData();}};
 window.editItem=(i)=>{const item=appData[myName].resolution[i],n=prompt("수정:",item.text);if(n){item.text=n;saveData();}};
-function renderResolutionList(){const l=document.getElementById('list-resolution');l.innerHTML="";(appData[myName].resolution||[]).forEach((x,i)=>{const s=x.steps.map((st,si)=>`<span class="step-item ${x.done[si]?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`).join('');l.innerHTML+=`<li class="resolution-item"><div class="res-left"><div class="res-text" onclick="window.editItem(${i})">${x.text}</div><div class="steps">${s}</div></div><button class="del-icon-btn" onclick="window.deleteItem(${i})"><i class="fas fa-trash-alt"></i></button></li>`});}
+
+// ▼▼▼ [수정됨] 목표 리스트 렌더링 (오늘 날짜 기준 체크 표시) ▼▼▼
+function renderResolutionList(){
+    const l=document.getElementById('list-resolution');
+    l.innerHTML="";
+    const today = getTodayDate();
+
+    (appData[myName].resolution||[]).forEach((x,i)=>{
+        const s=x.steps.map((st,si)=> {
+            // 저장된 값이 오늘 날짜와 같을 때만 'done' 클래스 추가
+            const isDoneToday = (x.done[si] === today);
+            return `<span class="step-item ${isDoneToday?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`;
+        }).join('');
+        
+        l.innerHTML+=`<li class="resolution-item"><div class="res-left"><div class="res-text" onclick="window.editItem(${i})">${x.text}</div><div class="steps">${s}</div></div><button class="del-icon-btn" onclick="window.deleteItem(${i})"><i class="fas fa-trash-alt"></i></button></li>`
+    });
+}
+
 function renderMessages(){const l=document.getElementById('msg-list');l.innerHTML="";[...(appData.messages||[])].reverse().forEach(m=>l.innerHTML+=`<li><b>${m.sender}:</b> ${m.text}</li>`);}
 
 window.showBibleBooks=(t)=>{
@@ -394,15 +452,13 @@ function showChapters(b){bibleState.currentBook=b.name;document.getElementById('
     const existingBtn = document.getElementById('btn-undo-finish');
     if(existingBtn) existingBtn.remove(); 
     
-    // ▼▼▼ [새로 추가된 버튼] 책 기록 완전 초기화 ▼▼▼
     const resetBtn = document.createElement('button');
     resetBtn.className = "text-btn";
     resetBtn.style.cssText = "display:block; width:100%; color:white; background:#ef4444; margin-top:30px; margin-bottom:10px; font-weight:bold; font-size:0.9rem; padding:15px; border-radius:12px;";
     resetBtn.innerText = `🗑️ 이 책 기록 초기화 (0부터 다시)`;
     resetBtn.onclick = window.resetBookHistory;
-    document.getElementById('bible-chapters-grid').after(resetBtn); // 목록 아래에 추가
+    document.getElementById('bible-chapters-grid').after(resetBtn); 
 
-    // 기존 완독 취소 버튼 유지 (혹시 필요할 수 있으니)
     const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0;
     if(round > 0) {
         const undoBtn = document.createElement('button');
@@ -415,12 +471,10 @@ function showChapters(b){bibleState.currentBook=b.name;document.getElementById('
     }
 }
 
-// ▼▼▼ [새로 추가된 함수] 책 기록 완전 초기화 (날짜 무시 삭제) ▼▼▼
 window.resetBookHistory = function() {
     const b = bibleState.currentBook;
     if(!confirm(`⚠️ 정말로 '${b}'의 모든 기록을 삭제하시겠습니까?\n\n- 읽은 날짜, 횟수, 점수가 모두 사라집니다.\n- 되돌릴 수 없습니다.`)) return;
     
-    // 1. bible 객체에서 해당 책 관련 키 삭제
     if(appData[myName].bible) {
         Object.keys(appData[myName].bible).forEach(key => {
             if(key.startsWith(b + "-")) {
@@ -429,12 +483,10 @@ window.resetBookHistory = function() {
         });
     }
 
-    // 2. bibleLog 배열에서 해당 책 관련 로그 삭제 (날짜 무시하고 키로만 검색)
     if(appData[myName].bibleLog) {
         appData[myName].bibleLog = appData[myName].bibleLog.filter(entry => !entry.key.startsWith(b + "-"));
     }
 
-    // 3. 완독 횟수 삭제
     if(appData[myName].bibleRounds && appData[myName].bibleRounds[b]) {
         delete appData[myName].bibleRounds[b];
     }
