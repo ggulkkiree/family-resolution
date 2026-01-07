@@ -227,11 +227,8 @@ function renderDashboard() {
     let todayTotal = 0, todayDone = 0;
     const taskList = document.getElementById('today-task-list'); taskList.innerHTML = "";
     
-    // ▼▼▼ [수정됨] 대시보드 - 오늘 날짜 체크 확인 ▼▼▼
     myGoals.forEach(g => {
-        // 날짜가 오늘 날짜와 일치해야 완료된 것으로 간주
         const isDoneToday = g.done && g.done.every(val => val === today);
-        
         todayTotal++; 
         if(isDoneToday) todayDone++;
         const div = document.createElement('div');
@@ -321,31 +318,26 @@ function renderHallOfFame(){const l=document.getElementById('hall-of-fame-list')
 window.toggleAccordion=function(id,h){const c=document.getElementById(id);c.classList.toggle('hidden');h.classList.toggle('open');};
 window.manageSeason=function(){const c=appData.period;if(!confirm(`시즌(${c.start}~${c.end}) 마감?`)){const s=prompt("시작일",c.start),e=prompt("종료일",c.end);if(s&&e){appData.period={start:s,end:e};saveData();}return;}const u=USER_SLOTS.filter(x=>appData.auth&&appData.auth[x]),r=u.map(x=>{const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=c.start&&d<=c.end).reduce((a,b)=>a+h[b],0);return{name:appData.auth[x].name,val:s}}).sort((a,b)=>b.val-a.val);if(!appData.pastSeasons)appData.pastSeasons=[];if(r.length>0)appData.pastSeasons.push({range:`${c.start}~${c.end}`,winner:r[0].name,score:r[0].val});const ns=prompt("새시작",getTodayDate()),ne=prompt("새종료","2026-12-31");appData.period={start:ns,end:ne};saveData().then(()=>alert("시즌 마감됨!"));};
 
-// ▼▼▼ [수정됨] 매일 초기화되는 체크 로직 (날짜 저장 방식) ▼▼▼
 window.toggleStep=(i,s)=>{
     const item=appData[myName].resolution[i];
     const today = getTodayDate();
     
-    // 기존 불리언(true/false)이나 옛날 날짜면 -> 완료 안 된 상태
-    // 오늘 날짜("2026-01-06")와 같아야 -> 완료된 상태
+    // 이미 완료된 상태인지 확인 (오늘 날짜가 저장되어 있어야 함)
     const isAlreadyDone = (item.done[s] === today);
 
     if(!item.counts) item.counts = Array(item.steps.length).fill(0);
 
     if(isAlreadyDone) {
-        // 체크 해제 (날짜 지움)
-        item.done[s] = ""; 
+        item.done[s] = ""; // 체크 해제
         item.counts[s] = Math.max(0, item.counts[s]-1);
     } else {
-        // 체크 완료 (오늘 날짜 저장)
-        item.done[s] = today;
+        item.done[s] = today; // 오늘 날짜 저장 (체크 완료)
         item.counts[s]++;
         if(window.confetti) confetti({particleCount:50,spread:60,origin:{y:0.6}});
     }
 
     if(!appData[myName].history) appData[myName].history={};
     
-    // 히스토리 점수 계산 (오늘 완료된 것만 카운트)
     let d=0;
     appData[myName].resolution.forEach(r => {
         r.done.forEach(x => {
@@ -360,7 +352,6 @@ window.toggleStep=(i,s)=>{
 window.deleteItem=(i)=>{if(confirm("삭제?")){appData[myName].resolution.splice(i,1);saveData();}};
 window.editItem=(i)=>{const item=appData[myName].resolution[i],n=prompt("수정:",item.text);if(n){item.text=n;saveData();}};
 
-// ▼▼▼ [수정됨] 목표 리스트 렌더링 (오늘 날짜 기준 체크 표시) ▼▼▼
 function renderResolutionList(){
     const l=document.getElementById('list-resolution');
     l.innerHTML="";
@@ -368,7 +359,6 @@ function renderResolutionList(){
 
     (appData[myName].resolution||[]).forEach((x,i)=>{
         const s=x.steps.map((st,si)=> {
-            // 저장된 값이 오늘 날짜와 같을 때만 'done' 클래스 추가
             const isDoneToday = (x.done[si] === today);
             return `<span class="step-item ${isDoneToday?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`;
         }).join('');
@@ -438,7 +428,11 @@ window.updateRoundCount = function(bookName) {
     });
 };
 
-function showChapters(b){bibleState.currentBook=b.name;document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-chapters-view').classList.remove('hidden-view');document.getElementById('bible-book-title').innerText=b.name;
+function showChapters(b){
+    bibleState.currentBook=b.name;
+    document.getElementById('bible-books-view').classList.add('hidden-view');
+    document.getElementById('bible-chapters-view').classList.remove('hidden-view');
+    document.getElementById('bible-book-title').innerText=b.name;
     
     const tools = document.querySelector('.chapter-tools');
     tools.innerHTML = `
@@ -449,10 +443,16 @@ function showChapters(b){bibleState.currentBook=b.name;document.getElementById('
     rangeStart = null; 
     renderChaptersGrid();
     
-    const existingBtn = document.getElementById('btn-undo-finish');
-    if(existingBtn) existingBtn.remove(); 
-    
+    // ▼▼▼ [수정된 부분] 버튼 중복 생성 방지 (기존 버튼 삭제) ▼▼▼
+    const existingUndoBtn = document.getElementById('btn-undo-finish');
+    if(existingUndoBtn) existingUndoBtn.remove(); 
+
+    const existingResetBtn = document.getElementById('btn-reset-book');
+    if(existingResetBtn) existingResetBtn.remove();
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
     const resetBtn = document.createElement('button');
+    resetBtn.id = "btn-reset-book"; // ID 부여
     resetBtn.className = "text-btn";
     resetBtn.style.cssText = "display:block; width:100%; color:white; background:#ef4444; margin-top:30px; margin-bottom:10px; font-weight:bold; font-size:0.9rem; padding:15px; border-radius:12px;";
     resetBtn.innerText = `🗑️ 이 책 기록 초기화 (0부터 다시)`;
