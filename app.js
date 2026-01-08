@@ -20,48 +20,73 @@ let bibleState = { currentTestament: null, currentBook: null };
 let myName = localStorage.getItem('myId');
 let rangeStart = null; 
 
+// [진단 모드] startApp 함수
 async function startApp() {
     try {
         app = initializeApp(firebaseConfig);
         db = getFirestore(app);
+        // 저장된 문서 ID가 맞는지 확인
         docRef = doc(db, "appData", "FamilyGoals_2026_Official"); 
 
         onSnapshot(docRef, (snapshot) => {
-            document.getElementById('splash-screen').style.opacity = '0';
-            setTimeout(()=> document.getElementById('splash-screen').style.display='none', 500);
+            document.getElementById('splash-screen').style.display = 'none';
 
-            if(snapshot.exists()) {
-                const data = snapshot.data();
+            if (snapshot.exists()) {
+                const realData = snapshot.data();
                 
-                // [복구 로직] 데이터가 실수로 appData 안에 저장되었을 경우를 대비
-                if (data.appData) {
-                    appData = data.appData; // 중첩된 데이터가 있으면 그걸 우선 사용
+                // [진단 1] 최상위 데이터 이름 확인
+                const rootKeys = Object.keys(realData);
+                let msg = "==== 🔍 DB 진단 결과 ====\n\n";
+                msg += "1. 최상위 저장 이름들:\n" + rootKeys.join(", ") + "\n\n";
+
+                // [진단 2] appData 중첩 확인
+                if (realData.appData) {
+                    msg += "⚠️ 'appData' 안에 데이터가 숨어있습니다!\n";
+                    msg += "안쪽 데이터 이름들: " + Object.keys(realData.appData).join(", ") + "\n";
+                    // 임시 복구 시도
+                    appData = realData.appData; 
                 } else {
-                    appData = data; // 정상적인 경우
+                    msg += "✅ 데이터가 중첩되지 않고 잘 펼쳐져 있습니다.\n";
+                    appData = realData;
+                }
+                
+                // [진단 3] 유저 이름 매칭 확인
+                // USER_SLOTS에 있는 이름이 실제 데이터에 있는지 확인
+                const missingUsers = USER_SLOTS.filter(slot => !appData[slot]);
+                if(missingUsers.length > 0) {
+                    msg += "\n⚠️ 다음 유저 데이터가 안 보입니다:\n" + missingUsers.join(", ") + "\n";
+                    msg += "(코드의 USER_SLOTS 이름과 DB 이름이 다를 수 있습니다)";
+                } else {
+                    msg += "\n🎉 모든 유저 데이터(user_1 등)를 찾았습니다!";
                 }
 
-                // 데이터 무결성 검사 및 기본값 설정
+                alert(msg); // 결과를 화면에 띄움
+
+                // 데이터 로드 진행
                 if(!appData.auth) appData.auth = {};
                 if(!appData.period) {
                     const y = new Date().getFullYear();
                     appData.period = { start: `${y}-01-01`, end: `${y}-12-31` };
                 }
-                if(!appData.pastSeasons) appData.pastSeasons = [];
                 
+                // 없는 유저 슬롯만 초기화 (기존 데이터 보호)
                 USER_SLOTS.forEach(slot => {
                     if(!appData[slot]) appData[slot] = { resolution: [], bible: {}, history: {}, bibleRounds: {}, bibleLog: [] };
-                    if(!appData[slot].bibleLog) appData[slot].bibleLog = [];
-                    if(!appData[slot].resolution) appData[slot].resolution = [];
                 });
+
                 checkLoginStatus();
+
             } else {
+                alert("❌ DB에 'FamilyGoals_2026_Official' 문서가 아예 없습니다.\n파이어베이스 콘솔에서 문서 ID를 확인하세요.");
                 initNewData();
             }
         }, (error) => {
             console.error("DB Error:", error);
-            document.getElementById('error-msg').innerText = "데이터 연결 실패! 인터넷을 확인해주세요.";
+            alert("DB 연결 실패: " + error.message);
         });
-    } catch (e) { alert("Config 오류"); }
+    } catch (e) { 
+        alert("설정 오류: " + e.message); 
+    }
 }
 
 function getTodayDate() {
