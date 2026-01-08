@@ -26,34 +26,36 @@ async function startApp() {
         db = getFirestore(app);
         docRef = doc(db, "appData", "FamilyGoals_2026_Official"); 
 
-        // onSnapshot 안에 자동 복구 로직 포함
-        onSnapshot(docRef, async (snapshot) => {
+        onSnapshot(docRef, (snapshot) => {
             document.getElementById('splash-screen').style.opacity = '0';
             setTimeout(()=> document.getElementById('splash-screen').style.display='none', 500);
 
             if(snapshot.exists()) {
-                const data = snapshot.data();
+                appData = snapshot.data();
                 
-                // [🚨 긴급 자동 복구 로직 🚨]
-                // 만약 데이터가 appData 상자 안에 숨어있다면?
-                if (data.appData) {
-                    // 1. 숨겨진 데이터를 꺼낸다
-                    const recoveredData = data.appData;
-                    
-                    // 2. 사용자에게 알린다 (안심시키기)
-                    alert("⚠️ 데이터 구조가 꼬여있는 것을 발견했습니다!\n\n자동으로 복구 중이니 잠시만 기다려주세요...\n(확인을 누르면 복구 후 새로고침 됩니다)");
-                    
-                    // 3. 꼬인 데이터를 풀어서 DB에 덮어씌운다 (영구 수정)
-                    await setDoc(docRef, recoveredData);
-                    
-                    // 4. 페이지 새로고침
-                    window.location.reload();
-                    return; // 더 이상 진행하지 않고 멈춤
+                // [🔍 이름표 확인 로직]
+                // auth 안에 저장된 이름들을 모두 꺼내서 보여줍니다.
+                const auth = appData.auth || {};
+                const keys = Object.keys(auth);
+                
+                let msg = "==== 📋 저장된 가족 명단 ====\n\n";
+                if(keys.length === 0) {
+                    msg += "저장된 이름이 없습니다.\n\n-> 걱정마세요! 각자 원하는 자리를 정해서\n'+ New' 버튼을 눌러 새로 등록하면 됩니다.\n\n(예: 아빠는 첫번째 칸, 엄마는 두번째 칸...)";
+                } else {
+                    msg += "아래 명단을 보고 제자리를 찾아가세요!\n\n";
+                    keys.forEach(key => {
+                        const info = auth[key];
+                        // user_1 -> 첫번째 칸
+                        const slotNum = key.replace('user_', '') + "번 칸"; 
+                        msg += `[${slotNum}] : ${info.name}\n`;
+                    });
+                    msg += "\n위 자리에 맞는 '+ New' 버튼을 눌러서\n이름과 비밀번호를 다시 등록해주세요.\n(기록은 자동으로 연결됩니다!)";
                 }
-
-                // 정상적인 데이터 로딩 (복구 후에는 여기로 옴)
-                appData = data;
                 
+                // 사용자에게 명단을 보여줌
+                alert(msg);
+
+                // 필수 데이터 초기화
                 if(!appData.auth) appData.auth = {};
                 if(!appData.period) {
                     const y = new Date().getFullYear();
@@ -158,6 +160,7 @@ function renderLoginButtons() {
             btn.onclick = () => tryLogin(slot, user.pin);
         } else {
             btn.className = "login-btn"; btn.innerHTML = `+ New`;
+            // [수정] 아래 tryRegister 함수를 보면, 재등록해도 기존 기록(history)은 보호하도록 되어있습니다.
             btn.onclick = () => tryRegister(slot);
         }
         grid.appendChild(btn);
@@ -165,7 +168,30 @@ function renderLoginButtons() {
 }
 
 window.tryLogin = (s, p) => { if(prompt("비밀번호(PIN):")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호 불일치"); };
-window.tryRegister = (s) => { const n=prompt("이름:"); if(!n)return; const p=prompt("비밀번호:"); if(!p)return; appData.auth[s]={name:n,pin:p}; if(!appData[s])appData[s]={resolution:[],bible:{},history:{}}; saveData().then(()=>{myName=s; localStorage.setItem('myId',s); checkLoginStatus();}); };
+
+// [중요] 재등록 시 기존 기록 보호 로직 확인
+// if(!appData[s]) appData[s]={...} 이 코드가 "기존 데이터가 없을 때만" 초기화한다는 뜻입니다.
+// 즉, 기존에 목표나 성경 기록이 있다면 이름만 바뀌고 기록은 유지됩니다. 안심하세요.
+window.tryRegister = (s) => { 
+    const n=prompt("이름을 입력하세요 (예: 아빠):"); 
+    if(!n)return; 
+    const p=prompt("비밀번호(PIN)를 입력하세요:"); 
+    if(!p)return; 
+    
+    // 이름표(auth)만 새로 답니다.
+    appData.auth[s]={name:n,pin:p}; 
+    
+    // 상자(데이터)가 없으면 새 상자를 만들고, 있으면 그대로 둡니다(보존).
+    if(!appData[s]) appData[s]={resolution:[],bible:{},history:{}}; 
+    
+    saveData().then(()=>{
+        myName=s; 
+        localStorage.setItem('myId',s); 
+        checkLoginStatus();
+        alert("등록 완료! 기존 기록이 있다면 자동으로 연결됩니다.");
+    }); 
+};
+
 window.logoutAction = () => { if(confirm("로그아웃 하시겠습니까?")) { localStorage.removeItem('myId'); myName=null; checkLoginStatus(); } };
 
 function updateMainUI() {
@@ -624,7 +650,6 @@ window.backToBooks=()=>{document.getElementById('bible-chapters-view').classList
 window.showBibleMain=()=>{document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-main-view').classList.remove('hidden-view');};
 window.goTab=(t,b)=>{document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));document.getElementById('page-'+t).classList.remove('hidden');if(t==='stats')renderDashboard();if(t==='bible')updateBibleStats();};
 
-// [정상 저장 코드] 이제 다시는 중첩되지 않게 평평하게 저장합니다.
 async function saveData(){try{await setDoc(docRef,appData,{merge:true});updateMainUI();}catch(e){console.error(e);}}
 function initNewData(){const y=new Date().getFullYear();appData={auth:{},messages:[],period:{start:`${y}-01-01`,end:`${y}-12-31`}};saveData();}
 function updateBibleStats() {const today = getTodayDate();const yearStr = today.split('-')[0];const log = appData[myName].bibleLog || [];let todayCnt = 0;let yearCnt = 0;log.forEach(entry => {if(entry.date === today) todayCnt++;if(entry.date.startsWith(yearStr)) yearCnt++;});document.getElementById('bible-today-count').innerText = `+${todayCnt}장`;document.getElementById('bible-year-count').innerText = `${yearCnt}장`;}
