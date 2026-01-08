@@ -26,25 +26,34 @@ async function startApp() {
         db = getFirestore(app);
         docRef = doc(db, "appData", "FamilyGoals_2026_Official"); 
 
-        onSnapshot(docRef, (snapshot) => {
-            // 로딩 화면 숨기기
-            const splash = document.getElementById('splash-screen');
-            if(splash) {
-                splash.style.opacity = '0';
-                setTimeout(()=> splash.style.display='none', 500);
-            }
+        // onSnapshot 안에 자동 복구 로직 포함
+        onSnapshot(docRef, async (snapshot) => {
+            document.getElementById('splash-screen').style.opacity = '0';
+            setTimeout(()=> document.getElementById('splash-screen').style.display='none', 500);
 
             if(snapshot.exists()) {
                 const data = snapshot.data();
                 
-                // [핵심 복구 로직] 데이터가 숨어있는지 확인하고 꺼내줍니다!
+                // [🚨 긴급 자동 복구 로직 🚨]
+                // 만약 데이터가 appData 상자 안에 숨어있다면?
                 if (data.appData) {
-                    console.log("복구 모드: 중첩된 데이터를 발견하여 꺼냅니다.");
-                    appData = data.appData; 
-                } else {
-                    appData = data; 
+                    // 1. 숨겨진 데이터를 꺼낸다
+                    const recoveredData = data.appData;
+                    
+                    // 2. 사용자에게 알린다 (안심시키기)
+                    alert("⚠️ 데이터 구조가 꼬여있는 것을 발견했습니다!\n\n자동으로 복구 중이니 잠시만 기다려주세요...\n(확인을 누르면 복구 후 새로고침 됩니다)");
+                    
+                    // 3. 꼬인 데이터를 풀어서 DB에 덮어씌운다 (영구 수정)
+                    await setDoc(docRef, recoveredData);
+                    
+                    // 4. 페이지 새로고침
+                    window.location.reload();
+                    return; // 더 이상 진행하지 않고 멈춤
                 }
 
+                // 정상적인 데이터 로딩 (복구 후에는 여기로 옴)
+                appData = data;
+                
                 if(!appData.auth) appData.auth = {};
                 if(!appData.period) {
                     const y = new Date().getFullYear();
@@ -62,8 +71,7 @@ async function startApp() {
             }
         }, (error) => {
             console.error("DB Error:", error);
-            const errMsg = document.getElementById('error-msg');
-            if(errMsg) errMsg.innerText = "데이터 연결 실패! 인터넷을 확인해주세요.";
+            document.getElementById('error-msg').innerText = "데이터 연결 실패! 인터넷을 확인해주세요.";
         });
     } catch (e) { alert("Config 오류"); }
 }
@@ -616,7 +624,7 @@ window.backToBooks=()=>{document.getElementById('bible-chapters-view').classList
 window.showBibleMain=()=>{document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-main-view').classList.remove('hidden-view');};
 window.goTab=(t,b)=>{document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));document.getElementById('page-'+t).classList.remove('hidden');if(t==='stats')renderDashboard();if(t==='bible')updateBibleStats();};
 
-// [올바른 저장 함수] 중첩 없이 깨끗하게 저장합니다
+// [정상 저장 코드] 이제 다시는 중첩되지 않게 평평하게 저장합니다.
 async function saveData(){try{await setDoc(docRef,appData,{merge:true});updateMainUI();}catch(e){console.error(e);}}
 function initNewData(){const y=new Date().getFullYear();appData={auth:{},messages:[],period:{start:`${y}-01-01`,end:`${y}-12-31`}};saveData();}
 function updateBibleStats() {const today = getTodayDate();const yearStr = today.split('-')[0];const log = appData[myName].bibleLog || [];let todayCnt = 0;let yearCnt = 0;log.forEach(entry => {if(entry.date === today) todayCnt++;if(entry.date.startsWith(yearStr)) yearCnt++;});document.getElementById('bible-today-count').innerText = `+${todayCnt}장`;document.getElementById('bible-year-count').innerText = `${yearCnt}장`;}
