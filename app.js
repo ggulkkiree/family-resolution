@@ -32,7 +32,15 @@ async function startApp() {
 
             if(snapshot.exists()) {
                 const data = snapshot.data();
-                appData = data.appData ? data.appData : data;
+                
+                // [복구 로직] 데이터가 실수로 appData 안에 저장되었을 경우를 대비
+                if (data.appData) {
+                    appData = data.appData; // 중첩된 데이터가 있으면 그걸 우선 사용
+                } else {
+                    appData = data; // 정상적인 경우
+                }
+
+                // 데이터 무결성 검사 및 기본값 설정
                 if(!appData.auth) appData.auth = {};
                 if(!appData.period) {
                     const y = new Date().getFullYear();
@@ -322,7 +330,7 @@ window.toggleStep=(i,s)=>{
     const item=appData[myName].resolution[i];
     const today = getTodayDate();
     
-    // 이미 완료된 상태인지 확인 (오늘 날짜가 저장되어 있어야 함)
+    // 이미 완료된 상태인지 확인
     const isAlreadyDone = (item.done[s] === today);
 
     if(!item.counts) item.counts = Array(item.steps.length).fill(0);
@@ -443,16 +451,14 @@ function showChapters(b){
     rangeStart = null; 
     renderChaptersGrid();
     
-    // ▼▼▼ [수정된 부분] 버튼 중복 생성 방지 (기존 버튼 삭제) ▼▼▼
     const existingUndoBtn = document.getElementById('btn-undo-finish');
     if(existingUndoBtn) existingUndoBtn.remove(); 
 
     const existingResetBtn = document.getElementById('btn-reset-book');
     if(existingResetBtn) existingResetBtn.remove();
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
     const resetBtn = document.createElement('button');
-    resetBtn.id = "btn-reset-book"; // ID 부여
+    resetBtn.id = "btn-reset-book"; 
     resetBtn.className = "text-btn";
     resetBtn.style.cssText = "display:block; width:100%; color:white; background:#ef4444; margin-top:30px; margin-bottom:10px; font-weight:bold; font-size:0.9rem; padding:15px; border-radius:12px;";
     resetBtn.innerText = `🗑️ 이 책 기록 초기화 (0부터 다시)`;
@@ -605,7 +611,9 @@ window.finishBookAndReset=()=>{if(document.getElementById('btn-finish-book').cla
 window.backToBooks=()=>{document.getElementById('bible-chapters-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');};
 window.showBibleMain=()=>{document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-main-view').classList.remove('hidden-view');};
 window.goTab=(t,b)=>{document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.page').forEach(e=>e.classList.add('hidden'));document.getElementById('page-'+t).classList.remove('hidden');if(t==='stats')renderDashboard();if(t==='bible')updateBibleStats();};
-async function saveData(){try{await setDoc(docRef,{appData:appData},{merge:true});updateMainUI();}catch(e){console.error(e);}}
+
+// [수정된 saveData] 이제 중괄호로 한번 더 감싸지 않고 바로 저장합니다
+async function saveData(){try{await setDoc(docRef,appData,{merge:true});updateMainUI();}catch(e){console.error(e);}}
 function initNewData(){const y=new Date().getFullYear();appData={auth:{},messages:[],period:{start:`${y}-01-01`,end:`${y}-12-31`}};saveData();}
 function updateBibleStats() {const today = getTodayDate();const yearStr = today.split('-')[0];const log = appData[myName].bibleLog || [];let todayCnt = 0;let yearCnt = 0;log.forEach(entry => {if(entry.date === today) todayCnt++;if(entry.date.startsWith(yearStr)) yearCnt++;});document.getElementById('bible-today-count').innerText = `+${todayCnt}장`;document.getElementById('bible-year-count').innerText = `${yearCnt}장`;}
 
