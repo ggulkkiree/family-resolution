@@ -27,35 +27,16 @@ async function startApp() {
         docRef = doc(db, "appData", "FamilyGoals_2026_Official"); 
 
         onSnapshot(docRef, (snapshot) => {
-            document.getElementById('splash-screen').style.opacity = '0';
-            setTimeout(()=> document.getElementById('splash-screen').style.display='none', 500);
+            const splash = document.getElementById('splash-screen');
+            if(splash) {
+                splash.style.opacity = '0';
+                setTimeout(()=> splash.style.display='none', 500);
+            }
 
             if(snapshot.exists()) {
                 appData = snapshot.data();
                 
-                // [🔍 이름표 확인 로직]
-                // auth 안에 저장된 이름들을 모두 꺼내서 보여줍니다.
-                const auth = appData.auth || {};
-                const keys = Object.keys(auth);
-                
-                let msg = "==== 📋 저장된 가족 명단 ====\n\n";
-                if(keys.length === 0) {
-                    msg += "저장된 이름이 없습니다.\n\n-> 걱정마세요! 각자 원하는 자리를 정해서\n'+ New' 버튼을 눌러 새로 등록하면 됩니다.\n\n(예: 아빠는 첫번째 칸, 엄마는 두번째 칸...)";
-                } else {
-                    msg += "아래 명단을 보고 제자리를 찾아가세요!\n\n";
-                    keys.forEach(key => {
-                        const info = auth[key];
-                        // user_1 -> 첫번째 칸
-                        const slotNum = key.replace('user_', '') + "번 칸"; 
-                        msg += `[${slotNum}] : ${info.name}\n`;
-                    });
-                    msg += "\n위 자리에 맞는 '+ New' 버튼을 눌러서\n이름과 비밀번호를 다시 등록해주세요.\n(기록은 자동으로 연결됩니다!)";
-                }
-                
-                // 사용자에게 명단을 보여줌
-                alert(msg);
-
-                // 필수 데이터 초기화
+                // 필수 데이터 초기화 (안전장치)
                 if(!appData.auth) appData.auth = {};
                 if(!appData.period) {
                     const y = new Date().getFullYear();
@@ -63,6 +44,7 @@ async function startApp() {
                 }
                 
                 USER_SLOTS.forEach(slot => {
+                    // 데이터가 없는 슬롯만 초기화 (기존 데이터 유지)
                     if(!appData[slot]) appData[slot] = { resolution: [], bible: {}, history: {}, bibleRounds: {}, bibleLog: [] };
                     if(!appData[slot].bibleLog) appData[slot].bibleLog = [];
                     if(!appData[slot].resolution) appData[slot].resolution = [];
@@ -73,7 +55,8 @@ async function startApp() {
             }
         }, (error) => {
             console.error("DB Error:", error);
-            document.getElementById('error-msg').innerText = "데이터 연결 실패! 인터넷을 확인해주세요.";
+            const errMsg = document.getElementById('error-msg');
+            if(errMsg) errMsg.innerText = "데이터 연결 실패! 인터넷을 확인해주세요.";
         });
     } catch (e) { alert("Config 오류"); }
 }
@@ -156,11 +139,14 @@ function renderLoginButtons() {
         const btn = document.createElement('div');
         const user = appData.auth[slot];
         if(user) {
-            btn.className = "login-btn taken"; btn.innerHTML = `🔒 ${user.name}`;
+            // 이미 등록된 자리면 자물쇠 버튼 표시
+            btn.className = "login-btn taken"; 
+            btn.innerHTML = `🔒 ${user.name}`;
             btn.onclick = () => tryLogin(slot, user.pin);
         } else {
-            btn.className = "login-btn"; btn.innerHTML = `+ New`;
-            // [수정] 아래 tryRegister 함수를 보면, 재등록해도 기존 기록(history)은 보호하도록 되어있습니다.
+            // 비어있는 자리면 + New 표시
+            btn.className = "login-btn"; 
+            btn.innerHTML = `+ New`;
             btn.onclick = () => tryRegister(slot);
         }
         grid.appendChild(btn);
@@ -169,26 +155,20 @@ function renderLoginButtons() {
 
 window.tryLogin = (s, p) => { if(prompt("비밀번호(PIN):")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호 불일치"); };
 
-// [중요] 재등록 시 기존 기록 보호 로직 확인
-// if(!appData[s]) appData[s]={...} 이 코드가 "기존 데이터가 없을 때만" 초기화한다는 뜻입니다.
-// 즉, 기존에 목표나 성경 기록이 있다면 이름만 바뀌고 기록은 유지됩니다. 안심하세요.
 window.tryRegister = (s) => { 
-    const n=prompt("이름을 입력하세요 (예: 아빠):"); 
+    const n=prompt("이름을 입력하세요:"); 
     if(!n)return; 
     const p=prompt("비밀번호(PIN)를 입력하세요:"); 
     if(!p)return; 
     
-    // 이름표(auth)만 새로 답니다.
     appData.auth[s]={name:n,pin:p}; 
-    
-    // 상자(데이터)가 없으면 새 상자를 만들고, 있으면 그대로 둡니다(보존).
     if(!appData[s]) appData[s]={resolution:[],bible:{},history:{}}; 
     
     saveData().then(()=>{
         myName=s; 
         localStorage.setItem('myId',s); 
         checkLoginStatus();
-        alert("등록 완료! 기존 기록이 있다면 자동으로 연결됩니다.");
+        alert("등록 완료!");
     }); 
 };
 
