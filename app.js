@@ -65,7 +65,7 @@ function getTodayDate() {
     return kstDate.toISOString().split('T')[0];
 }
 
-// 토요일 시작 ~ 금요일 종료 주간 범위 계산 함수 (수정됨)
+// 토요일 시작 ~ 금요일 종료 주간 범위 계산 함수
 function getWeeklyRange(){
     const now = new Date(); 
     const kstNow = new Date(now.getTime() + (9 * 60 * 60 * 1000));
@@ -323,11 +323,10 @@ function renderDashboard() {
     document.getElementById('bible-book-percent').innerText = percent + "%";
     setTimeout(() => { document.getElementById('bible-progress-bar').style.width = percent + "%"; }, 100);
 
-    // --- 주간 그래프 그리기 (토요일 ~ 금요일 수정됨) ---
+    // --- 주간 그래프 그리기 (토요일 ~ 금요일) ---
     const weekGraph = document.getElementById('weekly-graph'); 
     weekGraph.innerHTML = "";
     
-    // getWeeklyRange와 동일한 로직으로 이번주 '토요일' 찾기
     const dayOfWeek = kstNow.getDay();
     const offset = (dayOfWeek + 1) % 7; 
     const saturdayStart = new Date(kstNow);
@@ -337,13 +336,13 @@ function renderDashboard() {
 
     for(let i=0; i<7; i++) {
         const d = new Date(saturdayStart);
-        d.setDate(saturdayStart.getDate() + i); // 토요일부터 하루씩 증가
+        d.setDate(saturdayStart.getDate() + i); 
         const dStr = d.toISOString().split('T')[0];
         
         const count = myHistory[dStr] || 0;
         const h = Math.min(100, count * 25); 
         const isToday = (dStr === today);
-        const dayLabel = dayNames[d.getDay()]; // 요일 라벨
+        const dayLabel = dayNames[d.getDay()]; 
 
         weekGraph.innerHTML += `
             <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;">
@@ -361,12 +360,13 @@ function renderRankings(p){
     const r=document.getElementById('rank-resolution');
     r.innerHTML="";
     
+    // 결단서 랭킹
     u.map(x=>{
         const h=appData[x].history||{},s=Object.keys(h).filter(d=>d>=p.start&&d<=p.end).reduce((a,b)=>a+h[b],0);
         return{name:appData.auth[x].name,val:s}
     }).sort((a,b)=>b.val-a.val).forEach((x,i)=>r.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}점</span></div>`);
     
-    // 이번주 (토~금) 범위 계산
+    // 성경 랭킹 (수정됨: bibleLog 대신 bible 직접 참조)
     const w = getWeeklyRange();
     
     document.querySelector('.ranking-box:nth-child(2) .ranking-title').innerText=`📖 성경 (이번주)`;
@@ -374,9 +374,9 @@ function renderRankings(p){
     b.innerHTML="";
     
     u.map(x=>{
-        const log = appData[x].bibleLog || [];
-        // 토요일~금요일 사이의 기록만 필터링
-        const c = log.filter(entry => entry.date >= w.start && entry.date <= w.end).length;
+        // 중요 수정: log 배열이 아니라, 실제로 체크된 bible 객체의 '날짜' 값들을 직접 카운트합니다.
+        const bibleData = appData[x].bible || {};
+        const c = Object.values(bibleData).filter(date => date >= w.start && date <= w.end).length;
         return{name:appData.auth[x].name,val:c}
     }).sort((a,b)=>b.val-a.val).forEach((x,i)=>b.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}장</span></div>`);
 }
