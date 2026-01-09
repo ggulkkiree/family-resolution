@@ -366,7 +366,7 @@ function renderRankings(p){
         return{name:appData.auth[x].name,val:s}
     }).sort((a,b)=>b.val-a.val).forEach((x,i)=>r.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}점</span></div>`);
     
-    // 성경 랭킹 (수정됨: bibleLog 대신 bible 직접 참조)
+    // 성경 랭킹 (수정됨: 다시 bibleLog로 복귀하여 안전성 확보)
     const w = getWeeklyRange();
     
     document.querySelector('.ranking-box:nth-child(2) .ranking-title').innerText=`📖 성경 (이번주)`;
@@ -374,9 +374,10 @@ function renderRankings(p){
     b.innerHTML="";
     
     u.map(x=>{
-        // 중요 수정: log 배열이 아니라, 실제로 체크된 bible 객체의 '날짜' 값들을 직접 카운트합니다.
-        const bibleData = appData[x].bible || {};
-        const c = Object.values(bibleData).filter(date => date >= w.start && date <= w.end).length;
+        // 중요: 누적데이터가 살아있는 bibleLog를 사용해야 점수가 정확히 나옵니다.
+        const log = appData[x].bibleLog || [];
+        // 토~금 범위에 있는 날짜만 카운트
+        const c = log.filter(entry => entry.date >= w.start && entry.date <= w.end).length;
         return{name:appData.auth[x].name,val:c}
     }).sort((a,b)=>b.val-a.val).forEach((x,i)=>b.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}장</span></div>`);
 }
