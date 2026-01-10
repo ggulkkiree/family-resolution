@@ -717,27 +717,31 @@ window.controlAll = (on) => {
 
 
 window.finishBookAndReset = () => {
+    // 1. 아직 다 안 읽었으면 버튼 동작 안 함
     if(document.getElementById('btn-finish-book').classList.contains('disabled')) return;
     
+    // 2. 확인 창 띄우기
     if(confirm("완독 처리 하시겠습니까?\n체크박스는 초기화되지만, 읽은 기록은 유지됩니다.")) {
         const b = bibleState.currentBook;
         if(!appData[myName].bibleRounds) appData[myName].bibleRounds = {};
         
-        // n회독 카운트 증가
+        // 3. 완독 횟수(n회독) 1 증가
         appData[myName].bibleRounds[b] = (appData[myName].bibleRounds[b] || 0) + 1;
         
+        // 4. [핵심] 해당 책의 모든 장을 'null'로 바꿔서 체크 해제하기
         const bookData = BIBLE_DATA.books.find(x => x.name === b);
         for(let i=1; i<=bookData.chapters; i++){
-            // 기존 기록 삭제 대신 null 처리
             appData[myName].bible[`${b}-${i}`] = null;
         }
         
+        // 5. 저장 후 화면 즉시 새로고침 (체크박스 비우기)
         saveData().then(() => {
-            renderChaptersGrid(); 
-            updateBibleStats();
+            renderChaptersGrid(); // 체크박스 화면 갱신
+            updateBibleStats();   // 통계 갱신
+            alert(`${b} 완독을 축하합니다! 🎉`); // 축하 메시지 (선택사항)
         });
     }
-}; 
+};
 
 window.backToBooks=()=>{document.getElementById('bible-chapters-view').classList.add('hidden-view');document.getElementById('bible-books-view').classList.remove('hidden-view');};
 window.showBibleMain=()=>{document.getElementById('bible-books-view').classList.add('hidden-view');document.getElementById('bible-main-view').classList.remove('hidden-view');};
