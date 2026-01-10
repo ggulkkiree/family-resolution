@@ -59,16 +59,28 @@ async function startApp() {
     } catch (e) { alert("Config 오류"); }
 }
 
+// === [수정됨] 한국 시간 기준 오늘 날짜 구하기 ===
 function getTodayDate() {
     const now = new Date();
-    const kstDate = new Date(now.getTime() + (9 * 60 * 60 * 1000));
-    return kstDate.toISOString().split('T')[0];
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    const kstDiff = 9 * 60 * 60 * 1000;
+    const kstDate = new Date(utc + kstDiff);
+
+    const y = kstDate.getFullYear();
+    const m = String(kstDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(kstDate.getDate()).padStart(2, '0');
+    
+    return `${y}-${m}-${dd}`;
 }
 
-// 토요일 시작 ~ 금요일 종료 주간 범위 계산 함수
+// === [수정됨] 토요일 시작 ~ 금요일 종료 주간 범위 계산 함수 ===
 function getWeeklyRange(){
     const now = new Date(); 
-    const kstNow = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    // 기기 시간대 무시하고 강제 한국 시간(KST) 변환
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    const kstDiff = 9 * 60 * 60 * 1000;
+    const kstNow = new Date(utc + kstDiff);
+    
     const day = kstNow.getDay(); // 0(일) ~ 6(토)
     
     // 이번주 시작일(가장 최근 토요일) 찾기
@@ -81,7 +93,15 @@ function getWeeklyRange(){
     const e = new Date(s); 
     e.setDate(s.getDate() + 6);
     
-    return { start: s.toISOString().split('T')[0], end: e.toISOString().split('T')[0] };
+    // 날짜 포맷터 (YYYY-MM-DD)
+    const fmt = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dd}`;
+    };
+    
+    return { start: fmt(s), end: fmt(e) };
 }
 
 window.editProfile = function() {
@@ -302,10 +322,19 @@ function renderDashboard() {
     
     let realStreak = 0;
     const now = new Date();
-    const kstNow = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    // Streak 계산에도 KST 보정 필요
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    const kstNow = new Date(utc + (9*60*60*1000));
+
     for(let i=0; i<365; i++) {
-        const d = new Date(kstNow); d.setDate(d.getDate() - i);
-        const dStr = d.toISOString().split('T')[0];
+        const d = new Date(kstNow); 
+        d.setDate(d.getDate() - i);
+        // 날짜 포맷팅 직접 수행
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dStr = `${y}-${m}-${dd}`;
+
         if(myHistory[dStr] > 0) realStreak++; else if(i>0) break; 
     }
     document.getElementById('dash-streak').innerText = realStreak + "일";
@@ -327,6 +356,7 @@ function renderDashboard() {
     const weekGraph = document.getElementById('weekly-graph'); 
     weekGraph.innerHTML = "";
     
+    // 이미 계산된 kstNow 사용
     const dayOfWeek = kstNow.getDay();
     const offset = (dayOfWeek + 1) % 7; 
     const saturdayStart = new Date(kstNow);
@@ -337,7 +367,11 @@ function renderDashboard() {
     for(let i=0; i<7; i++) {
         const d = new Date(saturdayStart);
         d.setDate(saturdayStart.getDate() + i); 
-        const dStr = d.toISOString().split('T')[0];
+        
+        const yy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const ddd = String(d.getDate()).padStart(2, '0');
+        const dStr = `${yy}-${mm}-${ddd}`;
         
         const count = myHistory[dStr] || 0;
         const h = Math.min(100, count * 25); 
@@ -366,7 +400,7 @@ function renderRankings(p){
         return{name:appData.auth[x].name,val:s}
     }).sort((a,b)=>b.val-a.val).forEach((x,i)=>r.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}점</span></div>`);
     
-    // 성경 랭킹 (수정됨: 다시 bibleLog로 복귀하여 안전성 확보)
+    // 성경 랭킹 (이번주)
     const w = getWeeklyRange();
     
     document.querySelector('.ranking-box:nth-child(2) .ranking-title').innerText=`📖 성경 (이번주)`;
@@ -374,9 +408,8 @@ function renderRankings(p){
     b.innerHTML="";
     
     u.map(x=>{
-        // 중요: 누적데이터가 살아있는 bibleLog를 사용해야 점수가 정확히 나옵니다.
         const log = appData[x].bibleLog || [];
-        // 토~금 범위에 있는 날짜만 카운트
+        // 토~금 범위에 있는 날짜만 카운트 (문자열 비교로 충분)
         const c = log.filter(entry => entry.date >= w.start && entry.date <= w.end).length;
         return{name:appData.auth[x].name,val:c}
     }).sort((a,b)=>b.val-a.val).forEach((x,i)=>b.innerHTML+=`<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}장</span></div>`);
