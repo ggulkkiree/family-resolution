@@ -1,5 +1,5 @@
-// 🎨 UI (화면 그리기) 전용 파일 - 업그레이드 버전
-// 그래프 높이 자동 조절 & 목표별 성실도 분석 추가
+// 🎨 UI (화면 그리기) 전용 파일 - 최종 디자인 개선판
+// 그래프 스케일링, 성실도 분석 카드, 아코디언 기능 적용
 
 import { BIBLE_DATA, USER_SLOTS } from './data.js';
 
@@ -128,33 +128,21 @@ export function renderDashboard(appData, myName) {
     const myBible = appData[myName].bible || {};
     const today = getTodayDate();
 
-    // 오늘 목표 현황
+    // 목표 데이터 계산
     const myGoals = appData[myName].resolution || [];
     let todayTotal = 0, todayDone = 0;
-    const taskList = document.getElementById('today-task-list'); 
-    if(taskList) {
-        taskList.innerHTML = "";
-        myGoals.forEach(g => {
-            const isDoneToday = g.done && g.done.every(val => val === today);
-            todayTotal++;
-            if(isDoneToday) todayDone++;
-            taskList.innerHTML += `
-                <div class="today-check-row">
-                    <span style="font-size:0.9rem;">${g.text}</span>
-                    <span style="font-size:1.2rem; color:${isDoneToday?'var(--success)':'#ddd'}">${isDoneToday?'●':'○'}</span>
-                </div>`;
-        });
-    }
+    
+    // 계산만 먼저 수행
+    myGoals.forEach(g => {
+        const isDoneToday = g.done && g.done.every(val => val === today);
+        todayTotal++;
+        if(isDoneToday) todayDone++;
+    });
 
-    // 상태 Pill
-    const statusPill = document.getElementById('today-status');
-    if(statusPill) {
-        statusPill.innerText = `${todayDone}/${todayTotal} 완료`;
-        if(todayDone === todayTotal && todayTotal > 0) statusPill.classList.add('done'); 
-        else statusPill.classList.remove('done');
-    }
+    // 1. [수정됨] 오늘 목표 현황 (아코디언 적용)
+    renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal);
 
-    // 도넛 차트
+    // 2. [수정됨] 도넛 차트
     let rate = 0;
     if(todayTotal > 0) rate = Math.round((todayDone / todayTotal) * 100);
     const dRate = document.getElementById('dash-rate');
@@ -162,29 +150,65 @@ export function renderDashboard(appData, myName) {
     if(dRate) dRate.innerText = rate + "%";
     if(dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
-    // 스트릭
+    // 3. 스트릭
     calculateStreak(myHistory, rate, todayTotal);
 
-    // 성경 진행도
+    // 4. 성경 진행도
     updateBibleProgress(myBible);
 
-    // 주간 그래프 (업그레이드됨!)
+    // 5. 주간 그래프
     renderWeeklyGraph(myHistory, today);
 
-    // [New] 목표별 성실도 분석 카드 추가
+    // 6. [수정됨] 목표별 성실도 분석 (아코디언 적용)
     renderHabitAnalysis(myGoals);
 
-    // 랭킹
+    // 7. 랭킹
     renderRankings(appData, period);
     renderHallOfFame(appData);
 }
 
-// [New] 목표별 성실도 분석 함수
+// [New] 오늘 할 일 아코디언 렌더링
+function renderTodayTasksAccordion(myGoals, today, doneCount, totalCount) {
+    // 기존 today-task-list가 있는 카드 찾기
+    const originalList = document.getElementById('today-task-list');
+    if(!originalList) return;
+    
+    // 부모 카드 찾기
+    const parentCard = originalList.closest('.dash-card');
+    if(!parentCard) return;
+
+    // 카드의 내용을 아예 새로 덮어쓰기 (아코디언 구조로)
+    // ID 유지를 위해 재구성
+    const isAllDone = (doneCount === totalCount && totalCount > 0);
+    
+    parentCard.innerHTML = `
+        <div class="accordion-header" onclick="window.toggleAccordion('today-task-acc', this.querySelector('.accordion-icon'))" style="width:100%; display:flex; justify-content:space-between; align-items:center; padding:5px 0; cursor:pointer;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-weight:bold;">📅 오늘 목표</span>
+                <span class="check-pill ${isAllDone?'done':''}" style="font-size:0.8rem;">${doneCount}/${totalCount} 완료</span>
+            </div>
+            <i class="fas fa-chevron-down accordion-icon"></i>
+        </div>
+        <div id="today-task-acc" class="accordion-content hidden" style="width:100%; border-top:1px solid #f1f5f9; margin-top:10px; padding-top:10px;">
+            ${myGoals.length === 0 ? '<div style="color:#94a3b8; font-size:0.9rem;">목표가 없습니다.</div>' : ''}
+            ${myGoals.map(g => {
+                const isDoneToday = g.done && g.done.every(val => val === today);
+                return `
+                <div class="today-check-row" style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f8fafc;">
+                    <span style="font-size:0.9rem; text-align:left; flex:1; margin-right:10px;">${g.text}</span>
+                    <span style="font-size:1.2rem; color:${isDoneToday?'var(--success)':'#e2e8f0'}">
+                        ${isDoneToday?'<i class="fas fa-check-circle"></i>':'<i class="far fa-circle"></i>'}
+                    </span>
+                </div>`;
+            }).join('')}
+        </div>
+    `;
+}
+
+// [New] 목표별 성실도 분석 함수 (디자인 개선 + 아코디언 + 닫힘 기본)
 function renderHabitAnalysis(myGoals) {
-    // 1. HTML에 넣을 공간 찾기 (없으면 동적으로 추가)
     let container = document.getElementById('habit-analysis-card');
     if(!container) {
-        // 주간 그래프 바로 아래에 삽입
         const graphCard = document.getElementById('weekly-graph').closest('.dash-card');
         container = document.createElement('div');
         container.id = 'habit-analysis-card';
@@ -193,45 +217,49 @@ function renderHabitAnalysis(myGoals) {
         graphCard.after(container);
     }
 
-    // 2. 데이터 분석 (총 수행 횟수)
-    // counts 배열의 합을 구함
     const analysis = myGoals.map(g => {
         const totalCount = (g.counts || []).reduce((a, b) => a + b, 0);
         return { text: g.text, count: totalCount };
-    }).sort((a, b) => b.count - a.count); // 많이 한 순서대로 정렬
+    }).sort((a, b) => b.count - a.count);
 
-    // 3. 렌더링
-    let html = `<div style="font-weight:bold; width:100%; margin-bottom:10px;">📊 목표별 누적 실천 (성실도)</div>`;
+    const maxVal = Math.max(...analysis.map(a => a.count)) || 1;
+
+    // 아코디언 헤더 + 닫힌 콘텐츠(hidden)
+    let html = `
+        <div class="accordion-header" onclick="window.toggleAccordion('habit-acc', this.querySelector('.accordion-icon'))" style="width:100%; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
+            <div style="font-weight:bold;">📊 목표별 누적 실천</div>
+            <i class="fas fa-chevron-down accordion-icon"></i>
+        </div>
+        
+        <div id="habit-acc" class="accordion-content hidden" style="width:100%; margin-top:15px; border-top:1px solid #f1f5f9; padding-top:15px;">
+    `;
     
     if(analysis.length === 0) {
         html += `<div style="color:#94a3b8; font-size:0.9rem;">아직 등록된 목표가 없습니다.</div>`;
     } else {
-        // 최대값 찾기 (그래프 비율용)
-        const maxVal = Math.max(...analysis.map(a => a.count)) || 1;
-
         analysis.forEach(item => {
             const width = (item.count / maxVal) * 100;
-            // 색상: 많이 했으면 초록, 적게 했으면 주황
             const color = width > 70 ? 'var(--success)' : (width > 30 ? '#fbbf24' : '#ef4444');
             
+            // 디자인 개선: 왼쪽 정렬, 텍스트와 카운트 분리, 바 모양 개선
             html += `
-                <div style="margin-bottom:8px;">
-                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:2px;">
-                        <span>${item.text}</span>
-                        <span style="font-weight:bold; color:${color}">${item.count}회</span>
+                <div style="margin-bottom:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; margin-bottom:5px;">
+                        <span style="text-align:left; font-weight:500; color:var(--text); flex:1; margin-right:10px;">${item.text}</span>
+                        <span style="font-weight:bold; color:${color}; font-size:0.85rem; white-space:nowrap;">${item.count}회</span>
                     </div>
-                    <div style="width:100%; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
-                        <div style="width:${width}%; height:100%; background:${color}; border-radius:3px;"></div>
+                    <div style="width:100%; height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden;">
+                        <div style="width:${width}%; height:100%; background:${color}; border-radius:4px; transition: width 0.5s ease;"></div>
                     </div>
                 </div>
             `;
         });
     }
+    html += `</div>`;
     container.innerHTML = html;
 }
 
-
-// (내부함수) 주간 그래프 - 높이 자동 조절 기능 추가됨
+// (내부함수) 주간 그래프
 function renderWeeklyGraph(myHistory, today) {
     const weekGraph = document.getElementById('weekly-graph');
     if(!weekGraph) return;
@@ -248,7 +276,6 @@ function renderWeeklyGraph(myHistory, today) {
 
     const dayNames = ['일','월','화','수','목','금','토'];
     
-    // 1. 이번주 최대값 찾기 (그래프 스케일링용)
     let maxCountInWeek = 0;
     const weekData = [];
     
@@ -265,12 +292,9 @@ function renderWeeklyGraph(myHistory, today) {
         weekData.push({ date: dStr, count: count, dayLabel: dayNames[d.getDay()] });
     }
     
-    // 최소 4칸은 확보 (너무 작으면 안 예쁨)
     const scaleBase = Math.max(4, maxCountInWeek);
 
-    // 2. 그래프 그리기
     weekData.forEach(data => {
-        // [수정됨] 스케일링 적용: (내 카운트 / 최대값) * 100
         const h = Math.round((data.count / scaleBase) * 100);
         const isToday = (data.date === today);
 
