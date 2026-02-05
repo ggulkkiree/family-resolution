@@ -3,20 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Goals 2026 (Premium+)</title>
+    <title>Family Goals 2026 (Final)</title>
+    
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- v=plus로 버전 업데이트 -->
+    
+    <!-- 디자인 유지 -->
     <link rel="stylesheet" href="style.css?v=plus">
 </head>
 <body>
+
     <div id="splash-screen">
         <div class="logo-circle">⛪️</div>
         <h1 style="font-weight:800; letter-spacing:-1px;">FAMILY<br>GOALS</h1>
-        <span style="font-size:1rem; font-weight:500; opacity:0.8;">2026</span>
+        <span style="font-size:1rem; font-weight:500; opacity:0.8; letter-spacing:2px;">2026</span>
     </div>
 
-    <!-- 로그인 -->
     <div id="login-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h2>Welcome! 👋</h2>
@@ -24,7 +26,6 @@
         </div>
     </div>
 
-    <!-- 메인 앱 -->
     <div id="app-container" class="hidden">
         <header class="glass-header">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -76,9 +77,9 @@
             <!-- 2. 성경 탭 -->
             <div id="page-bible" class="page hidden">
                 <div class="stat-row">
-                    <div class="dash-card center-text">
+                    <div class="dash-card center-text highlight-green">
                         <div class="stat-label">오늘 읽음</div>
-                        <div id="bible-today-count" class="stat-value" style="color:#10b981;">0장</div>
+                        <div id="bible-today-count" class="stat-value">0장</div>
                     </div>
                     <div class="dash-card center-text">
                         <div class="stat-label">올해 누적</div>
@@ -121,10 +122,10 @@
             <div id="page-stats" class="page hidden">
                 <div class="period-card" onclick="window.manageSeason()" style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <div style="font-size:0.8rem; color:#64748b;">Current Season</div>
-                        <div id="period-display" style="font-weight:700;">Loading...</div>
+                        <div class="sub-text">Current Season</div>
+                        <div id="period-display" class="main-text">Loading...</div>
                     </div>
-                    <i class="fas fa-cog" style="color:#cbd5e1;"></i>
+                    <i class="fas fa-cog"></i>
                 </div>
 
                 <div class="section-header"><span class="section-title">🏆 가족 랭킹</span></div>
@@ -140,6 +141,8 @@
                 </div>
 
                 <div class="section-header mt-30"><span class="section-title">📊 나의 기록</span></div>
+                
+                <!-- [수정] 통계 카드는 아코디언 밖으로 꺼내서 항상 보이게 함 -->
                 <div class="stat-row">
                     <div class="dash-card center-text">
                         <div class="donut-container">
@@ -148,7 +151,6 @@
                         </div>
                         <div class="stat-label">오늘 달성률</div>
                     </div>
-                    <!-- [수정] streak-card 클래스 추가로 디자인 변경 -->
                     <div class="dash-card center-text streak-card">
                         <i class="fas fa-fire streak-icon" id="streak-icon"></i>
                         <div class="streak-count" id="dash-streak">0일</div>
@@ -156,8 +158,19 @@
                     </div>
                 </div>
 
+                <!-- [수정] 오늘 할 일 목록만 아코디언으로 감쌈 (기본 닫힘) -->
                 <div class="dash-card mt-15">
-                    <div id="today-task-list"></div>
+                    <div class="accordion-header" onclick="window.toggleAccordion('today-tasks-box', this.querySelector('i'))" style="display:flex; justify-content:space-between; width:100%;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span class="card-header-small" style="margin-bottom:0; border:none;">📅 오늘 목표 확인</span>
+                            <span id="today-status-text" style="font-size:0.85rem; font-weight:600; color:#94a3b8;"></span>
+                        </div>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </div>
+                    <!-- hidden 클래스 추가로 기본 닫힘 -->
+                    <div id="today-tasks-box" class="hidden" style="margin-top:15px; border-top:1px solid #f1f5f9; padding-top:10px;">
+                        <div id="today-task-list"></div>
+                    </div>
                 </div>
 
                 <div id="habit-analysis-card"></div>
