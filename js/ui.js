@@ -1,4 +1,4 @@
-// 🎨 UI (화면 그리기) - Premium Design Ver.
+// 🎨 UI (화면 그리기) - Final Fix (성경 누적 복구)
 
 import { BIBLE_DATA, USER_SLOTS } from './data.js';
 
@@ -31,40 +31,30 @@ export function getWeeklyRange(){
     return { start: fmt(s), end: fmt(e) };
 }
 
-// 랭킹 그리기 (디자인 개선)
+// 랭킹 그리기
 export function renderRankings(appData, p){
     const u = USER_SLOTS.filter(x => appData.auth && appData.auth[x]);
     const r = document.getElementById('rank-resolution');
     
-    // 점수 계산 및 정렬
     const sortedRes = u.map(x => {
         const h = appData[x].history || {};
         const s = Object.keys(h).filter(d => d >= p.start && d <= p.end).reduce((a, b) => a + h[b], 0);
         return { name: appData.auth[x].name, val: s };
     }).sort((a, b) => b.val - a.val);
 
-    // HTML 생성 (메달 추가)
     if(r) {
         r.innerHTML = sortedRes.map((x, i) => {
             let rankBadge = `<span class="rank-num">${i+1}</span>`;
             if(i === 0) rankBadge = `🥇`;
             if(i === 1) rankBadge = `🥈`;
             if(i === 2) rankBadge = `🥉`;
-            
-            // 1등은 배경색 살짝 다르게
             const highlightClass = i === 0 ? 'top-rank' : '';
-            
-            return `
-            <div class="rank-row ${highlightClass}">
-                <div class="rank-left">${rankBadge} <span class="rank-name">${x.name}</span></div>
-                <div class="rank-score">${x.val}점</div>
-            </div>`;
+            return `<div class="rank-row ${highlightClass}"><div class="rank-left">${rankBadge} <span class="rank-name">${x.name}</span></div><div class="rank-score">${x.val}점</div></div>`;
         }).join('');
     }
 
     const w = getWeeklyRange();
     const b = document.getElementById('rank-bible');
-    
     const sortedBible = u.map(x => {
         const log = appData[x].bibleLog || [];
         const c = log.filter(entry => entry.date >= w.start && entry.date <= w.end).length;
@@ -77,19 +67,12 @@ export function renderRankings(appData, p){
             if(i === 0) rankBadge = `🥇`;
             if(i === 1) rankBadge = `🥈`;
             if(i === 2) rankBadge = `🥉`;
-            
             const highlightClass = i === 0 ? 'top-rank' : '';
-
-            return `
-            <div class="rank-row ${highlightClass}">
-                <div class="rank-left">${rankBadge} <span class="rank-name">${x.name}</span></div>
-                <div class="rank-score">${x.val}장</div>
-            </div>`;
+            return `<div class="rank-row ${highlightClass}"><div class="rank-left">${rankBadge} <span class="rank-name">${x.name}</span></div><div class="rank-score">${x.val}장</div></div>`;
         }).join('');
     }
 }
 
-// 나머지 UI 함수들은 그대로 유지 (디자인에 맞게 클래스명만 연동)
 export function renderResolutionList(appData, myName) {
     const l = document.getElementById('list-resolution');
     if(!l) return;
@@ -97,24 +80,14 @@ export function renderResolutionList(appData, myName) {
     const today = getTodayDate();
     const list = appData[myName].resolution || [];
     
-    if(list.length === 0) {
-        l.innerHTML = `<li class="empty-msg">목표를 추가하고 하루를 시작해보세요!</li>`;
-        return;
-    }
+    if(list.length === 0) { l.innerHTML = `<li class="empty-msg">목표를 추가하고 하루를 시작해보세요!</li>`; return; }
 
     list.forEach((x, i) => {
         const s = x.steps.map((st, si) => {
             const isDoneToday = (x.done[si] === today);
             return `<span class="step-item ${isDoneToday?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`;
         }).join('');
-        l.innerHTML += `
-            <li class="resolution-item">
-                <div class="res-content">
-                    <div class="res-text" onclick="window.editItem(${i})">${x.text}</div>
-                    <div class="steps">${s}</div>
-                </div>
-                <button class="del-btn" onclick="window.deleteItem(${i})"><i class="fas fa-trash-alt"></i></button>
-            </li>`;
+        l.innerHTML += `<li class="resolution-item"><div class="res-content"><div class="res-text" onclick="window.editItem(${i})">${x.text}</div><div class="steps">${s}</div></div><button class="del-btn" onclick="window.deleteItem(${i})"><i class="fas fa-trash-alt"></i></button></li>`;
     });
 }
 
@@ -130,14 +103,7 @@ export function renderFamilyGoals(appData, myName) {
         const goals = appData[slot].resolution || [];
         const total = goals.length;
 
-        let html = `
-            <div class="family-card accordion-card">
-                <div class="accordion-header" onclick="window.toggleFamilyList('fam-list-${idx}')">
-                    <span class="family-name">${user.name}</span>
-                    <span class="family-badge">${total}개</span>
-                </div>
-                <ul id="fam-list-${idx}" class="family-goal-list hidden">
-        `;
+        let html = `<div class="family-card accordion-card"><div class="accordion-header" onclick="window.toggleFamilyList('fam-list-${idx}')"><span class="family-name">${user.name}</span><span class="family-badge">${total}개</span></div><ul id="fam-list-${idx}" class="family-goal-list hidden">`;
         if(total === 0) html += `<li class="empty-msg-small">등록된 목표가 없습니다.</li>`;
         else goals.forEach(g => html += `<li><span class="dot">•</span> ${g.text}</li>`);
         html += `</ul></div>`;
@@ -181,32 +147,24 @@ export function renderDashboard(appData, myName) {
     if(dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
     calculateStreak(myHistory, rate, todayTotal);
-    updateBibleProgress(myBible);
+    
+    // [중요] 성경 통계 업데이트 함수 호출 추가!
+    updateBibleStats(myBible);
+    
     renderWeeklyGraph(myHistory, today);
     renderHabitAnalysis(myGoals);
-    
-    // [중요] 랭킹을 가장 먼저 호출하지만 HTML상 위치는 index.html에서 결정됨
     renderRankings(appData, period);
     renderHallOfFame(appData);
 }
 
 function renderTodayTasksAccordion(myGoals, today, doneCount, totalCount) {
-    const statusText = document.getElementById('today-status-text');
-    // if(statusText) statusText.innerHTML = `${doneCount}/${totalCount}`;
-    // 아코디언 구현은 index.html의 구조에 따라 위임됨. 여기선 리스트만 채움.
     const listContainer = document.getElementById('today-task-list');
     if(!listContainer) return;
-    
     if(myGoals.length === 0) { listContainer.innerHTML = '<div class="empty-msg-small">목표 없음</div>'; return; }
-
     let html = '';
     myGoals.forEach(g => {
         const isDoneToday = g.done && g.done.every(val => val === today);
-        html += `
-        <div class="task-row ${isDoneToday?'done':''}">
-            <span class="task-text">${g.text}</span>
-            <span class="task-check">${isDoneToday?'<i class="fas fa-check-circle"></i>':'<i class="far fa-circle"></i>'}</span>
-        </div>`;
+        html += `<div class="task-row ${isDoneToday?'done':''}"><span class="task-text">${g.text}</span><span class="task-check">${isDoneToday?'<i class="fas fa-check-circle"></i>':'<i class="far fa-circle"></i>'}</span></div>`;
     });
     listContainer.innerHTML = html;
 }
@@ -220,36 +178,15 @@ function renderHabitAnalysis(myGoals) {
         if(graphCard) graphCard.parentNode.insertBefore(container, graphCard); 
         else return;
     }
-
-    const analysis = myGoals.map(g => {
-        const totalCount = (g.counts || []).reduce((a, b) => a + b, 0);
-        return { text: g.text, count: totalCount };
-    }).sort((a, b) => b.count - a.count);
-
+    const analysis = myGoals.map(g => ({ text: g.text, count: (g.counts || []).reduce((a, b) => a + b, 0) })).sort((a, b) => b.count - a.count);
     const maxVal = Math.max(...analysis.map(a => a.count)) || 1;
-
-    let html = `
-        <div class="dash-card">
-            <div class="accordion-header" onclick="window.toggleAccordion('habit-acc', this.querySelector('.accordion-icon'))">
-                <span class="card-title">📊 목표별 성실도</span>
-                <i class="fas fa-chevron-down accordion-icon"></i>
-            </div>
-            <div id="habit-acc" class="accordion-content hidden">
-    `;
-    
+    let html = `<div class="dash-card"><div class="accordion-header" onclick="window.toggleAccordion('habit-acc', this.querySelector('.accordion-icon'))"><span class="card-title">📊 목표별 성실도</span><i class="fas fa-chevron-down accordion-icon"></i></div><div id="habit-acc" class="accordion-content hidden">`;
     if(analysis.length === 0) { html += `<div class="empty-msg-small">데이터 없음</div>`; } 
     else {
         analysis.forEach(item => {
             const width = (item.count / maxVal) * 100;
             const color = width > 70 ? 'var(--success)' : (width > 30 ? '#fbbf24' : '#ef4444');
-            html += `
-                <div class="habit-row">
-                    <div class="habit-info">
-                        <span class="habit-name">${item.text}</span>
-                        <span class="habit-count" style="color:${color}">${item.count}회</span>
-                    </div>
-                    <div class="habit-track"><div class="habit-bar" style="width:${width}%; background:${color};"></div></div>
-                </div>`;
+            html += `<div class="habit-row"><div class="habit-info"><span class="habit-name">${item.text}</span><span class="habit-count" style="color:${color}">${item.count}회</span></div><div class="habit-track"><div class="habit-bar" style="width:${width}%; background:${color};"></div></div></div>`;
         });
     }
     html += `</div></div>`;
@@ -285,11 +222,7 @@ function renderWeeklyGraph(myHistory, today) {
     weekData.forEach(data => {
         const h = Math.round((data.count / scaleBase) * 100);
         const isToday = (data.date === today);
-        weekGraph.innerHTML += `
-            <div class="graph-col">
-                <div class="bar-area"><div class="week-bar ${h>0?'high':''}" style="height:${h}%; opacity:${isToday?'0.6':'1'};"></div></div>
-                <div class="day-label ${isToday?'active':''}">${data.dayLabel}</div>
-            </div>`;
+        weekGraph.innerHTML += `<div class="graph-col"><div class="bar-area"><div class="week-bar ${h>0?'high':''}" style="height:${h}%; opacity:${isToday?'0.6':'1'};"></div></div><div class="day-label ${isToday?'active':''}">${data.dayLabel}</div></div>`;
     });
 }
 
@@ -315,18 +248,32 @@ function calculateStreak(myHistory, rate, todayTotal) {
     streakText.innerText = realStreak + "일";
 }
 
-function updateBibleProgress(myBible) {
-    let lastBook = "없음", percent = 0;
-    const readKeys = Object.keys(myBible).sort();
-    if(readKeys.length > 0) {
-        const lastKey = readKeys[readKeys.length-1];
-        const [bName] = lastKey.split('-');
-        lastBook = bName;
-        const bookData = BIBLE_DATA.books.find(b => b.name === bName);
-        if(bookData) percent = Math.round((readKeys.filter(k => k.startsWith(bName+'-')).length / bookData.chapters) * 100);
+// [추가된 함수] 성경 통계 계산 (오늘/올해 누적)
+function updateBibleStats(myBible) {
+    const today = getTodayDate();
+    const yearStr = today.split('-')[0];
+    let todayCnt = 0;
+    let yearCnt = 0;
+
+    // myBible 객체 순회하면서 카운트
+    if(myBible) {
+        Object.values(myBible).forEach(dateStr => {
+            if(dateStr === today) todayCnt++;
+            if(dateStr && dateStr.startsWith(yearStr)) yearCnt++;
+        });
     }
-    // const elName = document.getElementById('current-book-name');
-    // 성경 진행도 카드가 대시보드에 있다면 업데이트. (HTML 구조에 따라 생략 가능)
+
+    // 화면에 표시 (성경 탭 상단)
+    const elToday = document.getElementById('bible-today-count');
+    const elYear = document.getElementById('bible-year-count');
+    
+    if(elToday) elToday.innerText = `${todayCnt}장`;
+    if(elYear) elYear.innerText = `${yearCnt}장`;
+}
+
+// 기존 성경 진행바 함수 (이름만 다름) - 하단 탭에 진행바가 있다면 사용
+function updateBibleProgress(myBible) {
+    // 필요한 경우 여기에 추가 구현
 }
 
 function renderHallOfFame(appData) {
