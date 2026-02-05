@@ -1,7 +1,8 @@
-// 🎨 UI (화면 그리기) - Final Fix (성경 누적 복구)
+// 🎨 UI (화면 그리기) - 부모님 맞춤형 (큰 글씨 & 심플 버전)
 
 import { BIBLE_DATA, USER_SLOTS } from './data.js';
 
+// 날짜 도우미
 export function getTodayDate() {
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
@@ -31,7 +32,7 @@ export function getWeeklyRange(){
     return { start: fmt(s), end: fmt(e) };
 }
 
-// 랭킹 그리기
+// 랭킹
 export function renderRankings(appData, p){
     const u = USER_SLOTS.filter(x => appData.auth && appData.auth[x]);
     const r = document.getElementById('rank-resolution');
@@ -73,6 +74,7 @@ export function renderRankings(appData, p){
     }
 }
 
+// 나의 목표
 export function renderResolutionList(appData, myName) {
     const l = document.getElementById('list-resolution');
     if(!l) return;
@@ -80,7 +82,7 @@ export function renderResolutionList(appData, myName) {
     const today = getTodayDate();
     const list = appData[myName].resolution || [];
     
-    if(list.length === 0) { l.innerHTML = `<li class="empty-msg">목표를 추가하고 하루를 시작해보세요!</li>`; return; }
+    if(list.length === 0) { l.innerHTML = `<li class="empty-msg">목표를 추가해주세요!</li>`; return; }
 
     list.forEach((x, i) => {
         const s = x.steps.map((st, si) => {
@@ -91,6 +93,7 @@ export function renderResolutionList(appData, myName) {
     });
 }
 
+// 가족 목표
 export function renderFamilyGoals(appData, myName) {
     const container = document.getElementById('family-goals-container');
     if(!container) return;
@@ -104,22 +107,24 @@ export function renderFamilyGoals(appData, myName) {
         const total = goals.length;
 
         let html = `<div class="family-card accordion-card"><div class="accordion-header" onclick="window.toggleFamilyList('fam-list-${idx}')"><span class="family-name">${user.name}</span><span class="family-badge">${total}개</span></div><ul id="fam-list-${idx}" class="family-goal-list hidden">`;
-        if(total === 0) html += `<li class="empty-msg-small">등록된 목표가 없습니다.</li>`;
+        if(total === 0) html += `<li class="empty-msg-small">목표 없음</li>`;
         else goals.forEach(g => html += `<li><span class="dot">•</span> ${g.text}</li>`);
         html += `</ul></div>`;
         container.innerHTML += html;
     });
 }
 
+// 메시지
 export function renderMessages(appData) {
     const l = document.getElementById('msg-list');
     if(!l) return;
     l.innerHTML = "";
     const msgs = [...(appData.messages || [])].reverse();
-    if(msgs.length === 0) { l.innerHTML = `<li class="empty-msg-small">응원의 한마디를 남겨주세요!</li>`; return; }
+    if(msgs.length === 0) { l.innerHTML = `<li class="empty-msg-small">응원 메시지를 남겨주세요!</li>`; return; }
     msgs.forEach(m => l.innerHTML += `<li><b class="sender-name">${m.sender}</b> ${m.text}</li>`);
 }
 
+// 대시보드
 export function renderDashboard(appData, myName) {
     const period = appData.period || { start: "2026-01-01", end: "2026-12-31" };
     const pDisplay = document.getElementById('period-display');
@@ -147,10 +152,7 @@ export function renderDashboard(appData, myName) {
     if(dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
     calculateStreak(myHistory, rate, todayTotal);
-    
-    // [중요] 성경 통계 업데이트 함수 호출 추가!
     updateBibleStats(myBible);
-    
     renderWeeklyGraph(myHistory, today);
     renderHabitAnalysis(myGoals);
     renderRankings(appData, period);
@@ -248,32 +250,21 @@ function calculateStreak(myHistory, rate, todayTotal) {
     streakText.innerText = realStreak + "일";
 }
 
-// [추가된 함수] 성경 통계 계산 (오늘/올해 누적)
 function updateBibleStats(myBible) {
     const today = getTodayDate();
     const yearStr = today.split('-')[0];
     let todayCnt = 0;
     let yearCnt = 0;
-
-    // myBible 객체 순회하면서 카운트
     if(myBible) {
         Object.values(myBible).forEach(dateStr => {
             if(dateStr === today) todayCnt++;
             if(dateStr && dateStr.startsWith(yearStr)) yearCnt++;
         });
     }
-
-    // 화면에 표시 (성경 탭 상단)
     const elToday = document.getElementById('bible-today-count');
     const elYear = document.getElementById('bible-year-count');
-    
     if(elToday) elToday.innerText = `${todayCnt}장`;
     if(elYear) elYear.innerText = `${yearCnt}장`;
-}
-
-// 기존 성경 진행바 함수 (이름만 다름) - 하단 탭에 진행바가 있다면 사용
-function updateBibleProgress(myBible) {
-    // 필요한 경우 여기에 추가 구현
 }
 
 function renderHallOfFame(appData) {
@@ -286,6 +277,7 @@ function renderHallOfFame(appData) {
     if(l.innerHTML === "") l.innerHTML = "<div class='empty-msg-small'>아직 기록이 없습니다.</div>";
 }
 
+// [핵심 변경] 성경 목록에서 '장 수' 제거하고 제목만 표시
 export function renderBibleBooks(appData, myName, bibleState) {
     const g = document.getElementById('bible-books-grid');
     if(!g) return;
@@ -303,9 +295,10 @@ export function renderBibleBooks(appData, myName, bibleState) {
         const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b.name]) || 0;
         
         d.className = `bible-btn ${isDone?'completed':''}`;
+        
+        // [수정] 장수(50장) 표시 삭제, 제목만 표시
         let html = `<div>${b.name}</div>`;
         if(round > 0) html += `<div class="round-badge">🔄 ${round+1}독</div>`;
-        else html += `<div class="chapter-count">${b.chapters}</div>`;
         
         d.innerHTML = html;
         d.onclick = () => window.showChapters(b.name);
