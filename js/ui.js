@@ -1,15 +1,14 @@
-// 🎨 UI (화면 그리기) 전용 파일 - 최종 디자인 개선판
-// 그래프 스케일링, 성실도 분석 카드, 아코디언 기능 적용
+// 🎨 UI (화면 그리기) 전용 파일 - 최종 복구 버전
+// 성실도 분석, 아코디언, 그래프 스케일링 포함
 
 import { BIBLE_DATA, USER_SLOTS } from './data.js';
 
-// === 날짜 도우미 함수들 ===
+// === 날짜 도우미 ===
 export function getTodayDate() {
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
     const kstDiff = 9 * 60 * 60 * 1000;
     const kstDate = new Date(utc + kstDiff);
-    
     const y = kstDate.getFullYear();
     const m = String(kstDate.getMonth() + 1).padStart(2, '0');
     const dd = String(kstDate.getDate()).padStart(2, '0');
@@ -21,16 +20,10 @@ export function getWeeklyRange(){
     const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
     const kstDiff = 9 * 60 * 60 * 1000;
     const kstNow = new Date(utc + kstDiff);
-    
     const day = kstNow.getDay();
-    const offset = (day + 1) % 7;
-    
-    const s = new Date(kstNow);
-    s.setDate(kstNow.getDate() - offset);
-    
-    const e = new Date(s);
-    e.setDate(s.getDate() + 6);
-    
+    const offset = (day + 1) % 7; 
+    const s = new Date(kstNow); s.setDate(kstNow.getDate() - offset);
+    const e = new Date(s); e.setDate(s.getDate() + 6);
     const fmt = (d) => {
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -40,16 +33,16 @@ export function getWeeklyRange(){
     return { start: fmt(s), end: fmt(e) };
 }
 
-// === 화면 그리기 핵심 함수들 ===
+// === 화면 그리기 함수들 ===
 
-// 1. 나의 목표 리스트 그리기
+// 1. 나의 목표 리스트
 export function renderResolutionList(appData, myName) {
     const l = document.getElementById('list-resolution');
     if(!l) return;
     l.innerHTML = "";
     const today = getTodayDate();
-
     const list = appData[myName].resolution || [];
+    
     list.forEach((x, i) => {
         const s = x.steps.map((st, si) => {
             const isDoneToday = (x.done[si] === today);
@@ -67,7 +60,7 @@ export function renderResolutionList(appData, myName) {
     });
 }
 
-// 2. 가족 목표 리스트 그리기
+// 2. 가족 목표 리스트
 export function renderFamilyGoals(appData, myName) {
     const container = document.getElementById('family-goals-container');
     if(!container) return;
@@ -76,7 +69,6 @@ export function renderFamilyGoals(appData, myName) {
     USER_SLOTS.forEach((slot, idx) => {
         if(slot === myName) return;
         if(!appData.auth[slot]) return;
-
         const user = appData.auth[slot];
         const goals = appData[slot].resolution || [];
         const total = goals.length;
@@ -89,17 +81,11 @@ export function renderFamilyGoals(appData, myName) {
                 </div>
                 <ul id="fam-list-${idx}" class="family-goal-list">
         `;
-
         if(total === 0) {
             html += `<li class="family-goal-item" style="color:#94a3b8;">등록된 목표가 없습니다.</li>`;
         } else {
             goals.forEach(g => {
-                html += `
-                    <li class="family-goal-item">
-                        <span class="fg-bullet" style="color:#cbd5e1;">•</span>
-                        <span>${g.text}</span>
-                    </li>
-                `;
+                html += `<li class="family-goal-item"><span class="fg-bullet">•</span><span>${g.text}</span></li>`;
             });
         }
         html += `</ul></div>`;
@@ -107,7 +93,7 @@ export function renderFamilyGoals(appData, myName) {
     });
 }
 
-// 3. 메시지(채팅) 그리기
+// 3. 메시지
 export function renderMessages(appData) {
     const l = document.getElementById('msg-list');
     if(!l) return;
@@ -118,7 +104,7 @@ export function renderMessages(appData) {
     });
 }
 
-// 4. 대시보드 전체 그리기
+// 4. 대시보드 (통합)
 export function renderDashboard(appData, myName) {
     const period = appData.period || { start: "2026-01-01", end: "2026-12-31" };
     const pDisplay = document.getElementById('period-display');
@@ -127,22 +113,20 @@ export function renderDashboard(appData, myName) {
     const myHistory = appData[myName].history || {};
     const myBible = appData[myName].bible || {};
     const today = getTodayDate();
-
-    // 목표 데이터 계산
     const myGoals = appData[myName].resolution || [];
-    let todayTotal = 0, todayDone = 0;
     
-    // 계산만 먼저 수행
+    // 계산
+    let todayTotal = 0, todayDone = 0;
     myGoals.forEach(g => {
         const isDoneToday = g.done && g.done.every(val => val === today);
         todayTotal++;
         if(isDoneToday) todayDone++;
     });
 
-    // 1. [수정됨] 오늘 목표 현황 (아코디언 적용)
+    // 오늘 할 일 (아코디언)
     renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal);
 
-    // 2. [수정됨] 도넛 차트
+    // 도넛 차트
     let rate = 0;
     if(todayTotal > 0) rate = Math.round((todayDone / todayTotal) * 100);
     const dRate = document.getElementById('dash-rate');
@@ -150,35 +134,30 @@ export function renderDashboard(appData, myName) {
     if(dRate) dRate.innerText = rate + "%";
     if(dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
-    // 3. 스트릭
+    // 스트릭
     calculateStreak(myHistory, rate, todayTotal);
-
-    // 4. 성경 진행도
+    
+    // 성경바
     updateBibleProgress(myBible);
-
-    // 5. 주간 그래프
+    
+    // 주간 그래프
     renderWeeklyGraph(myHistory, today);
-
-    // 6. [수정됨] 목표별 성실도 분석 (아코디언 적용)
+    
+    // [New] 성실도 분석 (아코디언)
     renderHabitAnalysis(myGoals);
 
-    // 7. 랭킹
+    // 랭킹
     renderRankings(appData, period);
     renderHallOfFame(appData);
 }
 
-// [New] 오늘 할 일 아코디언 렌더링
+// [기능] 오늘 할 일 아코디언 렌더링
 function renderTodayTasksAccordion(myGoals, today, doneCount, totalCount) {
-    // 기존 today-task-list가 있는 카드 찾기
     const originalList = document.getElementById('today-task-list');
     if(!originalList) return;
-    
-    // 부모 카드 찾기
     const parentCard = originalList.closest('.dash-card');
     if(!parentCard) return;
 
-    // 카드의 내용을 아예 새로 덮어쓰기 (아코디언 구조로)
-    // ID 유지를 위해 재구성
     const isAllDone = (doneCount === totalCount && totalCount > 0);
     
     parentCard.innerHTML = `
@@ -205,7 +184,7 @@ function renderTodayTasksAccordion(myGoals, today, doneCount, totalCount) {
     `;
 }
 
-// [New] 목표별 성실도 분석 함수 (디자인 개선 + 아코디언 + 닫힘 기본)
+// [기능] 성실도 분석 (아코디언 + 깔끔 디자인)
 function renderHabitAnalysis(myGoals) {
     let container = document.getElementById('habit-analysis-card');
     if(!container) {
@@ -224,13 +203,11 @@ function renderHabitAnalysis(myGoals) {
 
     const maxVal = Math.max(...analysis.map(a => a.count)) || 1;
 
-    // 아코디언 헤더 + 닫힌 콘텐츠(hidden)
     let html = `
         <div class="accordion-header" onclick="window.toggleAccordion('habit-acc', this.querySelector('.accordion-icon'))" style="width:100%; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
             <div style="font-weight:bold;">📊 목표별 누적 실천</div>
             <i class="fas fa-chevron-down accordion-icon"></i>
         </div>
-        
         <div id="habit-acc" class="accordion-content hidden" style="width:100%; margin-top:15px; border-top:1px solid #f1f5f9; padding-top:15px;">
     `;
     
@@ -240,64 +217,51 @@ function renderHabitAnalysis(myGoals) {
         analysis.forEach(item => {
             const width = (item.count / maxVal) * 100;
             const color = width > 70 ? 'var(--success)' : (width > 30 ? '#fbbf24' : '#ef4444');
-            
-            // 디자인 개선: 왼쪽 정렬, 텍스트와 카운트 분리, 바 모양 개선
             html += `
                 <div style="margin-bottom:12px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.9rem; margin-bottom:5px;">
-                        <span style="text-align:left; font-weight:500; color:var(--text); flex:1; margin-right:10px;">${item.text}</span>
+                        <span style="text-align:left; font-weight:500; color:var(--text-main); flex:1; margin-right:10px;">${item.text}</span>
                         <span style="font-weight:bold; color:${color}; font-size:0.85rem; white-space:nowrap;">${item.count}회</span>
                     </div>
                     <div style="width:100%; height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden;">
-                        <div style="width:${width}%; height:100%; background:${color}; border-radius:4px; transition: width 0.5s ease;"></div>
+                        <div style="width:${width}%; height:100%; background:${color}; border-radius:4px;"></div>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
     }
     html += `</div>`;
     container.innerHTML = html;
 }
 
-// (내부함수) 주간 그래프
+// [기능] 주간 그래프
 function renderWeeklyGraph(myHistory, today) {
     const weekGraph = document.getElementById('weekly-graph');
     if(!weekGraph) return;
     weekGraph.innerHTML = "";
-
+    
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
     const kstNow = new Date(utc + (9*60*60*1000));
-    
     const dayOfWeek = kstNow.getDay();
     const offset = (dayOfWeek + 1) % 7; 
-    const saturdayStart = new Date(kstNow);
-    saturdayStart.setDate(kstNow.getDate() - offset);
-
+    const saturdayStart = new Date(kstNow); saturdayStart.setDate(kstNow.getDate() - offset);
     const dayNames = ['일','월','화','수','목','금','토'];
     
-    let maxCountInWeek = 0;
+    let maxCount = 0;
     const weekData = [];
-    
     for(let i=0; i<7; i++) {
-        const d = new Date(saturdayStart);
-        d.setDate(saturdayStart.getDate() + i);
-        const yy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const ddd = String(d.getDate()).padStart(2, '0');
-        const dStr = `${yy}-${mm}-${ddd}`;
+        const d = new Date(saturdayStart); d.setDate(saturdayStart.getDate() + i);
+        const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+        const dStr = `${y}-${m}-${dd}`;
         const count = myHistory[dStr] || 0;
-        if(count > maxCountInWeek) maxCountInWeek = count;
-        
+        if(count > maxCount) maxCount = count;
         weekData.push({ date: dStr, count: count, dayLabel: dayNames[d.getDay()] });
     }
-    
-    const scaleBase = Math.max(4, maxCountInWeek);
+    const scaleBase = Math.max(4, maxCount);
 
     weekData.forEach(data => {
         const h = Math.round((data.count / scaleBase) * 100);
         const isToday = (data.date === today);
-
         weekGraph.innerHTML += `
             <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;">
                 <div style="flex:1;display:flex;align-items:flex-end;width:100%;">
@@ -308,21 +272,20 @@ function renderWeeklyGraph(myHistory, today) {
     });
 }
 
-// (나머지 함수들은 기존 유지)
 function calculateStreak(myHistory, rate, todayTotal) {
     const fireIcon = document.getElementById('streak-icon');
     const streakLabel = document.getElementById('streak-label');
     const streakText = document.getElementById('dash-streak');
     if(!fireIcon || !streakText) return;
 
-    fireIcon.className = "fas fa-fire streak-icon";
     if(rate >= 100 && todayTotal > 0) {
         fireIcon.className = "fas fa-crown streak-icon gold"; 
         streakLabel.innerText = "완벽한 하루!";
     } else if(rate >= 50) {
-        fireIcon.classList.add('active'); 
+        fireIcon.className = "fas fa-fire streak-icon active";
         streakLabel.innerText = "연속 성공 중";
     } else {
+        fireIcon.className = "fas fa-fire streak-icon";
         streakLabel.innerText = "50% 이상 도전!";
     }
 
@@ -330,15 +293,9 @@ function calculateStreak(myHistory, rate, todayTotal) {
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
     const kstNow = new Date(utc + (9*60*60*1000));
-
     for(let i=0; i<365; i++) {
-        const d = new Date(kstNow);
-        d.setDate(d.getDate() - i);
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        const dStr = `${y}-${m}-${dd}`;
-
+        const d = new Date(kstNow); d.setDate(d.getDate() - i);
+        const dStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         if(myHistory[dStr] > 0) realStreak++; else if(i>0) break;
     }
     streakText.innerText = realStreak + "일";
@@ -347,7 +304,6 @@ function calculateStreak(myHistory, rate, todayTotal) {
 function updateBibleProgress(myBible) {
     let lastBook = "없음", percent = 0;
     const readKeys = Object.keys(myBible).sort();
-    
     if(readKeys.length > 0) {
         const lastKey = readKeys[readKeys.length-1];
         const [bName] = lastKey.split('-');
@@ -355,11 +311,9 @@ function updateBibleProgress(myBible) {
         const bookData = BIBLE_DATA.books.find(b => b.name === bName);
         if(bookData) percent = Math.round((readKeys.filter(k => k.startsWith(bName+'-')).length / bookData.chapters) * 100);
     }
-    
     const elName = document.getElementById('current-book-name');
     const elPercent = document.getElementById('bible-book-percent');
     const elBar = document.getElementById('bible-progress-bar');
-    
     if(elName) elName.innerText = lastBook;
     if(elPercent) elPercent.innerText = percent + "%";
     if(elBar) setTimeout(() => { elBar.style.width = percent + "%"; }, 100);
@@ -378,7 +332,6 @@ function renderRankings(appData, p){
             r.innerHTML += `<div class="rank-row"><span>${i+1}.${x.name}</span><span class="score">${x.val}점</span></div>`;
         });
     }
-
     const w = getWeeklyRange();
     const b = document.getElementById('rank-bible');
     if(b) {
@@ -407,11 +360,9 @@ export function renderBibleBooks(appData, myName, bibleState) {
     const g = document.getElementById('bible-books-grid');
     if(!g) return;
     g.innerHTML = "";
-    
     BIBLE_DATA.books.filter(b => b.testament === bibleState.currentTestament).forEach(b => {
         const d = document.createElement('div');
         d.className = "bible-btn";
-        
         let c = 0;
         const y = new Date().getFullYear().toString();
         for(let i=1; i<=b.chapters; i++){
@@ -420,16 +371,10 @@ export function renderBibleBooks(appData, myName, bibleState) {
             if(dt && dt.startsWith(y)) c++;
         }
         if(c >= b.chapters) d.classList.add('completed');
-
         const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b.name]) || 0;
         let html = `<div>${b.name}</div>`;
-        
-        if(round > 0) {
-            html += `<div class="round-badge" onclick="event.stopPropagation(); window.updateRoundCount('${b.name}')" style="font-size:0.75rem; color:#166534; font-weight:bold; margin-top:2px; background:#dcfce7; padding:2px 6px; border-radius:8px;">🔄 ${round+1}독 도전</div>`;
-        } else {
-            html += `<div style="font-size:0.7rem; color:#94a3b8;">${b.chapters}장</div>`;
-        }
-        
+        if(round > 0) html += `<div class="verse-badge" style="margin:2px 0 0 0; font-size:0.7rem; background:#dcfce7; color:#166534;">🔄 ${round+1}독</div>`;
+        else html += `<div style="font-size:0.7rem; color:var(--text-light);">${b.chapters}장</div>`;
         d.innerHTML = html;
         d.onclick = () => window.showChapters(b.name);
         g.appendChild(d);
@@ -440,10 +385,8 @@ export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
     const b = BIBLE_DATA.books.find(x => x.name === bibleState.currentBook);
     const g = document.getElementById('bible-chapters-grid');
     const y = new Date().getFullYear().toString();
-    
     if(!g || !b) return;
     g.innerHTML = "";
-    
     let all = true;
     for(let i=1; i<=b.chapters; i++){
         const d = document.createElement('div');
@@ -451,22 +394,15 @@ export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
         const k = `${b.name}-${i}`;
         const dt = appData[myName].bible && appData[myName].bible[k];
         const r = dt && dt.startsWith(y);
-        
         if(r) d.classList.add('checked'); else all = false;
         d.innerText = i;
         if(rangeStart && rangeStart > 0 && i === rangeStart) d.classList.add('range-start');
         d.onclick = () => window.toggleChapter(i, k, !r); 
         g.appendChild(d);
     }
-    
     const btn = document.getElementById('btn-finish-book');
     if(btn) {
-        if(all){
-            btn.classList.remove('disabled');
-            btn.innerText = "완독하기 🎉";
-        } else {
-            btn.classList.add('disabled');
-            btn.innerText = "모두 읽어야 완독 가능";
-        }
+        if(all){ btn.classList.remove('disabled'); btn.innerText = "완독하기 🎉"; } 
+        else { btn.classList.add('disabled'); btn.innerText = "모두 읽어야 완독 가능"; }
     }
 }
