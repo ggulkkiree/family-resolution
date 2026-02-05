@@ -1,8 +1,7 @@
-// 🎨 UI (화면 그리기) - 부모님 맞춤형 (큰 글씨 & 심플 버전)
+// 🎨 UI (화면 그리기) - Premium "My Record" Update
 
 import { BIBLE_DATA, USER_SLOTS } from './data.js';
 
-// 날짜 도우미
 export function getTodayDate() {
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
@@ -32,7 +31,6 @@ export function getWeeklyRange(){
     return { start: fmt(s), end: fmt(e) };
 }
 
-// 랭킹
 export function renderRankings(appData, p){
     const u = USER_SLOTS.filter(x => appData.auth && appData.auth[x]);
     const r = document.getElementById('rank-resolution');
@@ -74,7 +72,6 @@ export function renderRankings(appData, p){
     }
 }
 
-// 나의 목표
 export function renderResolutionList(appData, myName) {
     const l = document.getElementById('list-resolution');
     if(!l) return;
@@ -93,7 +90,6 @@ export function renderResolutionList(appData, myName) {
     });
 }
 
-// 가족 목표
 export function renderFamilyGoals(appData, myName) {
     const container = document.getElementById('family-goals-container');
     if(!container) return;
@@ -114,7 +110,6 @@ export function renderFamilyGoals(appData, myName) {
     });
 }
 
-// 메시지
 export function renderMessages(appData) {
     const l = document.getElementById('msg-list');
     if(!l) return;
@@ -124,7 +119,6 @@ export function renderMessages(appData) {
     msgs.forEach(m => l.innerHTML += `<li><b class="sender-name">${m.sender}</b> ${m.text}</li>`);
 }
 
-// 대시보드
 export function renderDashboard(appData, myName) {
     const period = appData.period || { start: "2026-01-01", end: "2026-12-31" };
     const pDisplay = document.getElementById('period-display');
@@ -142,6 +136,7 @@ export function renderDashboard(appData, myName) {
         if(isDoneToday) todayDone++;
     });
 
+    // [중요] 오늘 할 일 (HTML 구조 변경)
     renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal);
 
     let rate = 0;
@@ -159,14 +154,29 @@ export function renderDashboard(appData, myName) {
     renderHallOfFame(appData);
 }
 
+// [수정] 오늘 할 일 리스트 (버튼형 디자인)
 function renderTodayTasksAccordion(myGoals, today, doneCount, totalCount) {
     const listContainer = document.getElementById('today-task-list');
     if(!listContainer) return;
-    if(myGoals.length === 0) { listContainer.innerHTML = '<div class="empty-msg-small">목표 없음</div>'; return; }
+    
+    const statusText = document.getElementById('today-status-text');
+    if(statusText) {
+        statusText.innerHTML = `<span style="font-size:0.9rem; font-weight:700; color:${doneCount===totalCount && totalCount>0 ? 'var(--success)' : 'var(--text-light)'}">${doneCount}/${totalCount}</span>`;
+    }
+
+    if(myGoals.length === 0) { listContainer.innerHTML = '<div class="empty-msg-small">등록된 목표가 없습니다.</div>'; return; }
+
     let html = '';
     myGoals.forEach(g => {
         const isDoneToday = g.done && g.done.every(val => val === today);
-        html += `<div class="task-row ${isDoneToday?'done':''}"><span class="task-text">${g.text}</span><span class="task-check">${isDoneToday?'<i class="fas fa-check-circle"></i>':'<i class="far fa-circle"></i>'}</span></div>`;
+        // 체크박스 대신 '카드형' 디자인 적용
+        html += `
+        <div class="task-card ${isDoneToday?'active':''}">
+            <span class="task-text">${g.text}</span>
+            <div class="task-icon-box">
+                ${isDoneToday ? '<i class="fas fa-check"></i>' : '<i class="fas fa-circle" style="opacity:0.1"></i>'}
+            </div>
+        </div>`;
     });
     listContainer.innerHTML = html;
 }
@@ -182,6 +192,8 @@ function renderHabitAnalysis(myGoals) {
     }
     const analysis = myGoals.map(g => ({ text: g.text, count: (g.counts || []).reduce((a, b) => a + b, 0) })).sort((a, b) => b.count - a.count);
     const maxVal = Math.max(...analysis.map(a => a.count)) || 1;
+    
+    // 성실도 분석 디자인 개선
     let html = `<div class="dash-card"><div class="accordion-header" onclick="window.toggleAccordion('habit-acc', this.querySelector('.accordion-icon'))"><span class="card-title">📊 목표별 성실도</span><i class="fas fa-chevron-down accordion-icon"></i></div><div id="habit-acc" class="accordion-content hidden">`;
     if(analysis.length === 0) { html += `<div class="empty-msg-small">데이터 없음</div>`; } 
     else {
@@ -247,7 +259,7 @@ function calculateStreak(myHistory, rate, todayTotal) {
         const dStr = `${y}-${m}-${dd}`;
         if(myHistory[dStr] > 0) realStreak++; else if(i>0) break;
     }
-    streakText.innerText = realStreak + "일";
+    streakText.innerText = `${realStreak}일`;
 }
 
 function updateBibleStats(myBible) {
@@ -277,7 +289,6 @@ function renderHallOfFame(appData) {
     if(l.innerHTML === "") l.innerHTML = "<div class='empty-msg-small'>아직 기록이 없습니다.</div>";
 }
 
-// [핵심 변경] 성경 목록에서 '장 수' 제거하고 제목만 표시
 export function renderBibleBooks(appData, myName, bibleState) {
     const g = document.getElementById('bible-books-grid');
     if(!g) return;
@@ -295,8 +306,6 @@ export function renderBibleBooks(appData, myName, bibleState) {
         const round = (appData[myName].bibleRounds && appData[myName].bibleRounds[b.name]) || 0;
         
         d.className = `bible-btn ${isDone?'completed':''}`;
-        
-        // [수정] 장수(50장) 표시 삭제, 제목만 표시
         let html = `<div>${b.name}</div>`;
         if(round > 0) html += `<div class="round-badge">🔄 ${round+1}독</div>`;
         
