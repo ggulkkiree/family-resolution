@@ -1,5 +1,5 @@
-// 🎨 UI (화면 그리기) 전용 파일
-// 데이터(data.js)를 가져와서 화면에 보여주는 역할만 합니다.
+// 🎨 UI (화면 그리기) 전용 파일 - 업그레이드 버전
+// 그래프 높이 자동 조절 & 목표별 성실도 분석 추가
 
 import { BIBLE_DATA, USER_SLOTS } from './data.js';
 
@@ -53,7 +53,6 @@ export function renderResolutionList(appData, myName) {
     list.forEach((x, i) => {
         const s = x.steps.map((st, si) => {
             const isDoneToday = (x.done[si] === today);
-            // onclick 이벤트는 app.js에서 window 객체에 연결된 함수를 호출합니다.
             return `<span class="step-item ${isDoneToday?'done':''}" onclick="window.toggleStep(${i},${si})">${st}</span>`;
         }).join('');
         
@@ -119,7 +118,7 @@ export function renderMessages(appData) {
     });
 }
 
-// 4. 대시보드 전체 그리기 (통계, 그래프, 랭킹 등)
+// 4. 대시보드 전체 그리기
 export function renderDashboard(appData, myName) {
     const period = appData.period || { start: "2026-01-01", end: "2026-12-31" };
     const pDisplay = document.getElementById('period-display');
@@ -147,7 +146,7 @@ export function renderDashboard(appData, myName) {
         });
     }
 
-    // 상태 Pill 업데이트
+    // 상태 Pill
     const statusPill = document.getElementById('today-status');
     if(statusPill) {
         statusPill.innerText = `${todayDone}/${todayTotal} 완료`;
@@ -163,21 +162,129 @@ export function renderDashboard(appData, myName) {
     if(dRate) dRate.innerText = rate + "%";
     if(dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
-    // 스트릭(연속 달성)
+    // 스트릭
     calculateStreak(myHistory, rate, todayTotal);
 
     // 성경 진행도
     updateBibleProgress(myBible);
 
-    // 주간 그래프
+    // 주간 그래프 (업그레이드됨!)
     renderWeeklyGraph(myHistory, today);
+
+    // [New] 목표별 성실도 분석 카드 추가
+    renderHabitAnalysis(myGoals);
 
     // 랭킹
     renderRankings(appData, period);
     renderHallOfFame(appData);
 }
 
-// (내부함수) 스트릭 계산
+// [New] 목표별 성실도 분석 함수
+function renderHabitAnalysis(myGoals) {
+    // 1. HTML에 넣을 공간 찾기 (없으면 동적으로 추가)
+    let container = document.getElementById('habit-analysis-card');
+    if(!container) {
+        // 주간 그래프 바로 아래에 삽입
+        const graphCard = document.getElementById('weekly-graph').closest('.dash-card');
+        container = document.createElement('div');
+        container.id = 'habit-analysis-card';
+        container.className = 'dash-card';
+        container.style.marginBottom = '12px';
+        graphCard.after(container);
+    }
+
+    // 2. 데이터 분석 (총 수행 횟수)
+    // counts 배열의 합을 구함
+    const analysis = myGoals.map(g => {
+        const totalCount = (g.counts || []).reduce((a, b) => a + b, 0);
+        return { text: g.text, count: totalCount };
+    }).sort((a, b) => b.count - a.count); // 많이 한 순서대로 정렬
+
+    // 3. 렌더링
+    let html = `<div style="font-weight:bold; width:100%; margin-bottom:10px;">📊 목표별 누적 실천 (성실도)</div>`;
+    
+    if(analysis.length === 0) {
+        html += `<div style="color:#94a3b8; font-size:0.9rem;">아직 등록된 목표가 없습니다.</div>`;
+    } else {
+        // 최대값 찾기 (그래프 비율용)
+        const maxVal = Math.max(...analysis.map(a => a.count)) || 1;
+
+        analysis.forEach(item => {
+            const width = (item.count / maxVal) * 100;
+            // 색상: 많이 했으면 초록, 적게 했으면 주황
+            const color = width > 70 ? 'var(--success)' : (width > 30 ? '#fbbf24' : '#ef4444');
+            
+            html += `
+                <div style="margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:2px;">
+                        <span>${item.text}</span>
+                        <span style="font-weight:bold; color:${color}">${item.count}회</span>
+                    </div>
+                    <div style="width:100%; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
+                        <div style="width:${width}%; height:100%; background:${color}; border-radius:3px;"></div>
+                    </div>
+                </div>
+            `;
+        });
+    }
+    container.innerHTML = html;
+}
+
+
+// (내부함수) 주간 그래프 - 높이 자동 조절 기능 추가됨
+function renderWeeklyGraph(myHistory, today) {
+    const weekGraph = document.getElementById('weekly-graph');
+    if(!weekGraph) return;
+    weekGraph.innerHTML = "";
+
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    const kstNow = new Date(utc + (9*60*60*1000));
+    
+    const dayOfWeek = kstNow.getDay();
+    const offset = (dayOfWeek + 1) % 7; 
+    const saturdayStart = new Date(kstNow);
+    saturdayStart.setDate(kstNow.getDate() - offset);
+
+    const dayNames = ['일','월','화','수','목','금','토'];
+    
+    // 1. 이번주 최대값 찾기 (그래프 스케일링용)
+    let maxCountInWeek = 0;
+    const weekData = [];
+    
+    for(let i=0; i<7; i++) {
+        const d = new Date(saturdayStart);
+        d.setDate(saturdayStart.getDate() + i);
+        const yy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const ddd = String(d.getDate()).padStart(2, '0');
+        const dStr = `${yy}-${mm}-${ddd}`;
+        const count = myHistory[dStr] || 0;
+        if(count > maxCountInWeek) maxCountInWeek = count;
+        
+        weekData.push({ date: dStr, count: count, dayLabel: dayNames[d.getDay()] });
+    }
+    
+    // 최소 4칸은 확보 (너무 작으면 안 예쁨)
+    const scaleBase = Math.max(4, maxCountInWeek);
+
+    // 2. 그래프 그리기
+    weekData.forEach(data => {
+        // [수정됨] 스케일링 적용: (내 카운트 / 최대값) * 100
+        const h = Math.round((data.count / scaleBase) * 100);
+        const isToday = (data.date === today);
+
+        weekGraph.innerHTML += `
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;">
+                <div style="flex:1;display:flex;align-items:flex-end;width:100%;">
+                    <div class="week-bar ${h>0?'high':''}" style="width:60%; margin:0 auto; height:${h}%; min-height:${data.count>0?'4px':'0'}; ${isToday ? 'opacity:0.8;' : ''}"></div>
+                </div>
+                <div class="week-day-label" style="${isToday ? 'font-weight:bold;color:var(--primary);' : ''}">${data.dayLabel}</div>
+            </div>`;
+    });
+}
+
+// (나머지 함수들은 기존 유지)
 function calculateStreak(myHistory, rate, todayTotal) {
     const fireIcon = document.getElementById('streak-icon');
     const streakLabel = document.getElementById('streak-label');
@@ -213,7 +320,6 @@ function calculateStreak(myHistory, rate, todayTotal) {
     streakText.innerText = realStreak + "일";
 }
 
-// (내부함수) 성경 진행바 업데이트
 function updateBibleProgress(myBible) {
     let lastBook = "없음", percent = 0;
     const readKeys = Object.keys(myBible).sort();
@@ -235,48 +341,6 @@ function updateBibleProgress(myBible) {
     if(elBar) setTimeout(() => { elBar.style.width = percent + "%"; }, 100);
 }
 
-// (내부함수) 주간 그래프
-function renderWeeklyGraph(myHistory, today) {
-    const weekGraph = document.getElementById('weekly-graph');
-    if(!weekGraph) return;
-    weekGraph.innerHTML = "";
-
-    const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    const kstNow = new Date(utc + (9*60*60*1000));
-    
-    const dayOfWeek = kstNow.getDay();
-    const offset = (dayOfWeek + 1) % 7; 
-    const saturdayStart = new Date(kstNow);
-    saturdayStart.setDate(kstNow.getDate() - offset);
-
-    const dayNames = ['일','월','화','수','목','금','토'];
-
-    for(let i=0; i<7; i++) {
-        const d = new Date(saturdayStart);
-        d.setDate(saturdayStart.getDate() + i);
-        
-        const yy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const ddd = String(d.getDate()).padStart(2, '0');
-        const dStr = `${yy}-${mm}-${ddd}`;
-        
-        const count = myHistory[dStr] || 0;
-        const h = Math.min(100, count * 25);
-        const isToday = (dStr === today);
-        const dayLabel = dayNames[d.getDay()];
-
-        weekGraph.innerHTML += `
-            <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;">
-                <div style="flex:1;display:flex;align-items:flex-end;width:100%;">
-                    <div class="week-bar ${h>0?'high':''}" style="width:60%;margin:0 auto;height:${h}%; ${isToday ? 'opacity:0.8;' : ''}"></div>
-                </div>
-                <div class="week-day-label" style="${isToday ? 'font-weight:bold;color:var(--primary);' : ''}">${dayLabel}</div>
-            </div>`;
-    }
-}
-
-// 5. 랭킹 그리기
 function renderRankings(appData, p){
     const u = USER_SLOTS.filter(x => appData.auth && appData.auth[x]);
     const r = document.getElementById('rank-resolution');
@@ -305,7 +369,6 @@ function renderRankings(appData, p){
     }
 }
 
-// 6. 명예의 전당 그리기
 function renderHallOfFame(appData) {
     const l = document.getElementById('hall-of-fame-list');
     if(!l) return;
@@ -316,7 +379,6 @@ function renderHallOfFame(appData) {
     if(l.innerHTML === "") l.innerHTML = "<div style='text-align:center;color:#94a3b8;font-size:0.8rem;'>기록 없음</div>";
 }
 
-// 7. 성경 책 목록(Grid) 그리기
 export function renderBibleBooks(appData, myName, bibleState) {
     const g = document.getElementById('bible-books-grid');
     if(!g) return;
@@ -328,7 +390,6 @@ export function renderBibleBooks(appData, myName, bibleState) {
         
         let c = 0;
         const y = new Date().getFullYear().toString();
-        // 읽은 장 계산
         for(let i=1; i<=b.chapters; i++){
             const k = `${b.name}-${i}`;
             const dt = appData[myName].bible && appData[myName].bible[k];
@@ -346,12 +407,11 @@ export function renderBibleBooks(appData, myName, bibleState) {
         }
         
         d.innerHTML = html;
-        d.onclick = () => window.showChapters(b.name); // app.js의 함수 호출
+        d.onclick = () => window.showChapters(b.name);
         g.appendChild(d);
     });
 }
 
-// 8. 성경 장(Chapter) 그리기
 export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
     const b = BIBLE_DATA.books.find(x => x.name === bibleState.currentBook);
     const g = document.getElementById('bible-chapters-grid');
@@ -370,10 +430,7 @@ export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
         
         if(r) d.classList.add('checked'); else all = false;
         d.innerText = i;
-        
         if(rangeStart && rangeStart > 0 && i === rangeStart) d.classList.add('range-start');
-        
-        // 클릭 시 app.js의 toggleChapter 호출
         d.onclick = () => window.toggleChapter(i, k, !r); 
         g.appendChild(d);
     }
