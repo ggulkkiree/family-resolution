@@ -1,9 +1,10 @@
-// 🧠 Main Controller (사령관) - 복구 및 연결 완료
+// 🧠 Main Controller (사령관) - 통계 복구 버전
 
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { BIBLE_DATA } from './js/data.js';
-import * as UI from './js/ui.js';
+// [중요] ?v=refresh를 붙여서, 브라우저가 강제로 새 설명서(UI)를 가져오게 합니다!
+import * as UI from './js/ui.js?v=refresh';
 
 let appData = {};
 let myName = localStorage.getItem('myId');
@@ -38,9 +39,12 @@ async function saveData() {
 
 function updateMainUI() {
     if(!myName || !appData.auth[myName]) return;
+    
+    // UI 업데이트 중 에러가 나도 앱이 멈추지 않도록 방어
     try {
         const nameEl = document.getElementById('user-name');
         if(nameEl) nameEl.innerText = appData.auth[myName].name;
+        
         if(appData.verse && appData.verse.t) {
             const vt = document.getElementById('verse-text');
             const vr = document.getElementById('verse-ref');
@@ -48,14 +52,18 @@ function updateMainUI() {
             if(vr) vr.innerText = appData.verse.r;
         }
         
+        // 각 화면 그리기 함수 호출
         UI.renderResolutionList(appData, myName);
         UI.renderFamilyGoals(appData, myName);
         UI.renderMessages(appData);
+        // [여기가 핵심] 통계 그리는 새 설명서가 적용됨
         UI.renderDashboard(appData, myName);
         
         if(bibleState.currentBook) UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
         if(bibleState.currentTestament) UI.renderBibleBooks(appData, myName, bibleState);
-    } catch (err) { console.error("UI Update Error:", err); }
+    } catch (err) {
+        console.error("UI Update Error:", err);
+    }
 }
 
 function checkLoginStatus() {
@@ -89,9 +97,7 @@ function checkLoginStatus() {
     }
 }
 
-// === 전역 함수 (HTML onclick 연결) ===
-
-// 탭 이동
+// === 전역 함수 (HTML 연결) ===
 window.goTab = (t, el) => {
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     if(el) el.classList.add('active');
@@ -101,11 +107,15 @@ window.goTab = (t, el) => {
     updateMainUI();
 };
 
-// 아코디언 토글 (UI.js에 HTML은 있지만 동작은 여기서)
 window.toggleAccordion = (id, icon) => {
     const content = document.getElementById(id);
     if(content) content.classList.toggle('hidden');
     if(icon) icon.classList.toggle('open');
+};
+
+window.toggleFamilyList = (id) => {
+    const list = document.getElementById(id);
+    if(list) list.classList.toggle('hidden');
 };
 
 window.addItem = function() {
@@ -122,7 +132,9 @@ window.toggleStep = function(i, s) {
     const item = appData[myName].resolution[i];
     const today = UI.getTodayDate();
     const isAlreadyDone = (item.done[s] === today);
+    
     if(!item.counts) item.counts = Array(item.steps.length).fill(0);
+
     if(isAlreadyDone) {
         item.done[s] = "";
         item.counts[s] = Math.max(0, item.counts[s]-1);
@@ -131,6 +143,7 @@ window.toggleStep = function(i, s) {
         item.counts[s]++;
         if(window.confetti) confetti({particleCount:50,spread:60,origin:{y:0.6}});
     }
+    
     if(!appData[myName].history) appData[myName].history = {};
     let d = 0;
     appData[myName].resolution.forEach(r => { r.done.forEach(x => { if(x === today) d++; }); });
@@ -237,9 +250,6 @@ window.finishBookAndReset = () => {
         saveData().then(()=>alert("축하합니다!"));
     }
 };
-window.backToBooks=()=>{ document.getElementById('bible-chapters-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view'); };
-window.showBibleMain=()=>{ document.getElementById('bible-books-view').classList.add('hidden-view'); document.getElementById('bible-main-view').classList.remove('hidden-view'); };
 window.manageSeason=()=>{ const c=appData.period; if(!confirm(`시즌(${c.start}~${c.end}) 마감?`)){ const s=prompt("시작",c.start),e=prompt("종료",c.end); if(s&&e){appData.period={start:s,end:e}; saveData();} } };
-window.toggleFamilyList=(id)=>{ const list=document.getElementById(id); list.classList.toggle('show'); };
 
 startApp();
