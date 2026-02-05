@@ -3,20 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Family Goals 2026 (Premium)</title>
-    
+    <title>Family Goals 2026 (Premium+)</title>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- v=premium 으로 변경해서 새 디자인 적용 -->
-    <link rel="stylesheet" href="style.css?v=premium">
+    <!-- v=plus로 버전 업데이트 -->
+    <link rel="stylesheet" href="style.css?v=plus">
 </head>
 <body>
-
     <div id="splash-screen">
         <div class="logo-circle">⛪️</div>
         <h1 style="font-weight:800; letter-spacing:-1px;">FAMILY<br>GOALS</h1>
-        <span style="font-size:1rem; font-weight:500; opacity:0.8; letter-spacing:2px;">2026</span>
+        <span style="font-size:1rem; font-weight:500; opacity:0.8;">2026</span>
     </div>
 
     <!-- 로그인 -->
@@ -35,14 +32,13 @@
                     Hi, <span id="user-name" style="color:#6366f1;">User</span>
                 </span>
                 <div style="display:flex; gap:12px;">
-                    <button onclick="window.editProfile()" class="icon-btn"><i class="fas fa-cog"></i></button>
-                    <button onclick="window.logoutAction()" class="icon-btn"><i class="fas fa-sign-out-alt"></i></button>
+                    <button onclick="window.editProfile()" class="icon-btn" style="background:none; border:none;"><i class="fas fa-cog" style="font-size:1.1rem; color:#94a3b8;"></i></button>
+                    <button onclick="window.logoutAction()" class="icon-btn" style="background:none; border:none;"><i class="fas fa-sign-out-alt" style="font-size:1.1rem; color:#94a3b8;"></i></button>
                 </div>
             </div>
         </header>
 
         <main id="main-content">
-            <!-- 말씀 카드 (그라데이션 강조) -->
             <div class="verse-card">
                 <div class="verse-header">
                     <span class="verse-badge">✨ 오늘의 말씀</span>
@@ -58,7 +54,6 @@
                     <span class="section-title">📌 나의 목표</span>
                     <i class="fas fa-chevron-down accordion-icon open"></i>
                 </div>
-                
                 <div id="my-goals-section">
                     <div class="input-pill">
                         <input type="text" id="input-resolution" placeholder="새 목표 입력...">
@@ -66,10 +61,8 @@
                     </div>
                     <ul id="list-resolution"></ul>
                 </div>
-                
                 <div class="section-header mt-30"><span class="section-title">👨‍👩‍👧‍👦 가족들의 목표</span></div>
                 <div id="family-goals-container"></div>
-
                 <div class="section-header mt-30"><span class="section-title">💌 응원 메시지</span></div>
                 <div class="chat-card">
                     <ul id="msg-list"></ul>
@@ -83,16 +76,15 @@
             <!-- 2. 성경 탭 -->
             <div id="page-bible" class="page hidden">
                 <div class="stat-row">
-                    <div class="dash-card center-text highlight-green">
+                    <div class="dash-card center-text">
                         <div class="stat-label">오늘 읽음</div>
-                        <div id="bible-today-count" class="stat-value">0장</div>
+                        <div id="bible-today-count" class="stat-value" style="color:#10b981;">0장</div>
                     </div>
                     <div class="dash-card center-text">
                         <div class="stat-label">올해 누적</div>
                         <div id="bible-year-count" class="stat-value">0장</div>
                     </div>
                 </div>
-
                 <div id="bible-main-view">
                     <div class="bible-select-card" onclick="window.showBibleBooks('old')">
                         <div class="icon-box old">📜</div>
@@ -105,37 +97,36 @@
                         <i class="fas fa-chevron-right arrow-icon"></i>
                     </div>
                 </div>
-
                 <div id="bible-books-view" class="hidden-view">
-                    <div class="sub-header">
+                    <div class="sub-header" style="display:flex; margin-bottom:15px; align-items:center;">
                         <button onclick="window.showBibleMain()" class="back-btn"><i class="fas fa-arrow-left"></i> 뒤로</button>
-                        <span class="sub-title">성경 선택</span>
+                        <span class="section-title" style="margin-left:10px;">성경 선택</span>
                     </div>
                     <div id="bible-books-grid" class="grid-5"></div>
                 </div>
-
                 <div id="bible-chapters-view" class="hidden-view">
-                    <div class="sub-header">
-                        <button onclick="window.backToBooks()" class="back-btn"><i class="fas fa-arrow-left"></i> 목록</button>
-                        <h3 id="bible-book-title" class="sub-title">Title</h3>
+                    <div class="sub-header" style="display:flex; margin-bottom:15px; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center;">
+                            <button onclick="window.backToBooks()" class="back-btn"><i class="fas fa-arrow-left"></i> 목록</button>
+                            <h3 id="bible-book-title" class="section-title" style="margin-left:10px; margin-bottom:0;">Title</h3>
+                        </div>
+                        <div class="chapter-tools"></div>
                     </div>
-                    <div class="chapter-tools"></div>
-                    <button id="btn-finish-book" onclick="window.finishBookAndReset()" class="full-width-btn">완독하기 🎉</button>
+                    <button id="btn-finish-book" onclick="window.finishBookAndReset()" class="login-btn" style="background:#334155; color:white; margin-bottom:15px;">완독하기 🎉</button>
                     <div id="bible-chapters-grid" class="grid-7"></div>
                 </div>
             </div>
 
-            <!-- 3. 대시보드 탭 (순서 변경됨!) -->
+            <!-- 3. 대시보드 탭 -->
             <div id="page-stats" class="page hidden">
-                <div class="period-card" onclick="window.manageSeason()">
+                <div class="period-card" onclick="window.manageSeason()" style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <div class="sub-text">Current Season</div>
-                        <div id="period-display" class="main-text">Loading...</div>
+                        <div style="font-size:0.8rem; color:#64748b;">Current Season</div>
+                        <div id="period-display" style="font-weight:700;">Loading...</div>
                     </div>
-                    <i class="fas fa-cog"></i>
+                    <i class="fas fa-cog" style="color:#cbd5e1;"></i>
                 </div>
 
-                <!-- [핵심] 랭킹 섹션 최상단 배치 -->
                 <div class="section-header"><span class="section-title">🏆 가족 랭킹</span></div>
                 <div class="ranking-grid">
                     <div class="ranking-card">
@@ -148,7 +139,6 @@
                     </div>
                 </div>
 
-                <!-- 나의 기록 -->
                 <div class="section-header mt-30"><span class="section-title">📊 나의 기록</span></div>
                 <div class="stat-row">
                     <div class="dash-card center-text">
@@ -158,10 +148,11 @@
                         </div>
                         <div class="stat-label">오늘 달성률</div>
                     </div>
-                    <div class="dash-card center-text">
+                    <!-- [수정] streak-card 클래스 추가로 디자인 변경 -->
+                    <div class="dash-card center-text streak-card">
                         <i class="fas fa-fire streak-icon" id="streak-icon"></i>
                         <div class="streak-count" id="dash-streak">0일</div>
-                        <div class="stat-label">연속 성공</div>
+                        <div class="streak-label" id="streak-label">연속 성공</div>
                     </div>
                 </div>
 
@@ -176,11 +167,11 @@
                     <div id="weekly-graph" class="weekly-graph"></div>
                 </div>
                 
-                <div class="fame-accordion">
-                     <div onclick="window.toggleAccordion('acc-fame', this.querySelector('i'))" class="fame-header">
+                <div class="fame-accordion" style="margin-top:20px; text-align:center;">
+                     <div onclick="window.toggleAccordion('acc-fame', this.querySelector('i'))" style="cursor:pointer; font-weight:700; color:#64748b;">
                         👑 지난 시즌 우승자 보기 <i class="fas fa-chevron-down accordion-icon"></i>
                      </div>
-                     <div id="acc-fame" class="hidden"><div id="hall-of-fame-list"></div></div>
+                     <div id="acc-fame" class="hidden" style="margin-top:10px;"><div id="hall-of-fame-list"></div></div>
                 </div>
             </div>
         </main>
@@ -198,9 +189,8 @@
         </nav>
     </div>
 
-    <!-- 스크립트 연결 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script type="module" src="app.js?v=premium"></script>
+    <script type="module" src="app.js?v=plus"></script>
 </body>
 </html>
 
