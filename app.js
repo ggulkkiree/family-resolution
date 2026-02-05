@@ -1,10 +1,10 @@
-// 🧠 Main Controller (사령관) - 통계 복구 버전
+// 🧠 Main Controller (사령관) - 부모님 맞춤형 (Big Text Ver.)
 
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { BIBLE_DATA } from './js/data.js';
-// [중요] ?v=refresh를 붙여서, 브라우저가 강제로 새 설명서(UI)를 가져오게 합니다!
-import * as UI from './js/ui.js?v=refresh';
+// [중요] ?v=bigtext를 붙여서, 글씨가 커지고 장수가 사라진 새 UI를 강제로 가져옵니다.
+import * as UI from './js/ui.js?v=bigtext';
 
 let appData = {};
 let myName = localStorage.getItem('myId');
@@ -12,18 +12,28 @@ let isDataLoaded = false;
 let bibleState = { currentTestament: null, currentBook: null };
 let rangeStart = null;
 
+// === 1. 앱 시작 ===
 function startApp() {
     onSnapshot(docRef, (snapshot) => {
         const splash = document.getElementById('splash-screen');
+        
         if(snapshot.exists()) {
             appData = snapshot.data();
             isDataLoaded = true;
-            if(splash) { splash.style.opacity = '0'; setTimeout(()=> splash.style.display='none', 500); }
+
+            // 로딩 화면 숨기기
+            if(splash) {
+                splash.style.opacity = '0';
+                setTimeout(()=> splash.style.display='none', 500);
+            }
+
+            // 데이터 방어 코드
             if(!appData.auth) appData.auth = {};
             if(!appData.period) {
                 const y = new Date().getFullYear();
                 appData.period = { start: `${y}-01-01`, end: `${y}-12-31` };
             }
+
             checkLoginStatus();
         } else {
             console.warn("데이터 로드 실패");
@@ -31,16 +41,17 @@ function startApp() {
     });
 }
 
+// === 2. 저장 함수 ===
 async function saveData() {
     if(!isDataLoaded) return;
     try { await setDoc(docRef, appData, { merge: true }); updateMainUI(); } 
-    catch(e) { console.error(e); }
+    catch(e) { console.error("저장 실패:", e); }
 }
 
+// === 3. 화면 갱신 ===
 function updateMainUI() {
     if(!myName || !appData.auth[myName]) return;
     
-    // UI 업데이트 중 에러가 나도 앱이 멈추지 않도록 방어
     try {
         const nameEl = document.getElementById('user-name');
         if(nameEl) nameEl.innerText = appData.auth[myName].name;
@@ -52,11 +63,10 @@ function updateMainUI() {
             if(vr) vr.innerText = appData.verse.r;
         }
         
-        // 각 화면 그리기 함수 호출
+        // UI 모듈의 그리기 함수들 호출
         UI.renderResolutionList(appData, myName);
         UI.renderFamilyGoals(appData, myName);
         UI.renderMessages(appData);
-        // [여기가 핵심] 통계 그리는 새 설명서가 적용됨
         UI.renderDashboard(appData, myName);
         
         if(bibleState.currentBook) UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
@@ -97,7 +107,9 @@ function checkLoginStatus() {
     }
 }
 
-// === 전역 함수 (HTML 연결) ===
+// === 전역 함수 연결 (HTML onclick 대응) ===
+
+// 탭 이동
 window.goTab = (t, el) => {
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     if(el) el.classList.add('active');
@@ -107,6 +119,7 @@ window.goTab = (t, el) => {
     updateMainUI();
 };
 
+// 아코디언 & 리스트 토글
 window.toggleAccordion = (id, icon) => {
     const content = document.getElementById(id);
     if(content) content.classList.toggle('hidden');
@@ -118,6 +131,7 @@ window.toggleFamilyList = (id) => {
     if(list) list.classList.toggle('hidden');
 };
 
+// 목표 관련
 window.addItem = function() {
     const input = document.getElementById('input-resolution');
     const val = input.value.trim();
@@ -151,8 +165,10 @@ window.toggleStep = function(i, s) {
     saveData();
 };
 
-window.deleteItem = (i) => { if(confirm("삭제하시겠습니까?")) { appData[myName].resolution.splice(i,1); saveData(); }};
-window.editItem = (i) => { const n = prompt("수정:", appData[myName].resolution[i].text); if(n) { appData[myName].resolution[i].text = n; saveData(); }};
+window.deleteItem = (i) => { if(confirm("정말 삭제하시겠습니까?")) { appData[myName].resolution.splice(i,1); saveData(); }};
+window.editItem = (i) => { const n = prompt("목표 수정:", appData[myName].resolution[i].text); if(n) { appData[myName].resolution[i].text = n; saveData(); }};
+
+// 채팅 & 설정
 window.sendMsg = () => {
     const input = document.getElementById('input-msg');
     const txt = input.value.trim();
@@ -170,20 +186,24 @@ window.editVerse = () => {
 };
 window.editProfile = () => {
     const cur = appData.auth[myName].pin;
-    if(prompt(`비밀번호(${cur}):`) !== cur) return alert("오류");
+    if(prompt(`현재 비밀번호(${cur}) 입력:`) !== cur) return alert("비밀번호가 틀렸습니다.");
     const n = prompt("새 이름:", appData.auth[myName].name); if(!n)return;
-    const p = prompt("새 비번:", cur); if(!p)return;
+    const p = prompt("새 비밀번호:", cur); if(!p)return;
     appData.auth[myName].name = n; appData.auth[myName].pin = p;
-    saveData().then(()=>alert("수정 완료"));
+    saveData().then(()=>alert("수정되었습니다."));
 };
-window.logoutAction = () => { if(confirm("로그아웃?")) { localStorage.removeItem('myId'); location.reload(); }};
-window.tryLogin = (s, p) => { if(prompt("PIN:")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("불일치"); };
+window.logoutAction = () => { if(confirm("로그아웃 하시겠습니까?")) { localStorage.removeItem('myId'); location.reload(); }};
+
+// 로그인 & 가입
+window.tryLogin = (s, p) => { if(prompt("비밀번호(PIN):")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호가 틀렸습니다."); };
 window.tryRegister = (s) => {
-    const n = prompt("이름:"); if(!n)return; const p = prompt("PIN:"); if(!p)return;
+    const n = prompt("이름:"); if(!n)return; const p = prompt("비밀번호(PIN):"); if(!p)return;
     appData.auth[s] = {name:n, pin:p};
     if(!appData[s]) appData[s] = {resolution:[], bible:{}, history:{}};
     saveData().then(() => { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); });
 };
+
+// 성경 관련 기능
 window.showBibleBooks = (t) => {
     bibleState.currentTestament = t;
     document.getElementById('bible-main-view').classList.add('hidden-view');
@@ -195,15 +215,18 @@ window.showChapters = (bn) => {
     document.getElementById('bible-books-view').classList.add('hidden-view');
     document.getElementById('bible-chapters-view').classList.remove('hidden-view');
     document.getElementById('bible-book-title').innerText = bn;
+    
+    // 범위 선택 버튼 생성
     const tools = document.querySelector('.chapter-tools');
-    if(tools) tools.innerHTML = `<button class="text-btn" onclick="window.toggleRangeMode()" id="btn-range">⚡️범위</button><button class="text-btn" onclick="window.controlAll(true)">전체</button><button class="text-btn" onclick="window.controlAll(false)">해제</button>`;
+    if(tools) tools.innerHTML = `<button class="text-btn" onclick="window.toggleRangeMode()" id="btn-range" style="font-weight:600; color:var(--primary); margin-right:10px;">⚡️범위선택</button><button class="text-btn" onclick="window.controlAll(true)">전체</button><button class="text-btn" onclick="window.controlAll(false)" style="color:#94a3b8;">해제</button>`;
+    
     rangeStart = null;
     UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
 };
 window.toggleRangeMode = () => {
     const btn = document.getElementById('btn-range');
-    if(rangeStart === null) { rangeStart = -1; alert("시작/끝 선택"); if(btn) btn.style.fontWeight="bold"; }
-    else { rangeStart = null; if(btn) btn.style.fontWeight="normal"; UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); }
+    if(rangeStart === null) { rangeStart = -1; alert("시작 장을 누르고, 끝 장을 누르세요."); if(btn) { btn.style.fontWeight="800"; btn.innerText="선택중..."; } }
+    else { rangeStart = null; if(btn) { btn.style.fontWeight="600"; btn.innerText="⚡️범위선택"; } UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); }
 };
 window.toggleChapter = (chap, k, check) => {
     const today = UI.getTodayDate();
@@ -227,7 +250,7 @@ window.toggleChapter = (chap, k, check) => {
     saveData();
 };
 window.controlAll = (on) => {
-    if(!on && !confirm("기록 삭제?")) return;
+    if(!on && !confirm("이 책의 체크를 모두 해제하시겠습니까?")) return;
     const b = BIBLE_DATA.books.find(x => x.name === bibleState.currentBook);
     const today = UI.getTodayDate();
     if(!appData[myName].bible) appData[myName].bible={};
@@ -241,15 +264,18 @@ window.controlAll = (on) => {
 };
 window.finishBookAndReset = () => {
     if(document.getElementById('btn-finish-book').classList.contains('disabled')) return;
-    if(confirm("완독?")) {
+    if(confirm("완독 처리 하시겠습니까?\n(체크는 초기화되고 1독이 추가됩니다)")) {
         const b = bibleState.currentBook;
         if(!appData[myName].bibleRounds) appData[myName].bibleRounds={};
         appData[myName].bibleRounds[b] = (appData[myName].bibleRounds[b]||0)+1;
         const bookData = BIBLE_DATA.books.find(x => x.name === b);
         for(let i=1; i<=bookData.chapters; i++) appData[myName].bible[`${b}-${i}`]=null;
-        saveData().then(()=>alert("축하합니다!"));
+        saveData().then(()=>alert("축하합니다! 완독 완료! 🎉"));
     }
 };
-window.manageSeason=()=>{ const c=appData.period; if(!confirm(`시즌(${c.start}~${c.end}) 마감?`)){ const s=prompt("시작",c.start),e=prompt("종료",c.end); if(s&&e){appData.period={start:s,end:e}; saveData();} } };
+window.manageSeason=()=>{ const c=appData.period; if(!confirm(`시즌(${c.start}~${c.end}) 마감?`)){ const s=prompt("시작일",c.start),e=prompt("종료일",c.end); if(s&&e){appData.period={start:s,end:e}; saveData();} } };
+window.backToBooks=()=>{ document.getElementById('bible-chapters-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view'); };
+window.showBibleMain=()=>{ document.getElementById('bible-books-view').classList.add('hidden-view'); document.getElementById('bible-main-view').classList.remove('hidden-view'); };
 
+// 앱 시작
 startApp();
