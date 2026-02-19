@@ -1,10 +1,10 @@
-// 🧠 Main Controller (사령관) - 부모님 맞춤형 (Big Text Ver.)
+// 🧠 Main Controller (사령관) - 시즌 마감 기능 픽스 버전
 
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { BIBLE_DATA } from './js/data.js';
-// [중요] ?v=bigtext를 붙여서, 글씨가 커지고 장수가 사라진 새 UI를 강제로 가져옵니다.
-import * as UI from './js/ui.js?v=bigtext';
+// [중요] USER_SLOTS를 여기서 쓰기 위해 가져옵니다.
+import { BIBLE_DATA, USER_SLOTS } from './js/data.js';
+import * as UI from './js/ui.js?v=season_fix';
 
 let appData = {};
 let myName = localStorage.getItem('myId');
@@ -16,24 +16,15 @@ let rangeStart = null;
 function startApp() {
     onSnapshot(docRef, (snapshot) => {
         const splash = document.getElementById('splash-screen');
-        
         if(snapshot.exists()) {
             appData = snapshot.data();
             isDataLoaded = true;
-
-            // 로딩 화면 숨기기
-            if(splash) {
-                splash.style.opacity = '0';
-                setTimeout(()=> splash.style.display='none', 500);
-            }
-
-            // 데이터 방어 코드
+            if(splash) { splash.style.opacity = '0'; setTimeout(()=> splash.style.display='none', 500); }
             if(!appData.auth) appData.auth = {};
             if(!appData.period) {
                 const y = new Date().getFullYear();
                 appData.period = { start: `${y}-01-01`, end: `${y}-12-31` };
             }
-
             checkLoginStatus();
         } else {
             console.warn("데이터 로드 실패");
@@ -63,7 +54,6 @@ function updateMainUI() {
             if(vr) vr.innerText = appData.verse.r;
         }
         
-        // UI 모듈의 그리기 함수들 호출
         UI.renderResolutionList(appData, myName);
         UI.renderFamilyGoals(appData, myName);
         UI.renderMessages(appData);
@@ -88,8 +78,7 @@ function checkLoginStatus() {
         const grid = document.getElementById('login-grid');
         if(grid) {
             grid.innerHTML = "";
-            const slots = ["user_1", "user_2", "user_3", "user_4", "user_5", "user_6"];
-            slots.forEach(slot => {
+            USER_SLOTS.forEach(slot => {
                 const btn = document.createElement('div');
                 const user = appData.auth[slot];
                 if(user) {
@@ -107,9 +96,8 @@ function checkLoginStatus() {
     }
 }
 
-// === 전역 함수 연결 (HTML onclick 대응) ===
+// === 전역 함수 연결 ===
 
-// 탭 이동
 window.goTab = (t, el) => {
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     if(el) el.classList.add('active');
@@ -119,7 +107,6 @@ window.goTab = (t, el) => {
     updateMainUI();
 };
 
-// 아코디언 & 리스트 토글
 window.toggleAccordion = (id, icon) => {
     const content = document.getElementById(id);
     if(content) content.classList.toggle('hidden');
@@ -131,7 +118,6 @@ window.toggleFamilyList = (id) => {
     if(list) list.classList.toggle('hidden');
 };
 
-// 목표 관련
 window.addItem = function() {
     const input = document.getElementById('input-resolution');
     const val = input.value.trim();
@@ -168,7 +154,6 @@ window.toggleStep = function(i, s) {
 window.deleteItem = (i) => { if(confirm("정말 삭제하시겠습니까?")) { appData[myName].resolution.splice(i,1); saveData(); }};
 window.editItem = (i) => { const n = prompt("목표 수정:", appData[myName].resolution[i].text); if(n) { appData[myName].resolution[i].text = n; saveData(); }};
 
-// 채팅 & 설정
 window.sendMsg = () => {
     const input = document.getElementById('input-msg');
     const txt = input.value.trim();
@@ -194,7 +179,6 @@ window.editProfile = () => {
 };
 window.logoutAction = () => { if(confirm("로그아웃 하시겠습니까?")) { localStorage.removeItem('myId'); location.reload(); }};
 
-// 로그인 & 가입
 window.tryLogin = (s, p) => { if(prompt("비밀번호(PIN):")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호가 틀렸습니다."); };
 window.tryRegister = (s) => {
     const n = prompt("이름:"); if(!n)return; const p = prompt("비밀번호(PIN):"); if(!p)return;
@@ -203,7 +187,6 @@ window.tryRegister = (s) => {
     saveData().then(() => { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); });
 };
 
-// 성경 관련 기능
 window.showBibleBooks = (t) => {
     bibleState.currentTestament = t;
     document.getElementById('bible-main-view').classList.add('hidden-view');
@@ -215,11 +198,8 @@ window.showChapters = (bn) => {
     document.getElementById('bible-books-view').classList.add('hidden-view');
     document.getElementById('bible-chapters-view').classList.remove('hidden-view');
     document.getElementById('bible-book-title').innerText = bn;
-    
-    // 범위 선택 버튼 생성
     const tools = document.querySelector('.chapter-tools');
     if(tools) tools.innerHTML = `<button class="text-btn" onclick="window.toggleRangeMode()" id="btn-range" style="font-weight:600; color:var(--primary); margin-right:10px;">⚡️범위선택</button><button class="text-btn" onclick="window.controlAll(true)">전체</button><button class="text-btn" onclick="window.controlAll(false)" style="color:#94a3b8;">해제</button>`;
-    
     rangeStart = null;
     UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
 };
@@ -273,9 +253,56 @@ window.finishBookAndReset = () => {
         saveData().then(()=>alert("축하합니다! 완독 완료! 🎉"));
     }
 };
-window.manageSeason=()=>{ const c=appData.period; if(!confirm(`시즌(${c.start}~${c.end}) 마감?`)){ const s=prompt("시작일",c.start),e=prompt("종료일",c.end); if(s&&e){appData.period={start:s,end:e}; saveData();} } };
+
+// [핵심] 시즌 마감 기능 (1등 저장 + 점수 리셋)
+window.manageSeason = () => {
+    const currentPeriod = appData.period;
+    
+    // 1. 확인 질문
+    if(!confirm(`현재 시즌(${currentPeriod.start} ~ ${currentPeriod.end})을 마감하시겠습니까?\n\n- 결단서 1등이 명예의 전당에 기록됩니다.\n- 모든 가족의 결단서 점수가 0점으로 새출발합니다.\n(성경 읽기 기록은 유지됩니다)`)) return;
+
+    // 2. 우승자 계산
+    const users = USER_SLOTS.filter(slot => appData.auth[slot]);
+    const rankings = users.map(slot => {
+        const history = appData[slot].history || {};
+        // 현재 시즌 기간 내의 점수만 합산
+        const score = Object.keys(history)
+            .filter(d => d >= currentPeriod.start && d <= currentPeriod.end)
+            .reduce((sum, d) => sum + (history[d] || 0), 0);
+        return { name: appData.auth[slot].name, val: score };
+    });
+
+    // 점수 높은 순 정렬
+    rankings.sort((a, b) => b.val - a.val);
+
+    // 3. 명예의 전당 저장
+    if(!appData.pastSeasons) appData.pastSeasons = [];
+    if(rankings.length > 0) {
+        appData.pastSeasons.push({
+            range: `${currentPeriod.start} ~ ${currentPeriod.end}`,
+            winner: rankings[0].name,
+            score: rankings[0].val
+        });
+    }
+
+    // 4. [중요] 새 시즌 시작 (시작일을 오늘로 변경 -> 점수 리셋 효과)
+    const today = UI.getTodayDate();
+    appData.period = {
+        start: today,
+        end: "2026-12-31" // 종료일은 일단 연말까지 (나중에 수정 가능)
+    };
+
+    // 5. 저장 및 알림
+    saveData().then(() => {
+        alert(`🏆 시즌 마감 완료!\n\n우승자: ${rankings[0] ? rankings[0].name : '없음'}\n\n이제 새로운 시즌이 시작되어 점수가 0점부터 다시 카운트됩니다.`);
+        location.reload(); // 확실한 반영을 위해 새로고침
+    });
+};
+
 window.backToBooks=()=>{ document.getElementById('bible-chapters-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view'); };
 window.showBibleMain=()=>{ document.getElementById('bible-books-view').classList.add('hidden-view'); document.getElementById('bible-main-view').classList.remove('hidden-view'); };
 
 // 앱 시작
 startApp();
+
+
