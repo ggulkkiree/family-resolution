@@ -1,11 +1,11 @@
-// 🧠 Main Controller - 성경 누적 복구
+// 🧠 Main Controller (사령관) - Undo Finish Feature
 
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { BIBLE_DATA, USER_SLOTS } from './js/data.js';
 
-// [중요] v=fix_bible_count 로 버전을 바꿔서 브라우저가 새 계산기를 쓰도록 강제합니다.
-import * as UI from './js/ui.js?v=fix_bible_count';
+// [중요] v=undo_finish 로 버전을 바꿔서 브라우저가 새 UI(취소버튼)를 가져오게 합니다.
+import * as UI from './js/ui.js?v=undo_finish';
 
 let appData = {};
 let myName = localStorage.getItem('myId');
@@ -233,6 +233,7 @@ window.controlAll = (on) => {
     }
     saveData();
 };
+
 window.finishBookAndReset = () => {
     if(document.getElementById('btn-finish-book').classList.contains('disabled')) return;
     if(confirm("완독 처리 하시겠습니까?\n(체크는 초기화되고 1독이 추가됩니다)")) {
@@ -242,6 +243,37 @@ window.finishBookAndReset = () => {
         const bookData = BIBLE_DATA.books.find(x => x.name === b);
         for(let i=1; i<=bookData.chapters; i++) appData[myName].bible[`${b}-${i}`]=null;
         saveData().then(()=>alert("축하합니다! 완독 완료! 🎉"));
+    }
+};
+
+// [추가] 완독 취소 기능 구현
+window.undoFinishBook = () => {
+    const b = bibleState.currentBook;
+    const currentRound = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0;
+    
+    // 만약 완독한 적이 없다면(0독) 실행 안 함
+    if(currentRound <= 0) return;
+    
+    if(confirm(`[${b}] 완독을 취소하시겠습니까?\n(독수가 1 줄어들고, 모든 장에 체크 표시가 복구됩니다.)`)) {
+        // 1. 독수 1 깎기
+        appData[myName].bibleRounds[b]--;
+        // 0독이 되면 데이터 깔끔하게 삭제
+        if(appData[myName].bibleRounds[b] <= 0) {
+            delete appData[myName].bibleRounds[b];
+        }
+        
+        // 2. 화면 체크 박스 복구
+        const bookData = BIBLE_DATA.books.find(x => x.name === b);
+        const today = UI.getTodayDate(); // 체크 박스 불 들어오게 하려면 날짜 데이터 필요
+        
+        if(!appData[myName].bible) appData[myName].bible = {};
+        
+        for(let i=1; i<=bookData.chapters; i++) {
+            // bibleLog(역사 기록부)는 이미 이전 기록이 있으니 안 건드리고, 화면에 보여주는 용도인 bible만 살림
+            appData[myName].bible[`${b}-${i}`] = today; 
+        }
+        
+        saveData().then(()=>alert("완독 처리가 취소되었습니다. ↩️"));
     }
 };
 
