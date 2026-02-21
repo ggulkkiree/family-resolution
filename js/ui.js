@@ -1,4 +1,4 @@
-// 🎨 UI (화면 그리기) - Bible Stat Fix Ver.
+// 🎨 UI (화면 그리기) - Undo Finish Update
 
 import { BIBLE_DATA, USER_SLOTS } from './data.js';
 
@@ -133,7 +133,6 @@ export function renderDashboard(appData, myName) {
     if(pDisplay) pDisplay.innerText = `${period.start} ~ ${period.end}`;
     
     const myHistory = appData[myName].history || {};
-    // [중요 수정] 현재 체크된 성경이 아니라, '누적 기록부(bibleLog)'를 가져옵니다.
     const myBibleLog = appData[myName].bibleLog || [];
     const today = getTodayDate();
     const myGoals = appData[myName].resolution || [];
@@ -155,10 +154,7 @@ export function renderDashboard(appData, myName) {
     if(dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
     calculateStreak(myHistory, rate, todayTotal);
-    
-    // [중요 수정] 역사 기록부(bibleLog)를 통계 함수에 넘겨줍니다.
     updateBibleStats(myBibleLog);
-    
     renderWeeklyGraph(myHistory, today);
     renderHabitAnalysis(myGoals);
     renderRankings(appData, period);
@@ -262,14 +258,12 @@ function calculateStreak(myHistory, rate, todayTotal) {
     streakText.innerText = `${realStreak}일`;
 }
 
-// [핵심 변경] 성경 역사 기록부(bibleLog)를 바탕으로 누적 장수를 셉니다!
 function updateBibleStats(bibleLog) {
     const today = getTodayDate();
     const yearStr = today.split('-')[0];
     let todayCnt = 0;
     let yearCnt = 0;
     
-    // 기록부를 쭉 훑어보면서 날짜별로 셉니다. (체크 해제되어도 기록부엔 남아있음)
     if(bibleLog && Array.isArray(bibleLog)) {
         bibleLog.forEach(entry => {
             if(entry.date === today) todayCnt++;
@@ -280,7 +274,7 @@ function updateBibleStats(bibleLog) {
     const elToday = document.getElementById('bible-today-count');
     const elYear = document.getElementById('bible-year-count');
     if(elToday) elToday.innerText = `${todayCnt}장`;
-    if(elYear) elYear.innerText = `${yearCnt}장`; // 이제 완독을 눌러도 이 숫자는 줄어들지 않습니다!
+    if(elYear) elYear.innerText = `${yearCnt}장`;
 }
 
 function renderHallOfFame(appData) {
@@ -319,6 +313,7 @@ export function renderBibleBooks(appData, myName, bibleState) {
     });
 }
 
+// [핵심 변경] 완독 취소 버튼 로직 추가
 export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
     const b = BIBLE_DATA.books.find(x => x.name === bibleState.currentBook);
     const g = document.getElementById('bible-chapters-grid');
@@ -337,9 +332,22 @@ export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
         d.onclick = () => window.toggleChapter(i, k, !r); 
         g.appendChild(d);
     }
+
+    // 1. 완독하기 버튼 활성화 로직
     const btn = document.getElementById('btn-finish-book');
     if(btn) {
         if(all){ btn.classList.remove('disabled'); btn.innerText = "완독하기 🎉"; } 
         else { btn.classList.add('disabled'); btn.innerText = "모두 읽어야 완독 가능"; }
+    }
+
+    // 2. 완독 취소 버튼 노출 로직 (1독 이상일 때만 표시)
+    const currentRound = (appData[myName].bibleRounds && appData[myName].bibleRounds[b.name]) || 0;
+    const undoBtn = document.getElementById('btn-undo-finish-book');
+    if(undoBtn) {
+        if(currentRound > 0) {
+            undoBtn.classList.remove('hidden');
+        } else {
+            undoBtn.classList.add('hidden');
+        }
     }
 }
