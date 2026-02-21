@@ -1,4 +1,4 @@
-// 🎨 UI (화면 그리기) - Premium "My Record" Update
+// 🎨 UI (화면 그리기) - Bible Stat Fix Ver.
 
 import { BIBLE_DATA, USER_SLOTS } from './data.js';
 
@@ -42,14 +42,15 @@ export function renderRankings(appData, p){
     }).sort((a, b) => b.val - a.val);
 
     if(r) {
-        r.innerHTML = sortedRes.map((x, i) => {
-            let rankBadge = `<span class="rank-num">${i+1}</span>`;
-            if(i === 0) rankBadge = `🥇`;
-            if(i === 1) rankBadge = `🥈`;
-            if(i === 2) rankBadge = `🥉`;
-            const highlightClass = i === 0 ? 'top-rank' : '';
-            return `<div class="rank-row ${highlightClass}"><div class="rank-left">${rankBadge} <span class="rank-name">${x.name}</span></div><div class="rank-score">${x.val}점</div></div>`;
-        }).join('');
+        if(sortedRes.length === 0) r.innerHTML = `<div style="text-align:center; padding:10px; color:#ccc; font-size:0.8rem;">아직 기록이 없습니다.</div>`;
+        else {
+            r.innerHTML = sortedRes.map((x, i) => {
+                let rankBadge = `<span class="rank-num">${i+1}</span>`;
+                if(i === 0) rankBadge = `🥇`; if(i === 1) rankBadge = `🥈`; if(i === 2) rankBadge = `🥉`;
+                const highlightClass = i === 0 ? 'top-rank' : '';
+                return `<div class="rank-row ${highlightClass}"><div class="rank-left">${rankBadge} <span class="rank-name">${x.name}</span></div><div class="rank-score">${x.val}점</div></div>`;
+            }).join('');
+        }
     }
 
     const w = getWeeklyRange();
@@ -61,14 +62,15 @@ export function renderRankings(appData, p){
     }).sort((a, b) => b.val - a.val);
 
     if(b) {
-        b.innerHTML = sortedBible.map((x, i) => {
-            let rankBadge = `<span class="rank-num">${i+1}</span>`;
-            if(i === 0) rankBadge = `🥇`;
-            if(i === 1) rankBadge = `🥈`;
-            if(i === 2) rankBadge = `🥉`;
-            const highlightClass = i === 0 ? 'top-rank' : '';
-            return `<div class="rank-row ${highlightClass}"><div class="rank-left">${rankBadge} <span class="rank-name">${x.name}</span></div><div class="rank-score">${x.val}장</div></div>`;
-        }).join('');
+        if(sortedBible.length === 0) b.innerHTML = `<div style="text-align:center; padding:10px; color:#ccc; font-size:0.8rem;">아직 기록이 없습니다.</div>`;
+        else {
+            b.innerHTML = sortedBible.map((x, i) => {
+                let rankBadge = `<span class="rank-num">${i+1}</span>`;
+                if(i === 0) rankBadge = `🥇`; if(i === 1) rankBadge = `🥈`; if(i === 2) rankBadge = `🥉`;
+                const highlightClass = i === 0 ? 'top-rank' : '';
+                return `<div class="rank-row ${highlightClass}"><div class="rank-left">${rankBadge} <span class="rank-name">${x.name}</span></div><div class="rank-score">${x.val}장</div></div>`;
+            }).join('');
+        }
     }
 }
 
@@ -79,7 +81,10 @@ export function renderResolutionList(appData, myName) {
     const today = getTodayDate();
     const list = appData[myName].resolution || [];
     
-    if(list.length === 0) { l.innerHTML = `<li class="empty-msg">목표를 추가해주세요!</li>`; return; }
+    if(list.length === 0) {
+        l.innerHTML = `<div class="empty-state"><span class="empty-icon">📝</span><p>등록된 목표가 없습니다.<br>상단 입력창에서 목표를 추가해보세요!</p></div>`;
+        return;
+    }
 
     list.forEach((x, i) => {
         const s = x.steps.map((st, si) => {
@@ -115,7 +120,10 @@ export function renderMessages(appData) {
     if(!l) return;
     l.innerHTML = "";
     const msgs = [...(appData.messages || [])].reverse();
-    if(msgs.length === 0) { l.innerHTML = `<li class="empty-msg-small">응원 메시지를 남겨주세요!</li>`; return; }
+    if(msgs.length === 0) { 
+        l.innerHTML = `<div style="text-align:center; padding:20px; color:#ccc;"><i class="far fa-comment-dots" style="font-size:2rem; margin-bottom:5px;"></i><br>첫 응원을 남겨보세요!</div>`; 
+        return; 
+    }
     msgs.forEach(m => l.innerHTML += `<li><b class="sender-name">${m.sender}</b> ${m.text}</li>`);
 }
 
@@ -125,7 +133,8 @@ export function renderDashboard(appData, myName) {
     if(pDisplay) pDisplay.innerText = `${period.start} ~ ${period.end}`;
     
     const myHistory = appData[myName].history || {};
-    const myBible = appData[myName].bible || {};
+    // [중요 수정] 현재 체크된 성경이 아니라, '누적 기록부(bibleLog)'를 가져옵니다.
+    const myBibleLog = appData[myName].bibleLog || [];
     const today = getTodayDate();
     const myGoals = appData[myName].resolution || [];
     
@@ -136,7 +145,6 @@ export function renderDashboard(appData, myName) {
         if(isDoneToday) todayDone++;
     });
 
-    // [중요] 오늘 할 일 (HTML 구조 변경)
     renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal);
 
     let rate = 0;
@@ -147,36 +155,30 @@ export function renderDashboard(appData, myName) {
     if(dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
 
     calculateStreak(myHistory, rate, todayTotal);
-    updateBibleStats(myBible);
+    
+    // [중요 수정] 역사 기록부(bibleLog)를 통계 함수에 넘겨줍니다.
+    updateBibleStats(myBibleLog);
+    
     renderWeeklyGraph(myHistory, today);
     renderHabitAnalysis(myGoals);
     renderRankings(appData, period);
     renderHallOfFame(appData);
 }
 
-// [수정] 오늘 할 일 리스트 (버튼형 디자인)
 function renderTodayTasksAccordion(myGoals, today, doneCount, totalCount) {
     const listContainer = document.getElementById('today-task-list');
     if(!listContainer) return;
-    
     const statusText = document.getElementById('today-status-text');
-    if(statusText) {
-        statusText.innerHTML = `<span style="font-size:0.9rem; font-weight:700; color:${doneCount===totalCount && totalCount>0 ? 'var(--success)' : 'var(--text-light)'}">${doneCount}/${totalCount}</span>`;
+    if(statusText) statusText.innerHTML = `${doneCount}/${totalCount}`;
+
+    if(myGoals.length === 0) { 
+        listContainer.innerHTML = `<div class="empty-state" style="padding:20px;"><span class="empty-icon" style="font-size:2rem;">📅</span><br>목표를 설정하면 여기에 나타납니다.</div>`;
+        return; 
     }
-
-    if(myGoals.length === 0) { listContainer.innerHTML = '<div class="empty-msg-small">등록된 목표가 없습니다.</div>'; return; }
-
     let html = '';
     myGoals.forEach(g => {
         const isDoneToday = g.done && g.done.every(val => val === today);
-        // 체크박스 대신 '카드형' 디자인 적용
-        html += `
-        <div class="task-card ${isDoneToday?'active':''}">
-            <span class="task-text">${g.text}</span>
-            <div class="task-icon-box">
-                ${isDoneToday ? '<i class="fas fa-check"></i>' : '<i class="fas fa-circle" style="opacity:0.1"></i>'}
-            </div>
-        </div>`;
+        html += `<div class="task-card ${isDoneToday?'active':''}"><span class="task-text">${g.text}</span><div class="task-icon-box">${isDoneToday?'<i class="fas fa-check"></i>':'<i class="fas fa-circle" style="opacity:0.1"></i>'}</div></div>`;
     });
     listContainer.innerHTML = html;
 }
@@ -192,8 +194,6 @@ function renderHabitAnalysis(myGoals) {
     }
     const analysis = myGoals.map(g => ({ text: g.text, count: (g.counts || []).reduce((a, b) => a + b, 0) })).sort((a, b) => b.count - a.count);
     const maxVal = Math.max(...analysis.map(a => a.count)) || 1;
-    
-    // 성실도 분석 디자인 개선
     let html = `<div class="dash-card"><div class="accordion-header" onclick="window.toggleAccordion('habit-acc', this.querySelector('.accordion-icon'))"><span class="card-title">📊 목표별 성실도</span><i class="fas fa-chevron-down accordion-icon"></i></div><div id="habit-acc" class="accordion-content hidden">`;
     if(analysis.length === 0) { html += `<div class="empty-msg-small">데이터 없음</div>`; } 
     else {
@@ -262,21 +262,25 @@ function calculateStreak(myHistory, rate, todayTotal) {
     streakText.innerText = `${realStreak}일`;
 }
 
-function updateBibleStats(myBible) {
+// [핵심 변경] 성경 역사 기록부(bibleLog)를 바탕으로 누적 장수를 셉니다!
+function updateBibleStats(bibleLog) {
     const today = getTodayDate();
     const yearStr = today.split('-')[0];
     let todayCnt = 0;
     let yearCnt = 0;
-    if(myBible) {
-        Object.values(myBible).forEach(dateStr => {
-            if(dateStr === today) todayCnt++;
-            if(dateStr && dateStr.startsWith(yearStr)) yearCnt++;
+    
+    // 기록부를 쭉 훑어보면서 날짜별로 셉니다. (체크 해제되어도 기록부엔 남아있음)
+    if(bibleLog && Array.isArray(bibleLog)) {
+        bibleLog.forEach(entry => {
+            if(entry.date === today) todayCnt++;
+            if(entry.date && entry.date.startsWith(yearStr)) yearCnt++;
         });
     }
+    
     const elToday = document.getElementById('bible-today-count');
     const elYear = document.getElementById('bible-year-count');
     if(elToday) elToday.innerText = `${todayCnt}장`;
-    if(elYear) elYear.innerText = `${yearCnt}장`;
+    if(elYear) elYear.innerText = `${yearCnt}장`; // 이제 완독을 눌러도 이 숫자는 줄어들지 않습니다!
 }
 
 function renderHallOfFame(appData) {
