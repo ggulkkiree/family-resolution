@@ -1,11 +1,10 @@
-// 🧠 Main Controller (사령관) - Undo Finish Feature
+// 🧠 Main Controller (사령관) - Range Selection Fix
 
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { BIBLE_DATA, USER_SLOTS } from './js/data.js';
-
-// [중요] v=undo_finish 로 버전을 바꿔서 브라우저가 새 UI(취소버튼)를 가져오게 합니다.
-import * as UI from './js/ui.js?v=undo_finish';
+// [중요] 버전 업데이트
+import * as UI from './js/ui.js?v=range_fix';
 
 let appData = {};
 let myName = localStorage.getItem('myId');
@@ -194,32 +193,69 @@ window.showChapters = (bn) => {
     rangeStart = null;
     UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
 };
+
+// [수정 핵심 1] 범위 선택 버튼 누를 때 로직 정리
 window.toggleRangeMode = () => {
     const btn = document.getElementById('btn-range');
-    if(rangeStart === null) { rangeStart = -1; alert("시작 장을 누르고, 끝 장을 누르세요."); if(btn) { btn.style.fontWeight="800"; btn.innerText="선택중..."; } }
-    else { rangeStart = null; if(btn) { btn.style.fontWeight="600"; btn.innerText="⚡️범위선택"; } UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); }
+    if(rangeStart === null) { 
+        // 범위 선택 모드 시작
+        rangeStart = -1; 
+        alert("시작 장을 누르고, 끝 장을 누르세요."); 
+        if(btn) { btn.style.fontWeight="800"; btn.innerText="선택중..."; } 
+    } else { 
+        // 중간에 범위 선택 취소
+        rangeStart = null; 
+        if(btn) { btn.style.fontWeight="600"; btn.innerText="⚡️범위선택"; } 
+        UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); 
+    }
 };
+
+// [수정 핵심 2] 챕터를 눌렀을 때의 작동 흐름 수정
 window.toggleChapter = (chap, k, check) => {
     const today = UI.getTodayDate();
     if(!appData[myName].bible) appData[myName].bible={};
     if(!appData[myName].bibleLog) appData[myName].bibleLog=[];
     
+    // 범위 선택 모드일 때
     if(rangeStart !== null) {
-        if(rangeStart === -1) { rangeStart = chap; UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); }
-        else {
+        if(rangeStart === -1) { 
+            // 1) 시작 장을 눌렀을 때
+            rangeStart = chap; 
+            UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); 
+        } else {
+            // 2) 끝 장을 눌렀을 때
             const s = Math.min(rangeStart, chap), e = Math.max(rangeStart, chap);
             for(let i=s; i<=e; i++) {
                 const key = `${bibleState.currentBook}-${i}`;
-                if(!appData[myName].bible[key]) { appData[myName].bible[key]=today; appData[myName].bibleLog.push({date:today, key:key}); }
+                if(!appData[myName].bible[key]) { 
+                    appData[myName].bible[key]=today; 
+                    appData[myName].bibleLog.push({date:today, key:key}); 
+                }
             }
-            saveData().then(()=>{ rangeStart=null; UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); });
+            
+            // [중요] 상태 먼저 초기화 & 버튼 글씨 되돌리기
+            rangeStart = null; 
+            const btn = document.getElementById('btn-range');
+            if(btn) { btn.style.fontWeight="600"; btn.innerText="⚡️범위선택"; }
+            
+            // 데이터 저장 (자동으로 화면이 새로 그려집니다)
+            saveData(); 
         }
         return;
     }
-    if(check) { appData[myName].bible[k]=today; appData[myName].bibleLog.push({date:today, key:k}); }
-    else { appData[myName].bible[k]=null; const idx=appData[myName].bibleLog.findIndex(x=>x.key===k && x.date===today); if(idx>-1)appData[myName].bibleLog.splice(idx,1); }
+    
+    // 일반 모드 (단일 클릭)
+    if(check) { 
+        appData[myName].bible[k]=today; 
+        appData[myName].bibleLog.push({date:today, key:k}); 
+    } else { 
+        appData[myName].bible[k]=null; 
+        const idx = appData[myName].bibleLog.findIndex(x=>x.key===k && x.date===today); 
+        if(idx>-1) appData[myName].bibleLog.splice(idx,1); 
+    }
     saveData();
 };
+
 window.controlAll = (on) => {
     if(!on && !confirm("이 책의 체크를 모두 해제하시겠습니까?")) return;
     const b = BIBLE_DATA.books.find(x => x.name === bibleState.currentBook);
@@ -246,33 +282,18 @@ window.finishBookAndReset = () => {
     }
 };
 
-// [추가] 완독 취소 기능 구현
 window.undoFinishBook = () => {
     const b = bibleState.currentBook;
     const currentRound = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0;
-    
-    // 만약 완독한 적이 없다면(0독) 실행 안 함
     if(currentRound <= 0) return;
     
     if(confirm(`[${b}] 완독을 취소하시겠습니까?\n(독수가 1 줄어들고, 모든 장에 체크 표시가 복구됩니다.)`)) {
-        // 1. 독수 1 깎기
         appData[myName].bibleRounds[b]--;
-        // 0독이 되면 데이터 깔끔하게 삭제
-        if(appData[myName].bibleRounds[b] <= 0) {
-            delete appData[myName].bibleRounds[b];
-        }
-        
-        // 2. 화면 체크 박스 복구
+        if(appData[myName].bibleRounds[b] <= 0) { delete appData[myName].bibleRounds[b]; }
         const bookData = BIBLE_DATA.books.find(x => x.name === b);
-        const today = UI.getTodayDate(); // 체크 박스 불 들어오게 하려면 날짜 데이터 필요
-        
+        const today = UI.getTodayDate(); 
         if(!appData[myName].bible) appData[myName].bible = {};
-        
-        for(let i=1; i<=bookData.chapters; i++) {
-            // bibleLog(역사 기록부)는 이미 이전 기록이 있으니 안 건드리고, 화면에 보여주는 용도인 bible만 살림
-            appData[myName].bible[`${b}-${i}`] = today; 
-        }
-        
+        for(let i=1; i<=bookData.chapters; i++) { appData[myName].bible[`${b}-${i}`] = today; }
         saveData().then(()=>alert("완독 처리가 취소되었습니다. ↩️"));
     }
 };
