@@ -1,10 +1,11 @@
-// 🧠 Main Controller (사령관) - 시즌 마감 기능 픽스 버전
+// 🧠 Main Controller - 성경 누적 복구
 
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-// [중요] USER_SLOTS를 여기서 쓰기 위해 가져옵니다.
 import { BIBLE_DATA, USER_SLOTS } from './js/data.js';
-import * as UI from './js/ui.js?v=season_fix';
+
+// [중요] v=fix_bible_count 로 버전을 바꿔서 브라우저가 새 계산기를 쓰도록 강제합니다.
+import * as UI from './js/ui.js?v=fix_bible_count';
 
 let appData = {};
 let myName = localStorage.getItem('myId');
@@ -12,7 +13,6 @@ let isDataLoaded = false;
 let bibleState = { currentTestament: null, currentBook: null };
 let rangeStart = null;
 
-// === 1. 앱 시작 ===
 function startApp() {
     onSnapshot(docRef, (snapshot) => {
         const splash = document.getElementById('splash-screen');
@@ -32,14 +32,12 @@ function startApp() {
     });
 }
 
-// === 2. 저장 함수 ===
 async function saveData() {
     if(!isDataLoaded) return;
     try { await setDoc(docRef, appData, { merge: true }); updateMainUI(); } 
     catch(e) { console.error("저장 실패:", e); }
 }
 
-// === 3. 화면 갱신 ===
 function updateMainUI() {
     if(!myName || !appData.auth[myName]) return;
     
@@ -96,8 +94,6 @@ function checkLoginStatus() {
     }
 }
 
-// === 전역 함수 연결 ===
-
 window.goTab = (t, el) => {
     document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
     if(el) el.classList.add('active');
@@ -132,9 +128,7 @@ window.toggleStep = function(i, s) {
     const item = appData[myName].resolution[i];
     const today = UI.getTodayDate();
     const isAlreadyDone = (item.done[s] === today);
-    
     if(!item.counts) item.counts = Array(item.steps.length).fill(0);
-
     if(isAlreadyDone) {
         item.done[s] = "";
         item.counts[s] = Math.max(0, item.counts[s]-1);
@@ -143,7 +137,6 @@ window.toggleStep = function(i, s) {
         item.counts[s]++;
         if(window.confetti) confetti({particleCount:50,spread:60,origin:{y:0.6}});
     }
-    
     if(!appData[myName].history) appData[myName].history = {};
     let d = 0;
     appData[myName].resolution.forEach(r => { r.done.forEach(x => { if(x === today) d++; }); });
@@ -153,7 +146,6 @@ window.toggleStep = function(i, s) {
 
 window.deleteItem = (i) => { if(confirm("정말 삭제하시겠습니까?")) { appData[myName].resolution.splice(i,1); saveData(); }};
 window.editItem = (i) => { const n = prompt("목표 수정:", appData[myName].resolution[i].text); if(n) { appData[myName].resolution[i].text = n; saveData(); }};
-
 window.sendMsg = () => {
     const input = document.getElementById('input-msg');
     const txt = input.value.trim();
@@ -178,7 +170,6 @@ window.editProfile = () => {
     saveData().then(()=>alert("수정되었습니다."));
 };
 window.logoutAction = () => { if(confirm("로그아웃 하시겠습니까?")) { localStorage.removeItem('myId'); location.reload(); }};
-
 window.tryLogin = (s, p) => { if(prompt("비밀번호(PIN):")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호가 틀렸습니다."); };
 window.tryRegister = (s) => {
     const n = prompt("이름:"); if(!n)return; const p = prompt("비밀번호(PIN):"); if(!p)return;
@@ -254,55 +245,33 @@ window.finishBookAndReset = () => {
     }
 };
 
-// [핵심] 시즌 마감 기능 (1등 저장 + 점수 리셋)
 window.manageSeason = () => {
     const currentPeriod = appData.period;
-    
-    // 1. 확인 질문
     if(!confirm(`현재 시즌(${currentPeriod.start} ~ ${currentPeriod.end})을 마감하시겠습니까?\n\n- 결단서 1등이 명예의 전당에 기록됩니다.\n- 모든 가족의 결단서 점수가 0점으로 새출발합니다.\n(성경 읽기 기록은 유지됩니다)`)) return;
 
-    // 2. 우승자 계산
     const users = USER_SLOTS.filter(slot => appData.auth[slot]);
     const rankings = users.map(slot => {
         const history = appData[slot].history || {};
-        // 현재 시즌 기간 내의 점수만 합산
-        const score = Object.keys(history)
-            .filter(d => d >= currentPeriod.start && d <= currentPeriod.end)
-            .reduce((sum, d) => sum + (history[d] || 0), 0);
+        const score = Object.keys(history).filter(d => d >= currentPeriod.start && d <= currentPeriod.end).reduce((sum, d) => sum + (history[d] || 0), 0);
         return { name: appData.auth[slot].name, val: score };
     });
-
-    // 점수 높은 순 정렬
     rankings.sort((a, b) => b.val - a.val);
 
-    // 3. 명예의 전당 저장
     if(!appData.pastSeasons) appData.pastSeasons = [];
     if(rankings.length > 0) {
-        appData.pastSeasons.push({
-            range: `${currentPeriod.start} ~ ${currentPeriod.end}`,
-            winner: rankings[0].name,
-            score: rankings[0].val
-        });
+        appData.pastSeasons.push({ range: `${currentPeriod.start} ~ ${currentPeriod.end}`, winner: rankings[0].name, score: rankings[0].val });
     }
 
-    // 4. [중요] 새 시즌 시작 (시작일을 오늘로 변경 -> 점수 리셋 효과)
     const today = UI.getTodayDate();
-    appData.period = {
-        start: today,
-        end: "2026-12-31" // 종료일은 일단 연말까지 (나중에 수정 가능)
-    };
+    appData.period = { start: today, end: "2026-12-31" };
 
-    // 5. 저장 및 알림
     saveData().then(() => {
         alert(`🏆 시즌 마감 완료!\n\n우승자: ${rankings[0] ? rankings[0].name : '없음'}\n\n이제 새로운 시즌이 시작되어 점수가 0점부터 다시 카운트됩니다.`);
-        location.reload(); // 확실한 반영을 위해 새로고침
+        location.reload(); 
     });
 };
 
 window.backToBooks=()=>{ document.getElementById('bible-chapters-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view'); };
 window.showBibleMain=()=>{ document.getElementById('bible-books-view').classList.add('hidden-view'); document.getElementById('bible-main-view').classList.remove('hidden-view'); };
 
-// 앱 시작
 startApp();
-
-
