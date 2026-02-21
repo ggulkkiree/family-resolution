@@ -1,10 +1,10 @@
-// 🧠 Main Controller (사령관) - Undo Option B (누적 차감 완벽 적용)
+// 🧠 Main Controller (사령관) - Undo Finish Fix (Firebase Merge Issue Resolved)
 
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { BIBLE_DATA, USER_SLOTS } from './js/data.js';
 
-// 기존 버전 유지 (HTML 수정 안해도 됨)
+// 버전은 그대로 둡니다
 import * as UI from './js/ui.js?v=range_fix';
 
 let appData = {};
@@ -235,13 +235,11 @@ window.toggleChapter = (chap, k, check) => {
         return;
     }
     
-    // [보너스 픽스] 단일 장 해제 시 누적 기록에서도 확실하게 삭제
     if(check) { 
         appData[myName].bible[k]=today; 
         appData[myName].bibleLog.push({date:today, key:k}); 
     } else { 
         appData[myName].bible[k]=null; 
-        // filter를 사용해 이 장(k)에 대한 기록을 완전히 지워버립니다 (누적 숫자 감소)
         appData[myName].bibleLog = appData[myName].bibleLog.filter(x => x.key !== k); 
     }
     saveData();
@@ -261,7 +259,6 @@ window.controlAll = (on) => {
                 appData[myName].bibleLog.push({date:today, key:k}); 
             } 
         } else { 
-            // [보너스 픽스] '전체 해제' 버튼을 눌렀을 때도 누적 기록에서 확실하게 삭제
             appData[myName].bible[k]=null; 
             appData[myName].bibleLog = appData[myName].bibleLog.filter(x => x.key !== k); 
         }
@@ -281,28 +278,31 @@ window.finishBookAndReset = () => {
     }
 };
 
-// [B안 핵심 픽스] 완독 취소 시 누적 장수에서 완전히 빼기
+// [버그 수정] 삭제(delete) 대신 확실하게 '0'을 덮어씌웁니다.
 window.undoFinishBook = () => {
     const b = bibleState.currentBook;
     const currentRound = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0;
     if(currentRound <= 0) return;
     
     if(confirm(`[${b}] 완독을 취소하시겠습니까?\n(독수가 1 줄어들고, 누적 장수에서 제외되며, 체크가 모두 해제됩니다.)`)) {
-        // 1. 독수 깎기
+        
+        // 1. 독수 깎기 (안전장치: 0 이하로는 안 내려감)
         appData[myName].bibleRounds[b]--;
-        if(appData[myName].bibleRounds[b] <= 0) { delete appData[myName].bibleRounds[b]; }
+        if(appData[myName].bibleRounds[b] < 0) {
+            appData[myName].bibleRounds[b] = 0;
+        }
         
         const bookData = BIBLE_DATA.books.find(x => x.name === b);
         if(!appData[myName].bible) appData[myName].bible = {};
         if(!appData[myName].bibleLog) appData[myName].bibleLog = [];
         
-        // 2. 화면 체크 싹 지우기 (B안: 해제 상태로 만들기)
+        // 2. 화면 체크 싹 지우기
         for(let i=1; i<=bookData.chapters; i++) { 
             const key = `${b}-${i}`;
             appData[myName].bible[key] = null; 
         }
         
-        // 3. 역사 기록부(bibleLog)에서 이 성경책에 해당하는 기록을 통째로 날려버림 (누적 장수 차감 효과!)
+        // 3. 역사 기록부에서 날리기 (누적 차감)
         appData[myName].bibleLog = appData[myName].bibleLog.filter(entry => !entry.key.startsWith(`${b}-`));
 
         saveData().then(()=>alert("완독 처리가 취소되고, 누적 장수에서 차감되었습니다. ↩️"));
