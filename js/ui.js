@@ -21,6 +21,9 @@ export function renderResolutionList(appData, myName) {
     listEl.innerHTML = ''; 
     const userData = appData[myName] || {};
     const myGoals = userData.resolution || [];
+    
+    // 💡 [수정] 화면을 다시 그릴 때 '오늘' 완료했는지 확인하기 위해 오늘 날짜를 가져옵니다!
+    const today = getTodayDate();
 
     if (myGoals.length === 0) {
         listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#8D6E63; font-size:0.95rem;">아직 등록된 목표가 없어요!<br>위에서 새 목표를 추가해 보세요 ✨</div>';
@@ -43,7 +46,10 @@ export function renderResolutionList(appData, myName) {
             const stepsDiv = document.createElement('div');
             goal.steps.forEach((step, sIndex) => {
                 const span = document.createElement('span');
-                const isDone = goal.done && goal.done.includes(`${gIndex}-${sIndex}`);
+                
+                // 💡 [핵심 수정] 엉뚱한 이름표 대신 "오늘 날짜(today)"가 저장되어 있는지 정확히 확인합니다!
+                const isDone = goal.done && goal.done[sIndex] === today;
+                
                 span.className = isDone ? 'step-item done' : 'step-item';
                 span.innerText = step;
                 
@@ -393,14 +399,14 @@ export function renderMessages(appData) {
 }
 
 // ==========================================
-// 📖 4. 성경 탭 안전장치 (앱 멈춤 방지용!)
+// 📖 4. 성경 탭 안전장치
 // ==========================================
 export function renderBibleBooks(appData, myName, bibleState) {
     const grid = document.getElementById('bible-books-grid');
-    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #8D6E63; font-weight:600;">성경 데이터를 안전하게 불러왔습니다! 📖</div>';
+    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #8D6E63; font-weight:600;">성경 목록 UI가 준비되었습니다! 📖</div>';
 }
 
 export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
     const grid = document.getElementById('bible-chapters-grid');
-    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #8D6E63; font-weight:600;">해당 성경의 장을 불러왔습니다! 📖</div>';
+    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #8D6E63; font-weight:600;">성경 장 UI가 준비되었습니다! 📖</div>';
 }
