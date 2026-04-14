@@ -1,4 +1,4 @@
-// 🧠 Main Controller (성경 장 선택 완벽 복구 버전)
+// 🧠 Main Controller (번개처럼 빠른 UI 업데이트 버전)
 
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -30,9 +30,11 @@ function startApp() {
     });
 }
 
+// 💡 [핵심 수정] 서버 저장을 기다리지 않고 화면부터 먼저 업데이트합니다! (엄청 빨라짐)
 async function saveData() {
     if(!isDataLoaded) return;
-    try { await setDoc(docRef, appData, { merge: true }); updateMainUI(); } 
+    updateMainUI(); // 화면 즉시 변경
+    try { await setDoc(docRef, appData, { merge: true }); } 
     catch(e) { console.error("저장 실패:", e); }
 }
 
@@ -106,7 +108,6 @@ function checkLoginStatus() {
     }
 }
 
-// === 탭 및 기존 기능 ===
 window.goTab = (t, el) => { document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active')); if(el) el.classList.add('active'); document.querySelectorAll('.page').forEach(e => e.classList.add('hidden')); const target = document.getElementById('page-' + t); if(target) target.classList.remove('hidden'); updateMainUI(); };
 window.toggleAccordion = (id, icon) => { const content = document.getElementById(id); if(content) content.classList.toggle('hidden'); if(icon) icon.classList.toggle('open'); };
 window.addItem = function() { const input = document.getElementById('input-resolution'); const val = input.value.trim(); if(!val) return; if(!appData[myName].resolution) appData[myName].resolution = []; appData[myName].resolution.push({ text: val, steps: ["완료"], done: [false], counts: [0] }); input.value = ""; saveData(); };
@@ -129,7 +130,6 @@ window.editVerse = () => { const t = prompt("말씀:", appData.verse ? appData.v
 window.logoutAction = () => { if(confirm("로그아웃 하시겠습니까?")) { localStorage.removeItem('myId'); location.reload(); }};
 window.tryLogin = (s, p) => { if(prompt("비밀번호(PIN):")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호가 틀렸습니다."); };
 
-// === 📖 성경 관련 핵심 로직 ===
 window.showBibleBooks = (t) => { bibleState.currentTestament = t; document.getElementById('bible-main-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view'); UI.renderBibleBooks(appData, myName, bibleState); };
 window.showBibleMain = () => { document.getElementById('bible-books-view').classList.add('hidden-view'); document.getElementById('bible-main-view').classList.remove('hidden-view'); bibleState.currentTestament = null; };
 window.backToBooks = () => { document.getElementById('bible-chapters-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view'); bibleState.currentBook = null; };
@@ -145,7 +145,6 @@ window.showChapters = (bn) => {
     UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); 
 };
 
-// ⚡️ 범위선택 버튼 로직
 window.toggleRangeMode = () => { 
     const btn = document.getElementById('btn-range'); 
     if(rangeStart === null) { 
@@ -159,13 +158,11 @@ window.toggleRangeMode = () => {
     } 
 };
 
-// 👆 개별 장 클릭 & 범위 선택 처리
 window.toggleChapter = (chap, k, check) => { 
     const today = UI.getTodayDate(); 
     if(!appData[myName].bible) appData[myName].bible={}; 
     if(!appData[myName].bibleLog) appData[myName].bibleLog=[]; 
 
-    // 범위 선택 모드일 때
     if(rangeStart !== null) { 
         if(rangeStart === -1) { 
             rangeStart = chap; 
@@ -187,25 +184,21 @@ window.toggleChapter = (chap, k, check) => {
         return; 
     } 
 
-    // 일반 개별 클릭 모드일 때
     if(check) { 
         appData[myName].bible[k]=today; 
         appData[myName].bibleLog.push({date:today, key:k}); 
     } else { 
         delete appData[myName].bible[k]; 
-        // 로그에서도 삭제하여 통계 정확도 유지
         appData[myName].bibleLog = appData[myName].bibleLog.filter(log => log.key !== k);
     } 
     saveData(); 
 };
 
-// 🟢 전체 / 해제 버튼 로직 (새로 추가됨!)
 window.controlAll = (isCheck) => {
     const b = bibleState.currentBook;
     if(!b) return;
     const bookObj = BIBLE_DATA.books.find(x => x.name === b);
     const today = UI.getTodayDate();
-    
     if(!appData[myName].bible) appData[myName].bible = {};
     if(!appData[myName].bibleLog) appData[myName].bibleLog = [];
 
