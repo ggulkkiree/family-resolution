@@ -1,11 +1,8 @@
-// 🧠 Main Controller (사령관) - Undo Finish Fix (Firebase Merge Issue Resolved)
-
+// 🧠 Main Controller (사령관) - 완독 및 취소 로직 완벽 연동 버전
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { BIBLE_DATA, USER_SLOTS } from './js/data.js';
-
-// 버전은 그대로 둡니다
-import * as UI from './js/ui.js?v=range_fix';
+import * as UI from './js/ui.js';
 
 let appData = {};
 let myName = localStorage.getItem('myId');
@@ -13,329 +10,227 @@ let isDataLoaded = false;
 let bibleState = { currentTestament: null, currentBook: null };
 let rangeStart = null;
 
+// 1. 앱 시작 및 실시간 데이터 리스너
 function startApp() {
     onSnapshot(docRef, (snapshot) => {
         const splash = document.getElementById('splash-screen');
-        if(snapshot.exists()) {
+        if (snapshot.exists()) {
             appData = snapshot.data();
             isDataLoaded = true;
-            if(splash) { splash.style.opacity = '0'; setTimeout(()=> splash.style.display='none', 500); }
-            if(!appData.auth) appData.auth = {};
-            if(!appData.period) {
+            
+            // 로딩 화면 제거
+            if (splash) { 
+                splash.style.opacity = '0'; 
+                setTimeout(() => splash.style.display = 'none', 500); 
+            }
+
+            // 기본 데이터 구조 초기화
+            if (!appData.auth) appData.auth = {};
+            if (!appData.period) {
                 const y = new Date().getFullYear();
                 appData.period = { start: `${y}-01-01`, end: `${y}-12-31` };
             }
+            
             checkLoginStatus();
         } else {
-            console.warn("데이터 로드 실패");
+            console.error("데이터를 불러올 수 없습니다.");
         }
     });
 }
 
+// 2. 데이터 저장 로직
 async function saveData() {
-    if(!isDataLoaded) return;
-    try { await setDoc(docRef, appData, { merge: true }); updateMainUI(); } 
-    catch(e) { console.error("저장 실패:", e); }
-}
-
-function updateMainUI() {
-    if(!myName || !appData.auth[myName]) return;
-    
+    if (!isDataLoaded) return;
     try {
-        const nameEl = document.getElementById('user-name');
-        if(nameEl) nameEl.innerText = appData.auth[myName].name;
-        
-        if(appData.verse && appData.verse.t) {
-            const vt = document.getElementById('verse-text');
-            const vr = document.getElementById('verse-ref');
-            if(vt) vt.innerText = appData.verse.t;
-            if(vr) vr.innerText = appData.verse.r;
-        }
-        
-        UI.renderResolutionList(appData, myName);
-        UI.renderFamilyGoals(appData, myName);
-        UI.renderMessages(appData);
-        UI.renderDashboard(appData, myName);
-        
-        if(bibleState.currentBook) UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
-        if(bibleState.currentTestament) UI.renderBibleBooks(appData, myName, bibleState);
-    } catch (err) {
-        console.error("UI Update Error:", err);
+        await setDoc(docRef, appData);
+        console.log("Data Sync Success!");
+    } catch (e) {
+        console.error("Save Error:", e);
+        alert("데이터 저장 중 오류가 발생했습니다.");
     }
 }
 
+// 3. 로그인 상태 체크 및 화면 렌더링
 function checkLoginStatus() {
-    if(!isDataLoaded) return;
-    if(myName && appData.auth[myName]) {
-        document.getElementById('login-modal').classList.add('hidden');
-        document.getElementById('app-container').classList.remove('hidden');
-        updateMainUI();
+    const loginModal = document.getElementById('login-modal');
+    const appContainer = document.getElementById('app-container');
+
+    if (!myName) {
+        loginModal.classList.remove('hidden');
+        appContainer.classList.add('hidden');
+        renderLoginGrid();
     } else {
-        document.getElementById('app-container').classList.add('hidden');
-        document.getElementById('login-modal').classList.remove('hidden');
-        const grid = document.getElementById('login-grid');
-        if(grid) {
-            grid.innerHTML = "";
-            USER_SLOTS.forEach(slot => {
-                const btn = document.createElement('div');
-                const user = appData.auth[slot];
-                if(user) {
-                    btn.className = "login-btn taken";
-                    btn.innerHTML = `🔒 ${user.name}`;
-                    btn.onclick = () => window.tryLogin(slot, user.pin);
-                } else {
-                    btn.className = "login-btn";
-                    btn.innerHTML = `+ New`;
-                    btn.onclick = () => window.tryRegister(slot);
-                }
-                grid.appendChild(btn);
-            });
+        loginModal.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        
+        // 현재 탭에 맞는 화면 렌더링
+        const activeTab = document.querySelector('.nav-item.active');
+        if (activeTab) {
+            const tabName = activeTab.getAttribute('onclick').match(/'([^']+)'/)[1];
+            refreshUI(tabName);
+        } else {
+            refreshUI('resolution');
         }
     }
 }
 
-window.goTab = (t, el) => {
-    document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-    if(el) el.classList.add('active');
-    document.querySelectorAll('.page').forEach(e => e.classList.add('hidden'));
-    const target = document.getElementById('page-' + t);
-    if(target) target.classList.remove('hidden');
-    updateMainUI();
-};
+// 4. 성경 완독 로직 (Finish)
+window.finishBook = async () => {
+    const bookName = bibleState.currentBook;
+    if (!bookName) return;
 
-window.toggleAccordion = (id, icon) => {
-    const content = document.getElementById(id);
-    if(content) content.classList.toggle('hidden');
-    if(icon) icon.classList.toggle('open');
-};
+    if (!appData[myName].bibleRounds) appData[myName].bibleRounds = {};
+    
+    // 현재 독수 증가
+    const currentRound = appData[myName].bibleRounds[bookName] || 0;
+    appData[myName].bibleRounds[bookName] = currentRound + 1;
 
-window.toggleFamilyList = (id) => {
-    const list = document.getElementById(id);
-    if(list) list.classList.toggle('hidden');
-};
-
-window.addItem = function() {
-    const input = document.getElementById('input-resolution');
-    const val = input.value.trim();
-    if(!val) return;
-    if(!appData[myName].resolution) appData[myName].resolution = [];
-    appData[myName].resolution.push({ text: val, steps: ["완료"], done: [false], counts: [0] });
-    input.value = "";
-    saveData();
-};
-
-window.toggleStep = function(i, s) {
-    const item = appData[myName].resolution[i];
-    const today = UI.getTodayDate();
-    const isAlreadyDone = (item.done[s] === today);
-    if(!item.counts) item.counts = Array(item.steps.length).fill(0);
-    if(isAlreadyDone) {
-        item.done[s] = "";
-        item.counts[s] = Math.max(0, item.counts[s]-1);
-    } else {
-        item.done[s] = today;
-        item.counts[s]++;
-        if(window.confetti) confetti({particleCount:50,spread:60,origin:{y:0.6}});
+    // 해당 권의 모든 장 체크 기록 초기화 (다음 독을 위해)
+    const book = BIBLE_DATA.books.find(b => b.name === bookName);
+    for (let i = 1; i <= book.chapters; i++) {
+        delete appData[myName].bible[`${bookName}-${i}`];
     }
-    if(!appData[myName].history) appData[myName].history = {};
-    let d = 0;
-    appData[myName].resolution.forEach(r => { r.done.forEach(x => { if(x === today) d++; }); });
-    appData[myName].history[today] = d;
-    saveData();
-};
 
-window.deleteItem = (i) => { if(confirm("정말 삭제하시겠습니까?")) { appData[myName].resolution.splice(i,1); saveData(); }};
-window.editItem = (i) => { const n = prompt("목표 수정:", appData[myName].resolution[i].text); if(n) { appData[myName].resolution[i].text = n; saveData(); }};
-window.sendMsg = () => {
-    const input = document.getElementById('input-msg');
-    const txt = input.value.trim();
-    if(!txt) return;
-    if(!appData.messages) appData.messages = [];
-    appData.messages.push({ sender: appData.auth[myName].name, text: txt });
-    if(appData.messages.length > 50) appData.messages.shift();
-    input.value = "";
-    saveData();
-};
-window.editVerse = () => {
-    const t = prompt("말씀:", appData.verse ? appData.verse.t : ""); if(t===null)return;
-    const r = prompt("출처:", appData.verse ? appData.verse.r : ""); if(r===null)return;
-    appData.verse = { t: t, r: r }; saveData();
-};
-window.editProfile = () => {
-    const cur = appData.auth[myName].pin;
-    if(prompt(`현재 비밀번호(${cur}) 입력:`) !== cur) return alert("비밀번호가 틀렸습니다.");
-    const n = prompt("새 이름:", appData.auth[myName].name); if(!n)return;
-    const p = prompt("새 비밀번호:", cur); if(!p)return;
-    appData.auth[myName].name = n; appData.auth[myName].pin = p;
-    saveData().then(()=>alert("수정되었습니다."));
-};
-window.logoutAction = () => { if(confirm("로그아웃 하시겠습니까?")) { localStorage.removeItem('myId'); location.reload(); }};
-window.tryLogin = (s, p) => { if(prompt("비밀번호(PIN):")===p) { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); } else alert("비밀번호가 틀렸습니다."); };
-window.tryRegister = (s) => {
-    const n = prompt("이름:"); if(!n)return; const p = prompt("비밀번호(PIN):"); if(!p)return;
-    appData.auth[s] = {name:n, pin:p};
-    if(!appData[s]) appData[s] = {resolution:[], bible:{}, history:{}};
-    saveData().then(() => { myName=s; localStorage.setItem('myId',s); checkLoginStatus(); });
-};
-
-window.showBibleBooks = (t) => {
-    bibleState.currentTestament = t;
-    document.getElementById('bible-main-view').classList.add('hidden-view');
-    document.getElementById('bible-books-view').classList.remove('hidden-view');
-    UI.renderBibleBooks(appData, myName, bibleState);
-};
-
-window.showChapters = (bn) => {
-    bibleState.currentBook = bn;
-    document.getElementById('bible-books-view').classList.add('hidden-view');
-    document.getElementById('bible-chapters-view').classList.remove('hidden-view');
-    document.getElementById('bible-book-title').innerText = bn;
-    const tools = document.querySelector('.chapter-tools');
-    if(tools) tools.innerHTML = `<button class="text-btn" onclick="window.toggleRangeMode()" id="btn-range" style="font-weight:600; color:var(--primary); margin-right:10px;">⚡️범위선택</button><button class="text-btn" onclick="window.controlAll(true)">전체</button><button class="text-btn" onclick="window.controlAll(false)" style="color:#94a3b8;">해제</button>`;
-    rangeStart = null;
+    await saveData();
+    alert(`🎉 [${bookName}] ${currentRound + 1}독을 축하합니다!`);
     UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
 };
 
-window.toggleRangeMode = () => {
-    const btn = document.getElementById('btn-range');
-    if(rangeStart === null) { 
-        rangeStart = -1; 
-        alert("시작 장을 누르고, 끝 장을 누르세요."); 
-        if(btn) { btn.style.fontWeight="800"; btn.innerText="선택중..."; } 
-    } else { 
-        rangeStart = null; 
-        if(btn) { btn.style.fontWeight="600"; btn.innerText="⚡️범위선택"; } 
-        UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); 
+// 5. [신규] 성경 완독 취소 로직 (Undo Finish)
+window.undoFinishBook = async () => {
+    const bookName = bibleState.currentBook;
+    if (!bookName) return;
+
+    const currentRound = (appData[myName].bibleRounds && appData[myName].bibleRounds[bookName]) || 0;
+    if (currentRound <= 0) return;
+
+    if (!confirm(`'${bookName}'의 완독(🔄 ${currentRound}독)을 취소하시겠습니까?\n(가장 최근의 완독 기록이 삭제됩니다.)`)) return;
+
+    // 독수 1 차감
+    appData[myName].bibleRounds[bookName] = currentRound - 1;
+    if (appData[myName].bibleRounds[bookName] === 0) {
+        delete appData[myName].bibleRounds[bookName];
     }
+
+    // 취소 시 UI 편의를 위해 해당 권의 모든 장을 다시 '읽음' 상태로 되돌림 (완독 직전 상태)
+    const book = BIBLE_DATA.books.find(b => b.name === bookName);
+    const today = UI.getTodayDate();
+    if (!appData[myName].bible) appData[myName].bible = {};
+    
+    for (let i = 1; i <= book.chapters; i++) {
+        appData[myName].bible[`${bookName}-${i}`] = today;
+    }
+
+    await saveData();
+    alert("완독 기록이 취소되었습니다.");
+    UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
 };
 
-window.toggleChapter = (chap, k, check) => {
+// 6. 성경 장별 토글 (Range Fix 포함)
+window.toggleChapter = async (num, key, isChecking) => {
+    if (!appData[myName].bible) appData[myName].bible = {};
+    if (!appData[myName].bibleLog) appData[myName].bibleLog = [];
+
     const today = UI.getTodayDate();
-    if(!appData[myName].bible) appData[myName].bible={};
-    if(!appData[myName].bibleLog) appData[myName].bibleLog=[];
-    
-    if(rangeStart !== null) {
-        if(rangeStart === -1) { 
-            rangeStart = chap; 
-            UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); 
-        } else {
-            const s = Math.min(rangeStart, chap), e = Math.max(rangeStart, chap);
-            for(let i=s; i<=e; i++) {
-                const key = `${bibleState.currentBook}-${i}`;
-                if(!appData[myName].bible[key]) { 
-                    appData[myName].bible[key]=today; 
-                    appData[myName].bibleLog.push({date:today, key:key}); 
-                }
+
+    // 범위 선택 (Shift 클릭 대용)
+    if (isChecking && rangeStart !== null) {
+        const start = Math.min(rangeStart, num);
+        const end = Math.max(rangeStart, num);
+        for (let i = start; i <= end; i++) {
+            const k = `${bibleState.currentBook}-${i}`;
+            if (!appData[myName].bible[k]) {
+                appData[myName].bible[k] = today;
+                appData[myName].bibleLog.push({ date: today, book: bibleState.currentBook, chapter: i });
             }
-            rangeStart = null; 
-            const btn = document.getElementById('btn-range');
-            if(btn) { btn.style.fontWeight="600"; btn.innerText="⚡️범위선택"; }
-            saveData(); 
         }
-        return;
+        rangeStart = null;
+    } else {
+        if (isChecking) {
+            appData[myName].bible[key] = today;
+            appData[myName].bibleLog.push({ date: today, book: bibleState.currentBook, chapter: num });
+            rangeStart = num; // 범위 시작점 설정
+        } else {
+            delete appData[myName].bible[key];
+            appData[myName].bibleLog = appData[myName].bibleLog.filter(e => !(e.book === bibleState.currentBook && e.chapter === num));
+            rangeStart = null;
+        }
     }
     
-    if(check) { 
-        appData[myName].bible[k]=today; 
-        appData[myName].bibleLog.push({date:today, key:k}); 
-    } else { 
-        appData[myName].bible[k]=null; 
-        appData[myName].bibleLog = appData[myName].bibleLog.filter(x => x.key !== k); 
-    }
-    saveData();
+    await saveData();
+    UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
 };
 
-window.controlAll = (on) => {
-    if(!on && !confirm("이 책의 체크를 모두 해제하시겠습니까?")) return;
-    const b = BIBLE_DATA.books.find(x => x.name === bibleState.currentBook);
-    const today = UI.getTodayDate();
-    if(!appData[myName].bible) appData[myName].bible={};
-    if(!appData[myName].bibleLog) appData[myName].bibleLog=[];
-    for(let i=1; i<=b.chapters; i++) {
-        const k=`${b.name}-${i}`;
-        if(on) { 
-            if(!appData[myName].bible[k]) { 
-                appData[myName].bible[k]=today; 
-                appData[myName].bibleLog.push({date:today, key:k}); 
-            } 
-        } else { 
-            appData[myName].bible[k]=null; 
-            appData[myName].bibleLog = appData[myName].bibleLog.filter(x => x.key !== k); 
-        }
-    }
-    saveData();
+// 7. 기타 UI 조작 윈도우 함수들
+window.goTab = (tab, el) => {
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+    document.getElementById(`tab-${tab}`).classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    refreshUI(tab);
 };
 
-window.finishBookAndReset = () => {
-    if(document.getElementById('btn-finish-book').classList.contains('disabled')) return;
-    if(confirm("완독 처리 하시겠습니까?\n(체크는 초기화되고 1독이 추가됩니다)")) {
-        const b = bibleState.currentBook;
-        if(!appData[myName].bibleRounds) appData[myName].bibleRounds={};
-        appData[myName].bibleRounds[b] = (appData[myName].bibleRounds[b]||0)+1;
-        const bookData = BIBLE_DATA.books.find(x => x.name === b);
-        for(let i=1; i<=bookData.chapters; i++) appData[myName].bible[`${b}-${i}`]=null;
-        saveData().then(()=>alert("축하합니다! 완독 완료! 🎉"));
-    }
+window.showChapters = (bookName) => {
+    bibleState.currentBook = bookName;
+    document.getElementById('bible-book-title').innerText = bookName;
+    document.getElementById('modal-bible-chapters').classList.remove('hidden');
+    UI.renderChaptersGrid(appData, myName, bibleState, rangeStart);
 };
 
-// [버그 수정] 삭제(delete) 대신 확실하게 '0'을 덮어씌웁니다.
-window.undoFinishBook = () => {
-    const b = bibleState.currentBook;
-    const currentRound = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0;
-    if(currentRound <= 0) return;
-    
-    if(confirm(`[${b}] 완독을 취소하시겠습니까?\n(독수가 1 줄어들고, 누적 장수에서 제외되며, 체크가 모두 해제됩니다.)`)) {
-        
-        // 1. 독수 깎기 (안전장치: 0 이하로는 안 내려감)
-        appData[myName].bibleRounds[b]--;
-        if(appData[myName].bibleRounds[b] < 0) {
-            appData[myName].bibleRounds[b] = 0;
-        }
-        
-        const bookData = BIBLE_DATA.books.find(x => x.name === b);
-        if(!appData[myName].bible) appData[myName].bible = {};
-        if(!appData[myName].bibleLog) appData[myName].bibleLog = [];
-        
-        // 2. 화면 체크 싹 지우기
-        for(let i=1; i<=bookData.chapters; i++) { 
-            const key = `${b}-${i}`;
-            appData[myName].bible[key] = null; 
-        }
-        
-        // 3. 역사 기록부에서 날리기 (누적 차감)
-        appData[myName].bibleLog = appData[myName].bibleLog.filter(entry => !entry.key.startsWith(`${b}-`));
-
-        saveData().then(()=>alert("완독 처리가 취소되고, 누적 장수에서 차감되었습니다. ↩️"));
-    }
+window.closeChapterModal = () => {
+    document.getElementById('modal-bible-chapters').classList.add('hidden');
+    bibleState.currentBook = null;
+    rangeStart = null;
+    UI.renderBibleBooks(appData, myName, bibleState);
 };
 
-window.manageSeason = () => {
-    const currentPeriod = appData.period;
-    if(!confirm(`현재 시즌(${currentPeriod.start} ~ ${currentPeriod.end})을 마감하시겠습니까?\n\n- 결단서 1등이 명예의 전당에 기록됩니다.\n- 모든 가족의 결단서 점수가 0점으로 새출발합니다.\n(성경 읽기 기록은 유지됩니다)`)) return;
-
-    const users = USER_SLOTS.filter(slot => appData.auth[slot]);
-    const rankings = users.map(slot => {
-        const history = appData[slot].history || {};
-        const score = Object.keys(history).filter(d => d >= currentPeriod.start && d <= currentPeriod.end).reduce((sum, d) => sum + (history[d] || 0), 0);
-        return { name: appData.auth[slot].name, val: score };
-    });
-    rankings.sort((a, b) => b.val - a.val);
-
-    if(!appData.pastSeasons) appData.pastSeasons = [];
-    if(rankings.length > 0) {
-        appData.pastSeasons.push({ range: `${currentPeriod.start} ~ ${currentPeriod.end}`, winner: rankings[0].name, score: rankings[0].val });
-    }
-
-    const today = UI.getTodayDate();
-    appData.period = { start: today, end: "2026-12-31" };
-
-    saveData().then(() => {
-        alert(`🏆 시즌 마감 완료!\n\n우승자: ${rankings[0] ? rankings[0].name : '없음'}\n\n이제 새로운 시즌이 시작되어 점수가 0점부터 다시 카운트됩니다.`);
-        location.reload(); 
-    });
+window.setTestament = (type) => {
+    bibleState.currentTestament = type;
+    document.querySelectorAll('.testament-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    UI.renderBibleBooks(appData, myName, bibleState);
 };
 
-window.backToBooks=()=>{ document.getElementById('bible-chapters-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view'); };
-window.showBibleMain=()=>{ document.getElementById('bible-books-view').classList.add('hidden-view'); document.getElementById('bible-main-view').classList.remove('hidden-view'); };
+function refreshUI(tab) {
+    if (tab === 'resolution') {
+        UI.renderResolutionList(appData, myName);
+        UI.renderFamilyGoals(appData, myName);
+    } else if (tab === 'bible') {
+        if (!bibleState.currentTestament) bibleState.currentTestament = '구약';
+        UI.renderBibleBooks(appData, myName, bibleState);
+    } else if (tab === 'dashboard') {
+        UI.renderDashboard(appData, myName);
+    } else if (tab === 'chat') {
+        UI.renderMessages(appData);
+    }
+}
 
+// 8. 초기화 실행
 startApp();
+
+// 9. 로그인 그리드 렌더링 (최초 1회)
+function renderLoginGrid() {
+    const grid = document.getElementById('login-grid');
+    grid.innerHTML = USER_SLOTS.map(slot => {
+        const user = appData.auth[slot];
+        return `
+            <div class="login-card" onclick="window.loginAs('${slot}')">
+                <div class="login-avatar">${user ? user.name[0] : '?'}</div>
+                <div class="login-name">${user ? user.name : '미등록'}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+window.loginAs = (slot) => {
+    if (!appData.auth[slot]) {
+        const name = prompt("이 슬롯에 등록할 이름을 입력하세요:");
+        if (!name) return;
+        appData.auth[slot] = { name: name };
+        appData[slot] = { resolution: [], history: {}, bible: {}, bibleLog: [], bibleRounds: {} };
+        saveData();
+    }
+    localStorage.setItem('myId', slot);
+    myName = slot;
+    checkLoginStatus();
+};
