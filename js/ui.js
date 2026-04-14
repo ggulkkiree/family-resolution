@@ -48,9 +48,9 @@ export function renderResolutionList(appData, myName) {
                 span.className = isDone ? 'step-item done' : 'step-item';
                 span.innerText = step;
                 
-                // [수정] 클릭 시 즉각적으로 색상이 변하도록 로직 추가!
+                // [패치] 클릭 시 즉각적으로 핑크색으로 변하는 시각적 피드백!
                 span.onclick = (e) => {
-                    e.currentTarget.classList.toggle('done'); // 클릭 즉시 시각적 반응
+                    e.currentTarget.classList.toggle('done'); 
                     if (typeof window.toggleStep === 'function') window.toggleStep(gIndex, sIndex);
                 };
                 stepsDiv.appendChild(span);
@@ -87,8 +87,8 @@ export function renderFamilyGoals(appData, myName) {
         const goals = userData.resolution || [];
         if (goals.length === 0) return; 
         
-        // [수정] user_1 대신 저장된 진짜 닉네임을 가져옵니다!
-        const displayName = userData.name || userData.nickname || userName;
+        // [패치] user_1 대신 저장된 진짜 닉네임 가져오기
+        const displayName = userData.name || userData.nickname || userData.displayName || (userData.profile && userData.profile.name) || userName;
 
         const card = document.createElement('div');
         card.className = 'family-card'; 
@@ -102,7 +102,7 @@ export function renderFamilyGoals(appData, myName) {
         nameTag.style.fontWeight = "800";
         nameTag.style.marginBottom = "10px";
         nameTag.style.color = "#6366f1";
-        nameTag.innerText = `👤 ${displayName}`; // 닉네임 적용
+        nameTag.innerText = `👤 ${displayName}`;
         card.appendChild(nameTag);
 
         const goalList = document.createElement('ul');
@@ -229,9 +229,9 @@ export function renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal)
             <div class="task-icon-box"><i class="fas fa-check"></i></div>
         `;
         
-        // [수정] 오늘 할 일 목록 클릭 시 즉시 밑줄 쫙! 체크! 되도록 추가
+        // [패치] 오늘 할 일 목록 클릭 시 즉시 반응하도록 추가
         taskDiv.onclick = (e) => {
-            e.currentTarget.classList.toggle('active'); // 즉시 상태 변경
+            e.currentTarget.classList.toggle('active'); 
             if (typeof window.toggleTodayTask === 'function') window.toggleTodayTask(idx, today);
         };
         taskList.appendChild(taskDiv);
@@ -250,6 +250,7 @@ export function updateBibleStats(myBibleLog) {
     yearCountEl.innerText = `${myBibleLog.length}장`;
 }
 
+// 👑 [패치] 닉네임 총동원 & 시즌 시작일(4월 12일) 필터링 완료된 랭킹!
 export function renderRankings(appData, period) {
     const rankRes = document.getElementById('rank-resolution');
     const rankBible = document.getElementById('rank-bible');
@@ -261,22 +262,36 @@ export function renderRankings(appData, period) {
     let resScores = [];
     let bibleScores = [];
 
+    // 1. 성경 왕 기준일 (이번 주 월요일)
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(now.setDate(diff));
     monday.setHours(0, 0, 0, 0);
 
+    // 2. 결단서 왕 기준일 (period 값이 없으면 4월 12일을 기본으로!)
+    const seasonStartDateStr = (period && period.start) ? period.start : "2026-04-12";
+    const seasonStart = new Date(seasonStartDateStr);
+    seasonStart.setHours(0, 0, 0, 0);
+
     Object.keys(appData).forEach(userName => {
         if (['period', 'messages', 'verse', 'hallOfFame'].includes(userName)) return;
         const userData = appData[userName];
         
-        // [수정] 랭킹에도 user_1 대신 진짜 닉네임 반영!
-        const displayName = userData.name || userData.nickname || userName;
+        // 닉네임 필터링 강화
+        const displayName = userData.name || userData.nickname || userData.displayName || (userData.profile && userData.profile.name) || userName;
 
         let resScore = 0;
         if (userData.history) {
-            Object.values(userData.history).forEach(val => resScore += Number(val));
+            Object.entries(userData.history).forEach(([dateStr, val]) => {
+                const recordDate = new Date(dateStr);
+                recordDate.setHours(0, 0, 0, 0);
+                
+                // [핵심] 시즌 시작일(4월 12일)과 같거나 이후인 데이터만 더하기!
+                if (recordDate >= seasonStart) {
+                    resScore += Number(val);
+                }
+            });
         }
         resScores.push({ name: displayName, score: resScore });
 
