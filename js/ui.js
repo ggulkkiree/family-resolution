@@ -1,80 +1,67 @@
-export function renderDashboard(appData, myName) {
-    const period = appData.period || { start: "2026-01-01", end: "2026-12-31" };
-    const pDisplay = document.getElementById('period-display');
-    if(pDisplay) pDisplay.innerText = `${period.start} ~ ${period.end}`;
-    
-    // [수정 1] 내 데이터가 아예 없을 때 앱이 멈추는 것을 방지하는 안전장치 추가
-    const userData = appData[myName] || {}; 
-    const myHistory = userData.history || {};
-    const myBibleLog = userData.bibleLog || [];
+// [최종 복구] CSS 스타일과 세부 목표 기능을 모두 포함한 버전
+export function renderResolutionList(appData, myName) {
+    const listEl = document.getElementById('list-resolution');
+    if (!listEl) return;
+
+    listEl.innerHTML = ''; 
+
+    const userData = appData[myName] || {};
     const myGoals = userData.resolution || [];
-    
-    const today = getTodayDate();
-    let todayTotal = 0, todayDone = 0;
-    
-    myGoals.forEach(g => {
-        todayTotal++;
-        // [수정 2] .every 대신 .includes를 사용 (배열인지 확인하는 방어 로직 추가)
-        let isDoneToday = false;
-        if (g.done) {
-            if (Array.isArray(g.done)) {
-                isDoneToday = g.done.includes(today);
-            } else if (typeof g.done === 'string') {
-                isDoneToday = (g.done === today);
+
+    if (myGoals.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#8D6E63; font-size:0.95rem;">아직 등록된 목표가 없어요!<br>위에서 새 목표를 추가해 보세요 ✨</div>';
+        return;
+    }
+
+    myGoals.forEach((goal, gIndex) => {
+        const li = document.createElement('li');
+        li.className = 'resolution-item';
+
+        // 내용 영역 (제목 + 세부단계)
+        const infoDiv = document.createElement('div');
+        infoDiv.style.flex = "1";
+
+        // 1. 목표 제목
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'res-text';
+        titleDiv.innerText = goal.text || (typeof goal === 'string' ? goal : '나의 목표');
+        infoDiv.appendChild(titleDiv);
+
+        // 2. 세부 단계 (Steps) - CSS의 .step-item 활용
+        if (goal.steps && Array.isArray(goal.steps)) {
+            const stepsDiv = document.createElement('div');
+            goal.steps.forEach((step, sIndex) => {
+                const span = document.createElement('span');
+                // 완료 여부에 따라 .done 클래스 추가
+                const isDone = goal.done && goal.done.includes(`${gIndex}-${sIndex}`);
+                span.className = isDone ? 'step-item done' : 'step-item';
+                span.innerText = step;
+                
+                // 클릭 시 상태 변경 기능 (window에 연결된 함수가 있다면)
+                span.onclick = () => {
+                    if (typeof window.toggleStep === 'function') {
+                        window.toggleStep(gIndex, sIndex);
+                    }
+                };
+                stepsDiv.appendChild(span);
+            });
+            infoDiv.appendChild(stepsDiv);
+        }
+
+        // 3. 삭제 버튼
+        const delBtn = document.createElement('button');
+        delBtn.className = 'del-btn';
+        delBtn.innerHTML = '<i class="fas fa-times"></i>';
+        delBtn.onclick = () => {
+            if (confirm('이 목표를 삭제할까요?')) {
+                if (typeof window.addItem === 'function') { // 기존 로직에 따른 삭제 함수 호출
+                    window.deleteItem && window.deleteItem(gIndex);
+                }
             }
-        }
-        
-        if(isDoneToday) todayDone++;
+        };
+
+        li.appendChild(infoDiv);
+        li.appendChild(delBtn);
+        listEl.appendChild(li);
     });
-
-    renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal);
-
-    let rate = 0;
-    if(todayTotal > 0) rate = Math.round((todayDone / todayTotal) * 100);
-    
-    // 작성하신 일요일 달성률 100% 보너스 로직 (유지)
-    if (new Date().getDay() === 0) {
-        rate = 100;
-    }
-
-    const dRate = document.getElementById('dash-rate');
-    const dFill = document.getElementById('donut-fill');
-    if(dRate) dRate.innerText = rate + "%";
-    if(dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
-
-    calculateStreak(myHistory, rate, todayTotal);
-    updateBibleStats(myBibleLog);
-    renderWeeklyGraph(myHistory, today);
-    renderHabitAnalysis(myGoals);
-    renderRankings(appData, period);
-    renderHallOfFame(appData);
-}
-
-function calculateStreak(myHistory, rate, todayTotal) {
-    const fireIcon = document.getElementById('streak-icon');
-    const streakText = document.getElementById('dash-streak');
-    if(!fireIcon || !streakText) return;
-
-    if(rate >= 100 && todayTotal > 0) fireIcon.className = "fas fa-crown streak-icon gold"; 
-    else if(rate >= 50) fireIcon.className = "fas fa-fire streak-icon active";
-    else fireIcon.className = "fas fa-fire streak-icon";
-
-    let realStreak = 0;
-    const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    const kstNow = new Date(utc + (9*60*60*1000));
-    
-    for(let i=0; i<365; i++) {
-        const d = new Date(kstNow); d.setDate(d.getDate() - i);
-        const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
-        const dStr = `${y}-${m}-${dd}`;
-        
-        // 작성하신 과거 기록 일요일 보너스 로직 (유지)
-        if(myHistory[dStr] > 0 || d.getDay() === 0) {
-            realStreak++; 
-        } else if(i>0) {
-            break;
-        }
-    }
-    streakText.innerText = `${realStreak}일`;
 }
