@@ -284,3 +284,45 @@ export function renderWeeklyGraph(myHistory, today) {
 
 export function renderHabitAnalysis(myGoals) {}
 export function renderHallOfFame(appData) {}
+
+// ==========================================
+// 💌 3. 응원 메시지 복구 코드
+// ==========================================
+export function renderMessages(appData) {
+    const msgList = document.getElementById('msg-list');
+    if (!msgList) return;
+
+    msgList.innerHTML = ''; // 화면에 그리기 전에 깨끗하게 비우기
+
+    // 서버(appData)에서 메시지 기록 가져오기
+    const messages = appData.messages || [];
+
+    // 메시지가 하나도 없을 때 보여줄 안내문
+    if (messages.length === 0) {
+        msgList.innerHTML = '<li style="text-align:center; color:#94a3b8; font-size:0.9rem; padding:10px 0;">첫 응원 메시지를 남겨보세요! 💌</li>';
+        return;
+    }
+
+    // 메시지가 있다면 하나씩 리스트(li)로 만들기
+    messages.forEach(msg => {
+        const li = document.createElement('li');
+        li.style.marginBottom = "8px";
+        li.style.fontSize = "0.95rem";
+        li.style.lineHeight = "1.4";
+        
+        // 데이터가 객체({sender: '아빠', text: '화이팅'})일 수도, 단순 문자열일 수도 있으니 모두 방어
+        const sender = msg.sender || msg.name || '가족';
+        const text = msg.text || msg.msg || (typeof msg === 'string' ? msg : '응원합니다!');
+
+        // 예쁘게 조립하기 (이름은 포인트 컬러로!)
+        li.innerHTML = `<span style="font-weight:800; color:var(--primary, #FF7F50); margin-right:6px;">${sender}</span> <span style="color:var(--text-main, #5D4037);">${text}</span>`;
+        
+        msgList.appendChild(li);
+    });
+
+    // 스크롤이 있다면 가장 아래(최신 메시지)로 자동 이동
+    const chatCard = msgList.parentElement;
+    if (chatCard) {
+        chatCard.scrollTop = chatCard.scrollHeight;
+    }
+}
