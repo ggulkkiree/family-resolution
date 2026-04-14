@@ -14,7 +14,6 @@ export function getTodayDate() {
 // ==========================================
 // 📌 1. 목표 탭 기능 모음
 // ==========================================
-
 export function renderResolutionList(appData, myName) {
     const listEl = document.getElementById('list-resolution');
     if (!listEl) return;
@@ -48,7 +47,6 @@ export function renderResolutionList(appData, myName) {
                 span.className = isDone ? 'step-item done' : 'step-item';
                 span.innerText = step;
                 
-                // [패치] 클릭 시 즉각적으로 핑크색으로 변하는 시각적 피드백!
                 span.onclick = (e) => {
                     e.currentTarget.classList.toggle('done'); 
                     if (typeof window.toggleStep === 'function') window.toggleStep(gIndex, sIndex);
@@ -81,14 +79,13 @@ export function renderFamilyGoals(appData, myName) {
 
     container.innerHTML = ''; 
     Object.keys(appData).forEach(userName => {
-        if (['period', 'messages', 'verse', 'hallOfFame'].includes(userName) || userName === myName) return;
+        if (['period', 'messages', 'verse', 'hallOfFame', 'auth'].includes(userName) || userName === myName) return;
 
         const userData = appData[userName];
         const goals = userData.resolution || [];
         if (goals.length === 0) return; 
         
-        // [패치] user_1 대신 저장된 진짜 닉네임 가져오기
-        const displayName = userData.name || userData.nickname || userData.displayName || (userData.profile && userData.profile.name) || userName;
+        const displayName = (appData.auth && appData.auth[userName]) ? appData.auth[userName].name : userName;
 
         const card = document.createElement('div');
         card.className = 'family-card'; 
@@ -128,7 +125,6 @@ export function renderFamilyGoals(appData, myName) {
 // ==========================================
 // 📊 2. 대시보드 및 통계 탭 기능 모음
 // ==========================================
-
 export function renderDashboard(appData, myName) {
     const period = appData.period || { start: "2026-01-01", end: "2026-12-31" };
     const pDisplay = document.getElementById('period-display');
@@ -229,7 +225,6 @@ export function renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal)
             <div class="task-icon-box"><i class="fas fa-check"></i></div>
         `;
         
-        // [패치] 오늘 할 일 목록 클릭 시 즉시 반응하도록 추가
         taskDiv.onclick = (e) => {
             e.currentTarget.classList.toggle('active'); 
             if (typeof window.toggleTodayTask === 'function') window.toggleTodayTask(idx, today);
@@ -250,7 +245,6 @@ export function updateBibleStats(myBibleLog) {
     yearCountEl.innerText = `${myBibleLog.length}장`;
 }
 
-// 👑 [패치] 닉네임 총동원 & 시즌 시작일(4월 12일) 필터링 완료된 랭킹!
 export function renderRankings(appData, period) {
     const rankRes = document.getElementById('rank-resolution');
     const rankBible = document.getElementById('rank-bible');
@@ -262,24 +256,21 @@ export function renderRankings(appData, period) {
     let resScores = [];
     let bibleScores = [];
 
-    // 1. 성경 왕 기준일 (이번 주 월요일)
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
     const monday = new Date(now.setDate(diff));
     monday.setHours(0, 0, 0, 0);
 
-    // 2. 결단서 왕 기준일 (period 값이 없으면 4월 12일을 기본으로!)
     const seasonStartDateStr = (period && period.start) ? period.start : "2026-04-12";
     const seasonStart = new Date(seasonStartDateStr);
     seasonStart.setHours(0, 0, 0, 0);
 
     Object.keys(appData).forEach(userName => {
-        if (['period', 'messages', 'verse', 'hallOfFame'].includes(userName)) return;
+        if (['period', 'messages', 'verse', 'hallOfFame', 'auth'].includes(userName)) return;
         const userData = appData[userName];
         
-        // 닉네임 필터링 강화
-        const displayName = userData.name || userData.nickname || userData.displayName || (userData.profile && userData.profile.name) || userName;
+        const displayName = (appData.auth && appData.auth[userName]) ? appData.auth[userName].name : userName;
 
         let resScore = 0;
         if (userData.history) {
@@ -287,7 +278,6 @@ export function renderRankings(appData, period) {
                 const recordDate = new Date(dateStr);
                 recordDate.setHours(0, 0, 0, 0);
                 
-                // [핵심] 시즌 시작일(4월 12일)과 같거나 이후인 데이터만 더하기!
                 if (recordDate >= seasonStart) {
                     resScore += Number(val);
                 }
@@ -403,14 +393,14 @@ export function renderMessages(appData) {
 }
 
 // ==========================================
-// 📖 4. 성경 탭 안전장치 복구 코드
+// 📖 4. 성경 탭 안전장치 (앱 멈춤 방지용!)
 // ==========================================
 export function renderBibleBooks(appData, myName, bibleState) {
     const grid = document.getElementById('bible-books-grid');
-    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8D6E63; padding: 20px;">성경 목록 UI가 준비되었습니다.</div>';
+    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #8D6E63; font-weight:600;">성경 데이터를 안전하게 불러왔습니다! 📖</div>';
 }
 
 export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
     const grid = document.getElementById('bible-chapters-grid');
-    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8D6E63; padding: 20px;">성경 장 UI가 준비되었습니다.</div>';
+    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #8D6E63; font-weight:600;">해당 성경의 장을 불러왔습니다! 📖</div>';
 }
