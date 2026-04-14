@@ -1,4 +1,4 @@
-// 🧠 UI Renderer (성경 장 선택 완벽 복구 버전)
+// 🧠 UI Renderer (성경 장 색상 완벽 표시 버전)
 
 import { BIBLE_DATA } from './data.js';
 
@@ -161,7 +161,7 @@ export function renderMessages(appData) {
 }
 
 // ==========================================
-// 📖 4. 성경 탭 - 권/장 목록 (클릭 로직 완벽 연동!)
+// 📖 4. 성경 탭 - 클릭 시 색상이 칠해지도록 완벽 보완!
 // ==========================================
 export function renderBibleBooks(appData, myName, bibleState) {
     const grid = document.getElementById('bible-books-grid');
@@ -197,18 +197,33 @@ export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
         const key = `${bookName}-${i}`;
         const isDone = !!myBible[key];
         
-        let rangeClass = "";
-        // 범위 선택 중일 때 시작점을 시각적으로 표시
-        if (rangeStart !== null && rangeStart !== -1) {
-            if (i === rangeStart) rangeClass = " in-range"; 
+        const cell = document.createElement('div');
+        cell.innerText = i;
+        cell.className = 'chapter-cell';
+
+        // 💡 CSS 파일 설정과 무관하게, 코드가 직접 예쁜 보라색 버튼으로 만들어 줍니다!
+        if (isDone) {
+            cell.style.backgroundColor = '#6366f1'; // 예쁜 남색/보라색
+            cell.style.color = '#ffffff';
+            cell.style.fontWeight = 'bold';
+            cell.style.borderRadius = '8px'; // 동글동글하게
+        } else {
+            cell.style.backgroundColor = 'transparent';
+            cell.style.color = '#334155';
+            cell.style.fontWeight = 'normal';
         }
 
-        const cell = document.createElement('div');
-        // style.css에 .chapter-cell 과 .done 에 대한 디자인이 있어야 색이 변합니다!
-        cell.className = `chapter-cell ${isDone ? 'done' : ''}${rangeClass}`;
-        cell.innerText = i;
-        
-        // 👆 클릭 시 app.js의 toggleChapter 실행!
+        // 범위 선택 시작점 시각 효과
+        if (rangeStart !== null && rangeStart !== -1 && i === rangeStart) {
+            cell.style.backgroundColor = '#fca5a5'; // 살짝 붉은색
+            cell.style.color = 'white';
+            cell.style.borderRadius = '8px';
+        }
+
+        cell.style.cursor = 'pointer';
+        cell.style.padding = '10px 0'; // 터치하기 편하게 
+        cell.style.textAlign = 'center';
+
         cell.onclick = () => window.toggleChapter(i, key, !isDone);
         grid.appendChild(cell);
     }
