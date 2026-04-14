@@ -395,16 +395,3 @@ export function renderMessages(appData) {
         chatCard.scrollTop = chatCard.scrollHeight;
     }
 }
-
-// ==========================================
-// 📖 4. 성경 탭 안전장치 복구 코드
-// ==========================================
-export function renderBibleBooks(appData, myName, bibleState) {
-    const grid = document.getElementById('bible-books-grid');
-    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8D6E63; padding: 20px;">성경 목록 UI가 준비되었습니다.</div>';
-}
-
-export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
-    const grid = document.getElementById('bible-chapters-grid');
-    if(grid) grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #8D6E63; padding: 20px;">성경 장 UI가 준비되었습니다.</div>';
-}
