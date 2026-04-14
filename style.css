@@ -1,17 +1,23 @@
-/* 🎨 2026 Family Goals - Premium Design Update */
-
+/* 🎨 2026 Family Goals - Jelly & Cute Premium Theme */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css");
 
 :root {
-    --primary: #6366f1; --primary-light: #eff6ff; --secondary: #f59e0b;
-    --bg-color: #f8fafc; --surface: #ffffff;
-    --text-main: #1e293b; --text-sub: #64748b; --text-light: #94a3b8;
-    --success: #10b981; --success-light: #d1fae5;
-    --radius-lg: 20px; --radius-md: 12px;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.03);
+    --primary: #FF7F50;       /* 코랄 핑크 */
+    --secondary: #FFD700;     /* 망고 옐로우 */
+    --bg-color: #FFFDF5;      /* 따뜻하고 부드러운 아이보리 */
+    --surface: #ffffff;
+    --text-main: #5D4037;     /* 따뜻한 브라운 (가독성 UP) */
+    --text-sub: #8D6E63;
+    --success: #FF7F50;       /* 성공 컬러도 테마에 맞춤 */
+    --radius-jelly: 25px;     /* 아주 둥글둥글한 모서리 */
+    --shadow-jelly: 0 10px 20px rgba(255, 127, 80, 0.12);
 }
 
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 모든 움직임을 쫀득하게 */
+}
 
 body {
     margin: 0; padding: 0;
@@ -20,144 +26,102 @@ body {
     color: var(--text-main);
     height: 100vh; height: 100dvh; 
     overflow: hidden;
-    font-size: 16px; 
 }
 
-#app-container { display: flex; flex-direction: column; height: 100%; max-width: 600px; margin: 0 auto; background: var(--bg-color); position: relative; }
-.glass-header { padding: 15px 20px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(0,0,0,0.05); z-index: 100; }
-#main-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 110px; }
+#app-container { 
+    display: flex; flex-direction: column; height: 100%; 
+    max-width: 600px; margin: 0 auto; background: var(--bg-color); 
+}
 
-/* 카드 공통 */
-.verse-card, .dash-card, .chat-card, .ranking-card, .family-card {
+/* 헤더: 투명하고 깔끔하게 */
+.glass-header { 
+    padding: 20px; 
+    background: rgba(255, 255, 255, 0.8); 
+    backdrop-filter: blur(10px); 
+    border-bottom: 2px solid #F0EBE3;
+}
+
+/* 모든 카드를 젤리처럼 포동포동하게 */
+.verse-card, .dash-card, .chat-card, .ranking-card, .family-card, .resolution-item, .task-card {
     background: var(--surface);
-    border-radius: var(--radius-lg);
-    padding: 20px; margin-bottom: 15px;
-    box-shadow: var(--shadow-sm); border: 1px solid #f1f5f9;
+    border-radius: var(--radius-jelly);
+    padding: 22px; 
+    margin-bottom: 18px;
+    border: 3px solid #FFF5E1; /* 부드러운 테두리 */
+    box-shadow: var(--shadow-jelly);
 }
 
-/* 말씀 카드 */
-.verse-card { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; }
-.verse-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.verse-badge { background: rgba(255,255,255,0.25); padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
-.edit-icon-white { background: none; border: none; color: rgba(255,255,255,0.9); cursor: pointer; font-size: 1.1rem; }
-#verse-text { font-size: 1.1rem; font-weight: 700; line-height: 1.5; margin: 0 0 5px 0; }
-#verse-ref { text-align: right; font-size: 0.9rem; opacity: 0.9; margin: 0; }
-
-/* [수정] 통계 카드 디자인 */
-.stat-row { display: flex; gap: 10px; margin-bottom: 10px; }
-.dash-card.center-text { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-
-/* 1. 달성률 카드 (깔끔한 흰색) */
-.donut-container { position: relative; width: 80px; height: 80px; margin-bottom: 8px; }
-.donut-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
-.donut-bg { fill: none; stroke: #f1f5f9; stroke-width: 8; }
-.donut-fill { fill: none; stroke: var(--primary); stroke-width: 8; stroke-dasharray: 251; stroke-dashoffset: 251; transition: stroke-dashoffset 1s ease; stroke-linecap: round; }
-.donut-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 800; font-size: 1.2rem; color: var(--text-main); }
-
-/* 2. [핵심] 스트릭 카드 (불꽃 그라데이션) - 짜치는 디자인 탈출! */
-.dash-card.streak-card {
-    background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%);
-    color: white; border: none;
-    box-shadow: 0 8px 20px -5px rgba(255, 94, 98, 0.4);
+/* 말씀 카드: 코랄 핑크 그라데이션 */
+.verse-card { 
+    background: linear-gradient(135deg, var(--primary), #FFAB91); 
+    color: white; 
+    border: none; 
 }
-.streak-icon { font-size: 2.5rem; margin-bottom: 5px; color: rgba(255,255,255,0.9); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2)); }
-.streak-count { font-size: 1.8rem; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.streak-label { font-size: 0.9rem; opacity: 0.9; margin-top: 2px; font-weight: 500; }
+.verse-badge { background: rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 20px; font-weight: 700; }
 
-/* [수정] 오늘 할 일 리스트 (버튼형 디자인) - 구린 폰트/색감 탈출! */
-.task-card {
-    background: #ffffff;
-    border: 1px solid #f1f5f9;
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 10px;
-    display: flex; justify-content: space-between; align-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-    transition: 0.2s;
+/* 버튼 및 입력창: 망고 옐로우 포인트 */
+.add-circle-btn, .send-btn {
+    background: var(--secondary);
+    color: #5D4037;
+    border: none; width: 45px; height: 45px;
+    border-radius: 18px;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 0 #E6C200; /* 입체감 버튼 */
 }
+.add-circle-btn:active { transform: translateY(3px); box-shadow: none; }
+
+/* 체크박스 애니메이션 (통통 튀는 효과) */
 .task-card.active {
-    background: #f0fdf4; /* 성공 시 연한 초록 배경 */
-    border-color: #bbf7d0;
+    background: #FFF9E6;
+    border-color: var(--secondary);
+    transform: scale(0.98);
 }
-.task-text { font-size: 1.05rem; font-weight: 600; color: #334155; }
-.task-card.active .task-text { color: #15803d; text-decoration: line-through; opacity: 0.8; }
 .task-icon-box {
-    width: 32px; height: 32px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    background: #f1f5f9; color: #cbd5e1; font-size: 1rem;
+    width: 35px; height: 35px; border-radius: 50%;
+    background: #F0F0F0;
 }
 .task-card.active .task-icon-box {
-    background: #22c55e; color: white;
-    box-shadow: 0 4px 10px -2px rgba(34, 197, 94, 0.4);
+    background: var(--primary);
+    animation: jelly-pop 0.4s ease;
 }
 
-/* 목표 리스트 & 입력창 */
-#list-resolution { padding: 0; list-style: none; margin-top: 15px; }
-.resolution-item { background: white; border-radius: 16px; padding: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; box-shadow: var(--shadow-sm); border: 1px solid #f1f5f9; }
-.res-text { font-weight: 700; margin-bottom: 8px; color: var(--text-main); font-size: 1.05rem; }
-.step-item { font-size: 0.8rem; padding: 5px 10px; border-radius: 8px; background: #f1f5f9; color: var(--text-sub); margin-right: 5px; display: inline-block; cursor: pointer; font-weight: 600; }
-.step-item.done { background: var(--success-light); color: var(--success); }
-.del-btn { color: #cbd5e1; cursor: pointer; padding: 5px; }
+@keyframes jelly-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
 
-.input-pill, .chat-input-row { background: #f8fafc; border-radius: 16px; padding: 8px 8px 8px 15px; display: flex; align-items: center; border: 1px solid #e2e8f0; margin-top: 10px; }
-.input-pill input, .chat-input-row input { border: none; outline: none; flex: 1; font-size: 1rem; background: transparent; font-family: inherit; color: var(--text-main); }
-.add-circle-btn, .send-btn { background: var(--text-main); color: white; border: none; width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; font-size: 1rem; }
+/* 일요일 보너스 배너 */
+.sunday-banner {
+    background: var(--secondary);
+    color: #5D4037;
+    padding: 15px;
+    border-radius: var(--radius-jelly);
+    text-align: center;
+    font-weight: 800;
+    margin-bottom: 20px;
+    border: 3px dashed var(--primary);
+    animation: bounce 2s infinite;
+}
 
-/* 랭킹 */
-.ranking-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-.ranking-card { padding: 15px; min-height: 140px; background: white; border: 1px solid #eef2ff; }
-.card-header-small { font-size: 0.9rem; font-weight: 700; color: var(--text-sub); margin-bottom: 10px; border-bottom: 2px solid #f1f5f9; padding-bottom: 5px; }
-.rank-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.95rem; }
-.rank-row.top-rank { font-weight: 700; color: var(--text-main); background: #fffbeb; padding: 4px 8px; border-radius: 8px; margin: 0 -8px 8px -8px; }
-.rank-num { margin-right: 6px; font-weight: 700; color: var(--text-light); }
-.rank-score { font-family: monospace; font-weight: 700; color: var(--primary); }
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
 
-/* 성경 버튼 */
-.bible-select-card { display: flex; align-items: center; gap: 15px; padding: 20px; background: white; border-radius: 20px; margin-bottom: 12px; box-shadow: var(--shadow-sm); cursor: pointer; border: 1px solid #f1f5f9; }
-.icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; }
-.icon-box.old { background: #fff7ed; color: #b45309; }
-.icon-box.new { background: #eff6ff; color: #1d4ed8; }
-.text-box h3 { margin: 0; font-size: 1.1rem; font-weight: 800; }
-.text-box p { margin: 0; font-size: 0.9rem; color: var(--text-sub); }
-.arrow-icon { margin-left: auto; color: #cbd5e1; }
+/* 하단 네비게이션: 둥근 플로팅 스타일 */
+.bottom-nav { 
+    position: absolute; bottom: 25px; left: 50%; 
+    transform: translateX(-50%); width: 90%; 
+    background: rgba(255, 255, 255, 0.95); 
+    border-radius: 35px; 
+    padding: 12px; 
+    display: flex; justify-content: space-around;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    border: 2px solid var(--primary);
+}
+.nav-item { color: #D7CCC8; }
+.nav-item.active { color: var(--primary); font-weight: 800; }
 
-.bible-btn, .chapter-item { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; border: 1px solid #e2e8f0; border-radius: 12px; color: var(--text-sub); font-size: 0.9rem; font-weight: 600; cursor: pointer; box-shadow: 0 2px 0 #e2e8f0; }
-.bible-btn.completed, .chapter-item.checked { background: var(--success); color: white; border-color: var(--success); box-shadow: 0 2px 0 #059669; }
-.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-.grid-7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-
-/* 유틸리티 */
-.hidden { display: none !important; }
-.hidden-view { display: none; }
-.section-title { font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 5px; display: block; }
-.accordion-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 8px 0; }
-.accordion-icon { color: var(--text-light); transition: 0.3s; font-size: 1.2rem; }
-.accordion-icon.open { transform: rotate(180deg); }
-
-/* 하단 탭 */
-.bottom-nav { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 380px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(20px); border-radius: 24px; display: flex; justify-content: space-around; padding: 10px 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.5); z-index: 900; }
-.nav-item { background: none; border: none; color: #94a3b8; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 5px 15px; }
-.nav-item i { font-size: 1.4rem; }
-.nav-item span { font-size: 0.75rem; font-weight: 600; }
-.nav-item.active { color: var(--primary); transform: translateY(-2px); }
-
-/* 그래프 */
-.weekly-graph { display: flex; height: 100px; align-items: flex-end; gap: 6px; }
-.graph-col { flex: 1; display: flex; flex-direction: column; height: 100%; }
-.bar-area { flex: 1; display: flex; align-items: flex-end; justify-content: center; }
-.week-bar { width: 70%; background: #f1f5f9; border-radius: 4px; }
-.week-bar.high { background: var(--primary); }
-.day-label { text-align: center; font-size: 0.75rem; color: var(--text-light); margin-top: 5px; }
-.day-label.active { color: var(--primary); font-weight: 700; }
-
-.habit-row { display: flex; flex-direction: column; margin-bottom: 12px; }
-.habit-info { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px; }
-.habit-name { color: var(--text-main); font-weight: 600; }
-.habit-count { font-weight: 700; }
-.habit-track { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
-.habit-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
-
-.stat-label { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 5px; }
-.stat-value { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
-.login-btn { width: 100%; padding: 16px; border-radius: 12px; border: 1px solid #f1f5f9; background: white; font-weight: 600; color: var(--text-sub); cursor: pointer; font-size: 1rem; }
-.login-btn.taken { background: var(--primary-light); color: var(--primary); border: none; }
+/* 스크롤바 숨기기 */
+#main-content::-webkit-scrollbar { display: none; }
