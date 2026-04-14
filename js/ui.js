@@ -242,13 +242,69 @@ export function updateBibleStats(myBibleLog) {
     yearCountEl.innerText = `${myBibleLog.length}장`;
 }
 
+// 👑 [진짜 데이터 반영됨!] 랭킹 렌더링 함수
 export function renderRankings(appData, period) {
     const rankRes = document.getElementById('rank-resolution');
     const rankBible = document.getElementById('rank-bible');
     if (!rankRes || !rankBible) return;
 
-    rankRes.innerHTML = '<div style="color:#64748b; font-size:0.9rem; text-align:center; padding:10px;">결단서 왕 데이터를 불러왔습니다.</div>';
-    rankBible.innerHTML = '<div style="color:#64748b; font-size:0.9rem; text-align:center; padding:10px;">이번 주 성경 왕 데이터를 불러왔습니다.</div>';
+    rankRes.innerHTML = '';
+    rankBible.innerHTML = '';
+
+    let resScores = [];
+    let bibleScores = [];
+
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now.setDate(diff));
+    monday.setHours(0, 0, 0, 0);
+
+    Object.keys(appData).forEach(userName => {
+        if (['period', 'messages', 'verse', 'hallOfFame'].includes(userName)) return;
+        const userData = appData[userName];
+
+        let resScore = 0;
+        if (userData.history) {
+            Object.values(userData.history).forEach(val => resScore += Number(val));
+        }
+        resScores.push({ name: userName, score: resScore });
+
+        let bibleScore = 0;
+        if (userData.bibleLog) {
+            userData.bibleLog.forEach(log => {
+                const logDate = new Date(log.date);
+                if (logDate >= monday) {
+                    bibleScore++;
+                }
+            });
+        }
+        bibleScores.push({ name: userName, score: bibleScore });
+    });
+
+    resScores.sort((a, b) => b.score - a.score);
+    bibleScores.sort((a, b) => b.score - a.score);
+
+    const drawList = (container, sortedData, unit) => {
+        if (sortedData.every(d => d.score === 0)) {
+            container.innerHTML = '<div style="color:#94a3b8; font-size:0.85rem; text-align:center; padding:15px;">아직 이번 시즌 기록이 없습니다 🏃‍♂️</div>';
+            return;
+        }
+
+        sortedData.slice(0, 3).forEach((data, idx) => {
+            if (data.score === 0) return; 
+            
+            const row = document.createElement('div');
+            row.className = idx === 0 ? 'rank-row top-rank' : 'rank-row';
+            const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : '🥉');
+            
+            row.innerHTML = `<span>${medal} ${data.name}</span> <span style="font-weight:700; color:var(--primary);">${data.score}${unit}</span>`;
+            container.appendChild(row);
+        });
+    };
+
+    drawList(rankRes, resScores, '번');
+    drawList(rankBible, bibleScores, '장');
 }
 
 export function renderWeeklyGraph(myHistory, today) {
@@ -292,35 +348,29 @@ export function renderMessages(appData) {
     const msgList = document.getElementById('msg-list');
     if (!msgList) return;
 
-    msgList.innerHTML = ''; // 화면에 그리기 전에 깨끗하게 비우기
+    msgList.innerHTML = ''; 
 
-    // 서버(appData)에서 메시지 기록 가져오기
     const messages = appData.messages || [];
 
-    // 메시지가 하나도 없을 때 보여줄 안내문
     if (messages.length === 0) {
         msgList.innerHTML = '<li style="text-align:center; color:#94a3b8; font-size:0.9rem; padding:10px 0;">첫 응원 메시지를 남겨보세요! 💌</li>';
         return;
     }
 
-    // 메시지가 있다면 하나씩 리스트(li)로 만들기
     messages.forEach(msg => {
         const li = document.createElement('li');
         li.style.marginBottom = "8px";
         li.style.fontSize = "0.95rem";
         li.style.lineHeight = "1.4";
         
-        // 데이터가 객체({sender: '아빠', text: '화이팅'})일 수도, 단순 문자열일 수도 있으니 모두 방어
         const sender = msg.sender || msg.name || '가족';
         const text = msg.text || msg.msg || (typeof msg === 'string' ? msg : '응원합니다!');
 
-        // 예쁘게 조립하기 (이름은 포인트 컬러로!)
         li.innerHTML = `<span style="font-weight:800; color:var(--primary, #FF7F50); margin-right:6px;">${sender}</span> <span style="color:var(--text-main, #5D4037);">${text}</span>`;
         
         msgList.appendChild(li);
     });
 
-    // 스크롤이 있다면 가장 아래(최신 메시지)로 자동 이동
     const chatCard = msgList.parentElement;
     if (chatCard) {
         chatCard.scrollTop = chatCard.scrollHeight;
