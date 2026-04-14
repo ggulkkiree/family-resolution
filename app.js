@@ -1,4 +1,4 @@
-// 🧠 Main Controller (번개처럼 빠른 UI 업데이트 버전)
+// 🧠 Main Controller (Firebase 데이터 삭제 버그 완벽 수정 버전)
 
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -30,10 +30,9 @@ function startApp() {
     });
 }
 
-// 💡 [핵심 수정] 서버 저장을 기다리지 않고 화면부터 먼저 업데이트합니다! (엄청 빨라짐)
 async function saveData() {
     if(!isDataLoaded) return;
-    updateMainUI(); // 화면 즉시 변경
+    updateMainUI(); 
     try { await setDoc(docRef, appData, { merge: true }); } 
     catch(e) { console.error("저장 실패:", e); }
 }
@@ -158,6 +157,7 @@ window.toggleRangeMode = () => {
     } 
 };
 
+// 💡 [핵심 수정] delete 대신 null을 넣어서 서버에 명확하게 비우라고 명령합니다!
 window.toggleChapter = (chap, k, check) => { 
     const today = UI.getTodayDate(); 
     if(!appData[myName].bible) appData[myName].bible={}; 
@@ -188,12 +188,13 @@ window.toggleChapter = (chap, k, check) => {
         appData[myName].bible[k]=today; 
         appData[myName].bibleLog.push({date:today, key:k}); 
     } else { 
-        delete appData[myName].bible[k]; 
+        appData[myName].bible[k] = null; // 수정된 부분!
         appData[myName].bibleLog = appData[myName].bibleLog.filter(log => log.key !== k);
     } 
     saveData(); 
 };
 
+// 💡 [핵심 수정] 전체 해제 시에도 서버에 null로 비우라고 덮어씌웁니다!
 window.controlAll = (isCheck) => {
     const b = bibleState.currentBook;
     if(!b) return;
@@ -210,14 +211,14 @@ window.controlAll = (isCheck) => {
                 appData[myName].bibleLog.push({date:today, key:k});
             }
         } else {
-            delete appData[myName].bible[k];
+            appData[myName].bible[k] = null; // 수정된 부분!
             appData[myName].bibleLog = appData[myName].bibleLog.filter(log => log.key !== k);
         }
     }
     saveData();
 };
 
-window.finishBookAndReset = () => { const b = bibleState.currentBook; if(!b) return; if(!appData[myName].bibleRounds) appData[myName].bibleRounds = {}; appData[myName].bibleRounds[b] = (appData[myName].bibleRounds[b]||0)+1; const bookObj = BIBLE_DATA.books.find(x => x.name === b); for(let i=1; i<=bookObj.chapters; i++) { delete appData[myName].bible[`${b}-${i}`]; } saveData().then(()=> { alert(`🎉 [${b}] ${appData[myName].bibleRounds[b]}독 완료! 다음 독을 시작하세요.`); UI.renderChaptersGrid(appData, myName, bibleState, null); }); };
-window.undoFinishBook = () => { const b = bibleState.currentBook; if(!b) return; const cur = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0; if(cur <= 0) return; if(!confirm(`'${b}' 완독을 취소하시겠습니까?`)) return; appData[myName].bibleRounds[b] = cur - 1; if(appData[myName].bibleRounds[b]===0) delete appData[myName].bibleRounds[b]; const bookObj = BIBLE_DATA.books.find(x => x.name === b); const today = UI.getTodayDate(); for(let i=1; i<=bookObj.chapters; i++) { appData[myName].bible[`${b}-${i}`] = today; } saveData().then(()=> { alert("완독이 취소되었습니다."); UI.renderChaptersGrid(appData, myName, bibleState, null); }); };
+window.finishBookAndReset = () => { const b = bibleState.currentBook; if(!b) return; if(!appData[myName].bibleRounds) appData[myName].bibleRounds = {}; appData[myName].bibleRounds[b] = (appData[myName].bibleRounds[b]||0)+1; const bookObj = BIBLE_DATA.books.find(x => x.name === b); for(let i=1; i<=bookObj.chapters; i++) { appData[myName].bible[`${b}-${i}`] = null; /*수정*/ } saveData().then(()=> { alert(`🎉 [${b}] ${appData[myName].bibleRounds[b]}독 완료! 다음 독을 시작하세요.`); UI.renderChaptersGrid(appData, myName, bibleState, null); }); };
+window.undoFinishBook = () => { const b = bibleState.currentBook; if(!b) return; const cur = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0; if(cur <= 0) return; if(!confirm(`'${b}' 완독을 취소하시겠습니까?`)) return; appData[myName].bibleRounds[b] = cur - 1; if(appData[myName].bibleRounds[b]===0) appData[myName].bibleRounds[b] = null; /*수정*/ const bookObj = BIBLE_DATA.books.find(x => x.name === b); const today = UI.getTodayDate(); for(let i=1; i<=bookObj.chapters; i++) { appData[myName].bible[`${b}-${i}`] = today; } saveData().then(()=> { alert("완독이 취소되었습니다."); UI.renderChaptersGrid(appData, myName, bibleState, null); }); };
 
 startApp();
