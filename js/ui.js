@@ -1,10 +1,7 @@
-// 🧠 UI Renderer (성경 목록 로직 완벽 복구 버전)
+// 🧠 UI Renderer (성경 장 선택 완벽 복구 버전)
 
 import { BIBLE_DATA } from './data.js';
 
-// ==========================================
-// 🛠️ 공통 도우미 함수
-// ==========================================
 export function getTodayDate() {
     const now = new Date();
     const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
@@ -15,35 +12,19 @@ export function getTodayDate() {
     return `${y}-${m}-${d}`;
 }
 
-// ==========================================
-// 📌 1. 목표 탭 기능 모음
-// ==========================================
 export function renderResolutionList(appData, myName) {
     const listEl = document.getElementById('list-resolution');
     if (!listEl) return;
-
     listEl.innerHTML = '';
     const userData = appData[myName] || {};
     const myGoals = userData.resolution || [];
     const today = getTodayDate();
-
-    if (myGoals.length === 0) {
-        listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#8D6E63; font-size:0.95rem;">아직 등록된 목표가 없어요!<br>위에서 새 목표를 추가해 보세요 ✨</div>';
-        return;
-    }
-
+    if (myGoals.length === 0) { listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#8D6E63; font-size:0.95rem;">아직 등록된 목표가 없어요!<br>위에서 새 목표를 추가해 보세요 ✨</div>'; return; }
     myGoals.forEach((goal, gIndex) => {
-        const li = document.createElement('li');
-        li.className = 'resolution-item';
-
-        const infoDiv = document.createElement('div');
-        infoDiv.style.flex = "1";
-
-        const titleDiv = document.createElement('div');
-        titleDiv.className = 'res-text';
-        titleDiv.innerText = goal.text || (typeof goal === 'string' ? goal : '나의 목표');
+        const li = document.createElement('li'); li.className = 'resolution-item';
+        const infoDiv = document.createElement('div'); infoDiv.style.flex = "1";
+        const titleDiv = document.createElement('div'); titleDiv.className = 'res-text'; titleDiv.innerText = goal.text || (typeof goal === 'string' ? goal : '나의 목표');
         infoDiv.appendChild(titleDiv);
-
         if (goal.steps && Array.isArray(goal.steps)) {
             const stepsDiv = document.createElement('div');
             goal.steps.forEach((step, sIndex) => {
@@ -51,273 +32,142 @@ export function renderResolutionList(appData, myName) {
                 const isDone = goal.done && goal.done[sIndex] === today;
                 span.className = isDone ? 'step-item done' : 'step-item';
                 span.innerText = step;
-                span.onclick = (e) => {
-                    e.currentTarget.classList.toggle('done');
-                    if (typeof window.toggleStep === 'function') window.toggleStep(gIndex, sIndex);
-                };
+                span.onclick = (e) => { e.currentTarget.classList.toggle('done'); if (typeof window.toggleStep === 'function') window.toggleStep(gIndex, sIndex); };
                 stepsDiv.appendChild(span);
             });
             infoDiv.appendChild(stepsDiv);
         }
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'del-btn';
-        delBtn.innerHTML = '<i class="fas fa-times"></i>';
-        delBtn.onclick = () => {
-            if (confirm('이 목표를 삭제할까요?')) {
-                if (window.deleteItem) window.deleteItem(gIndex);
-            }
-        };
-
-        li.appendChild(infoDiv);
-        li.appendChild(delBtn);
-        listEl.appendChild(li);
+        const delBtn = document.createElement('button'); delBtn.className = 'del-btn'; delBtn.innerHTML = '<i class="fas fa-times"></i>';
+        delBtn.onclick = () => { if (confirm('이 목표를 삭제할까요?')) { if (window.deleteItem) window.deleteItem(gIndex); } };
+        li.appendChild(infoDiv); li.appendChild(delBtn); listEl.appendChild(li);
     });
 }
 
 export function renderFamilyGoals(appData, myName) {
     const container = document.getElementById('family-goals-container');
     if (!container) return;
-
     container.innerHTML = '';
     Object.keys(appData).forEach(userName => {
         if (['period', 'messages', 'verse', 'hallOfFame', 'auth'].includes(userName) || userName === myName) return;
-
-        const userData = appData[userName];
-        const goals = userData.resolution || [];
+        const userData = appData[userName]; const goals = userData.resolution || [];
         if (goals.length === 0) return;
-
         const displayName = (appData.auth && appData.auth[userName]) ? appData.auth[userName].name : userName;
-
-        const card = document.createElement('div');
-        card.className = 'family-card';
-        card.innerHTML = `
-            <div style="font-weight:800; margin-bottom:10px; color:#6366f1;">👤 ${displayName}</div>
-            <ul style="list-style:none; padding:0; margin:0;">
-                ${goals.map(g => `<li style="font-size:0.95rem; margin-bottom:5px; color:#475569;">• ${g.text || g}</li>`).join('')}
-            </ul>
-        `;
+        const card = document.createElement('div'); card.className = 'family-card';
+        card.innerHTML = `<div style="font-weight:800; margin-bottom:10px; color:#6366f1;">👤 ${displayName}</div><ul style="list-style:none; padding:0; margin:0;">${goals.map(g => `<li style="font-size:0.95rem; margin-bottom:5px; color:#475569;">• ${g.text || g}</li>`).join('')}</ul>`;
         container.appendChild(card);
     });
 }
 
-// ==========================================
-// 📊 2. 대시보드 및 통계 탭 기능 모음
-// ==========================================
 export function renderDashboard(appData, myName) {
     const period = appData.period || { start: "2026-01-01", end: "2026-12-31" };
-    const pDisplay = document.getElementById('period-display');
-    if (pDisplay) pDisplay.innerText = `${period.start} ~ ${period.end}`;
-
-    const userData = appData[myName] || {};
-    const myHistory = userData.history || {};
-    const myBibleLog = userData.bibleLog || [];
-    const myGoals = userData.resolution || [];
-
-    const today = getTodayDate();
-    let todayTotal = 0, todayDone = 0;
-
+    const pDisplay = document.getElementById('period-display'); if (pDisplay) pDisplay.innerText = `${period.start} ~ ${period.end}`;
+    const userData = appData[myName] || {}; const myHistory = userData.history || {}; const myBibleLog = userData.bibleLog || []; const myGoals = userData.resolution || [];
+    const today = getTodayDate(); let todayTotal = 0, todayDone = 0;
     myGoals.forEach(g => {
-        todayTotal++;
-        let isDoneToday = false;
-        if (g.done) {
-            if (Array.isArray(g.done)) isDoneToday = g.done.includes(today);
-            else if (typeof g.done === 'string') isDoneToday = (g.done === today);
-        }
+        todayTotal++; let isDoneToday = false;
+        if (g.done) { if (Array.isArray(g.done)) isDoneToday = g.done.includes(today); else if (typeof g.done === 'string') isDoneToday = (g.done === today); }
         if (isDoneToday) todayDone++;
     });
-
     renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal);
-
-    let rate = 0;
-    if (todayTotal > 0) rate = Math.round((todayDone / todayTotal) * 100);
-    if (new Date().getDay() === 0) rate = 100;
-
-    const dRate = document.getElementById('dash-rate');
-    const dFill = document.getElementById('donut-fill');
-    if (dRate) dRate.innerText = rate + "%";
-    if (dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
-
-    calculateStreak(myHistory, rate, todayTotal);
-    updateBibleStats(myBibleLog);
-    renderWeeklyGraph(myHistory, today);
-    renderRankings(appData, period);
+    let rate = 0; if (todayTotal > 0) rate = Math.round((todayDone / todayTotal) * 100); if (new Date().getDay() === 0) rate = 100;
+    const dRate = document.getElementById('dash-rate'); const dFill = document.getElementById('donut-fill');
+    if (dRate) dRate.innerText = rate + "%"; if (dFill) setTimeout(() => { dFill.style.strokeDashoffset = 251 - (251 * rate / 100); }, 100);
+    calculateStreak(myHistory, rate, todayTotal); updateBibleStats(myBibleLog); renderWeeklyGraph(myHistory, today); renderRankings(appData, period);
 }
 
 function calculateStreak(myHistory, rate, todayTotal) {
-    const fireIcon = document.getElementById('streak-icon');
-    const streakText = document.getElementById('dash-streak');
+    const fireIcon = document.getElementById('streak-icon'); const streakText = document.getElementById('dash-streak');
     if (!fireIcon || !streakText) return;
-
     if (rate >= 100 && todayTotal > 0) fireIcon.className = "fas fa-crown streak-icon gold";
     else if (rate >= 50) fireIcon.className = "fas fa-fire streak-icon active";
     else fireIcon.className = "fas fa-fire streak-icon";
-
-    let realStreak = 0;
-    const now = new Date();
-    const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    const kstNow = new Date(utc + (9 * 60 * 60 * 1000));
-
+    let realStreak = 0; const now = new Date(); const utc = now.getTime() + (now.getTimezoneOffset() * 60 * 1000); const kstNow = new Date(utc + (9 * 60 * 60 * 1000));
     for (let i = 0; i < 365; i++) {
         const d = new Date(kstNow); d.setDate(d.getDate() - i);
         const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
         const dStr = `${y}-${m}-${dd}`;
-        if (myHistory[dStr] > 0 || d.getDay() === 0) realStreak++;
-        else if (i > 0) break;
+        if (myHistory[dStr] > 0 || d.getDay() === 0) realStreak++; else if (i > 0) break;
     }
     streakText.innerText = `${realStreak}일`;
 }
 
 export function renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal) {
-    const statusText = document.getElementById('today-status-text');
-    const taskList = document.getElementById('today-task-list');
+    const statusText = document.getElementById('today-status-text'); const taskList = document.getElementById('today-task-list');
     if (!statusText || !taskList) return;
-
-    statusText.innerText = `${todayDone} / ${todayTotal} 완료`;
-    taskList.innerHTML = '';
-
-    if (myGoals.length === 0) {
-        taskList.innerHTML = '<div style="color:#94a3b8; font-size:0.9rem; text-align:center;">오늘 달성할 목표가 없습니다.</div>';
-        return;
-    }
-
+    statusText.innerText = `${todayDone} / ${todayTotal} 완료`; taskList.innerHTML = '';
+    if (myGoals.length === 0) { taskList.innerHTML = '<div style="color:#94a3b8; font-size:0.9rem; text-align:center;">오늘 달성할 목표가 없습니다.</div>'; return; }
     myGoals.forEach((goal, idx) => {
         const isDone = goal.done && (Array.isArray(goal.done) ? goal.done.includes(today) : goal.done === today);
-        const taskDiv = document.createElement('div');
-        taskDiv.className = isDone ? 'task-card active' : 'task-card';
-        taskDiv.innerHTML = `
-            <div class="task-text">${goal.text || goal}</div>
-            <div class="task-icon-box"><i class="fas fa-check"></i></div>
-        `;
-        taskDiv.onclick = () => {
-            if (typeof window.toggleTodayTask === 'function') window.toggleTodayTask(idx, today);
-        };
+        const taskDiv = document.createElement('div'); taskDiv.className = isDone ? 'task-card active' : 'task-card';
+        taskDiv.innerHTML = `<div class="task-text">${goal.text || goal}</div><div class="task-icon-box"><i class="fas fa-check"></i></div>`;
+        taskDiv.onclick = () => { if (typeof window.toggleTodayTask === 'function') window.toggleTodayTask(idx, today); };
         taskList.appendChild(taskDiv);
     });
 }
 
 export function updateBibleStats(myBibleLog) {
-    const todayCountEl = document.getElementById('bible-today-count');
-    const yearCountEl = document.getElementById('bible-year-count');
+    const todayCountEl = document.getElementById('bible-today-count'); const yearCountEl = document.getElementById('bible-year-count');
     if (!todayCountEl || !yearCountEl) return;
-
     const today = getTodayDate();
     const todayCount = myBibleLog.filter(log => log.date === today).length;
-    todayCountEl.innerText = `${todayCount}장`;
-    yearCountEl.innerText = `${myBibleLog.length}장`;
+    todayCountEl.innerText = `${todayCount}장`; yearCountEl.innerText = `${myBibleLog.length}장`;
 }
 
 export function renderRankings(appData, period) {
-    const rankRes = document.getElementById('rank-resolution');
-    const rankBible = document.getElementById('rank-bible');
-    if (!rankRes || !rankBible) return;
-
-    rankRes.innerHTML = '';
-    rankBible.innerHTML = '';
-
-    let resScores = [];
-    let bibleScores = [];
-
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now.setDate(diff));
-    monday.setHours(0, 0, 0, 0);
-
-    const seasonStartDateStr = (period && period.start) ? period.start : "2026-01-01";
-    const seasonStart = new Date(seasonStartDateStr);
-    seasonStart.setHours(0, 0, 0, 0);
-
+    const rankRes = document.getElementById('rank-resolution'); const rankBible = document.getElementById('rank-bible');
+    if (!rankRes || !rankBible) return; rankRes.innerHTML = ''; rankBible.innerHTML = '';
+    let resScores = []; let bibleScores = [];
+    const now = new Date(); const day = now.getDay(); const diff = now.getDate() - day + (day === 0 ? -6 : 1); const monday = new Date(now.setDate(diff)); monday.setHours(0, 0, 0, 0);
+    const seasonStartDateStr = (period && period.start) ? period.start : "2026-01-01"; const seasonStart = new Date(seasonStartDateStr); seasonStart.setHours(0, 0, 0, 0);
     Object.keys(appData).forEach(userName => {
         if (['period', 'messages', 'verse', 'hallOfFame', 'auth'].includes(userName)) return;
-        const userData = appData[userName];
-        const displayName = (appData.auth && appData.auth[userName]) ? appData.auth[userName].name : userName;
-
-        let resScore = 0;
-        if (userData.history) {
-            Object.entries(userData.history).forEach(([dateStr, val]) => {
-                const recordDate = new Date(dateStr);
-                if (recordDate >= seasonStart) resScore += Number(val);
-            });
-        }
+        const userData = appData[userName]; const displayName = (appData.auth && appData.auth[userName]) ? appData.auth[userName].name : userName;
+        let resScore = 0; if (userData.history) { Object.entries(userData.history).forEach(([dateStr, val]) => { const recordDate = new Date(dateStr); if (recordDate >= seasonStart) resScore += Number(val); }); }
         resScores.push({ name: displayName, score: resScore });
-
-        let bibleScore = 0;
-        if (userData.bibleLog) {
-            userData.bibleLog.forEach(log => {
-                const logDate = new Date(log.date);
-                if (logDate >= monday) bibleScore++;
-            });
-        }
+        let bibleScore = 0; if (userData.bibleLog) { userData.bibleLog.forEach(log => { const logDate = new Date(log.date); if (logDate >= monday) bibleScore++; }); }
         bibleScores.push({ name: displayName, score: bibleScore });
     });
-
     const drawList = (container, sortedData, unit) => {
         sortedData.sort((a, b) => b.score - a.score).slice(0, 3).forEach((data, idx) => {
             if (data.score === 0) return;
-            const row = document.createElement('div');
-            row.className = idx === 0 ? 'rank-row top-rank' : 'rank-row';
+            const row = document.createElement('div'); row.className = idx === 0 ? 'rank-row top-rank' : 'rank-row';
             const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : '🥉');
             row.innerHTML = `<span>${medal} ${data.name}</span> <span style="font-weight:700;">${data.score}${unit}</span>`;
             container.appendChild(row);
         });
         if (container.innerHTML === '') container.innerHTML = '<div style="color:#94a3b8; font-size:0.8rem; text-align:center;">기록 없음</div>';
     };
-
-    drawList(rankRes, resScores, '번');
-    drawList(rankBible, bibleScores, '장');
+    drawList(rankRes, resScores, '번'); drawList(rankBible, bibleScores, '장');
 }
 
 export function renderWeeklyGraph(myHistory, today) {
-    const graphContainer = document.getElementById('weekly-graph');
-    if (!graphContainer) return;
-    graphContainer.innerHTML = '';
+    const graphContainer = document.getElementById('weekly-graph'); if (!graphContainer) return; graphContainer.innerHTML = '';
     const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
     for (let i = 6; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
         const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
-        const dateStr = `${y}-${m}-${dd}`;
-        const isActive = myHistory[dateStr] > 0 || d.getDay() === 0;
-        const col = document.createElement('div');
-        col.className = 'graph-col';
-        col.innerHTML = `
-            <div class="bar-area"><div class="week-bar ${isActive ? 'high' : ''}" style="height: ${isActive ? '80%' : '20%'}"></div></div>
-            <div class="day-label ${i === 0 ? 'active' : ''}">${dayNames[d.getDay()]}</div>
-        `;
+        const dateStr = `${y}-${m}-${dd}`; const isActive = myHistory[dateStr] > 0 || d.getDay() === 0;
+        const col = document.createElement('div'); col.className = 'graph-col';
+        col.innerHTML = `<div class="bar-area"><div class="week-bar ${isActive ? 'high' : ''}" style="height: ${isActive ? '80%' : '20%'}"></div></div><div class="day-label ${i === 0 ? 'active' : ''}">${dayNames[d.getDay()]}</div>`;
         graphContainer.appendChild(col);
     }
 }
 
-// ==========================================
-// 💌 3. 응원 메시지 기능
-// ==========================================
 export function renderMessages(appData) {
-    const msgList = document.getElementById('msg-list');
-    if (!msgList) return;
-    msgList.innerHTML = '';
-    const messages = appData.messages || [];
-    if (messages.length === 0) {
-        msgList.innerHTML = '<li style="text-align:center; color:#94a3b8; font-size:0.9rem; padding:10px 0;">첫 응원 메시지를 남겨보세요! 💌</li>';
-        return;
-    }
-    messages.forEach(msg => {
-        const li = document.createElement('li');
-        li.style.marginBottom = "8px";
-        li.innerHTML = `<span style="font-weight:800; color:#6366f1; margin-right:6px;">${msg.sender}</span> <span>${msg.text}</span>`;
-        msgList.appendChild(li);
-    });
+    const msgList = document.getElementById('msg-list'); if (!msgList) return; msgList.innerHTML = ''; const messages = appData.messages || [];
+    if (messages.length === 0) { msgList.innerHTML = '<li style="text-align:center; color:#94a3b8; font-size:0.9rem; padding:10px 0;">첫 응원 메시지를 남겨보세요! 💌</li>'; return; }
+    messages.forEach(msg => { const li = document.createElement('li'); li.style.marginBottom = "8px"; li.innerHTML = `<span style="font-weight:800; color:#6366f1; margin-right:6px;">${msg.sender}</span> <span>${msg.text}</span>`; msgList.appendChild(li); });
     msgList.parentElement.scrollTop = msgList.parentElement.scrollHeight;
 }
 
 // ==========================================
-// 📖 4. 성경 탭 - 권/장 목록 (핵심 복구 부분)
+// 📖 4. 성경 탭 - 권/장 목록 (클릭 로직 완벽 연동!)
 // ==========================================
 export function renderBibleBooks(appData, myName, bibleState) {
     const grid = document.getElementById('bible-books-grid');
     if (!grid) return;
     grid.innerHTML = '';
     
-    // BIBLE_DATA에서 구약/신약 필터링
     const books = BIBLE_DATA.books.filter(b => b.testament === bibleState.currentTestament);
 
     books.forEach(book => {
@@ -348,14 +198,17 @@ export function renderChaptersGrid(appData, myName, bibleState, rangeStart) {
         const isDone = !!myBible[key];
         
         let rangeClass = "";
+        // 범위 선택 중일 때 시작점을 시각적으로 표시
         if (rangeStart !== null && rangeStart !== -1) {
-            const s = Math.min(rangeStart, i), e = Math.max(rangeStart, i);
-            if (i >= s && i <= e) rangeClass = " in-range";
+            if (i === rangeStart) rangeClass = " in-range"; 
         }
 
         const cell = document.createElement('div');
+        // style.css에 .chapter-cell 과 .done 에 대한 디자인이 있어야 색이 변합니다!
         cell.className = `chapter-cell ${isDone ? 'done' : ''}${rangeClass}`;
         cell.innerText = i;
+        
+        // 👆 클릭 시 app.js의 toggleChapter 실행!
         cell.onclick = () => window.toggleChapter(i, key, !isDone);
         grid.appendChild(cell);
     }
