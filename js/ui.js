@@ -1,19 +1,29 @@
-// ui.js의 renderDashboard와 calculateStreak 함수만 아래와 같이 교체해주세요. (다른 건 원본 유지)
-
 export function renderDashboard(appData, myName) {
     const period = appData.period || { start: "2026-01-01", end: "2026-12-31" };
     const pDisplay = document.getElementById('period-display');
     if(pDisplay) pDisplay.innerText = `${period.start} ~ ${period.end}`;
     
-    const myHistory = appData[myName].history || {};
-    const myBibleLog = appData[myName].bibleLog || [];
-    const today = getTodayDate();
-    const myGoals = appData[myName].resolution || [];
+    // [수정 1] 내 데이터가 아예 없을 때 앱이 멈추는 것을 방지하는 안전장치 추가
+    const userData = appData[myName] || {}; 
+    const myHistory = userData.history || {};
+    const myBibleLog = userData.bibleLog || [];
+    const myGoals = userData.resolution || [];
     
+    const today = getTodayDate();
     let todayTotal = 0, todayDone = 0;
+    
     myGoals.forEach(g => {
-        const isDoneToday = g.done && g.done.every(val => val === today);
         todayTotal++;
+        // [수정 2] .every 대신 .includes를 사용 (배열인지 확인하는 방어 로직 추가)
+        let isDoneToday = false;
+        if (g.done) {
+            if (Array.isArray(g.done)) {
+                isDoneToday = g.done.includes(today);
+            } else if (typeof g.done === 'string') {
+                isDoneToday = (g.done === today);
+            }
+        }
+        
         if(isDoneToday) todayDone++;
     });
 
@@ -22,7 +32,7 @@ export function renderDashboard(appData, myName) {
     let rate = 0;
     if(todayTotal > 0) rate = Math.round((todayDone / todayTotal) * 100);
     
-    // [추가] 오늘이 일요일이면 자동으로 달성률 100% 처리
+    // 작성하신 일요일 달성률 100% 보너스 로직 (유지)
     if (new Date().getDay() === 0) {
         rate = 100;
     }
@@ -59,7 +69,7 @@ function calculateStreak(myHistory, rate, todayTotal) {
         const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
         const dStr = `${y}-${m}-${dd}`;
         
-        // [수정] 과거 기록 중 일요일(getDay() === 0)은 무조건 성공한 것으로 간주하여 기록 유지
+        // 작성하신 과거 기록 일요일 보너스 로직 (유지)
         if(myHistory[dStr] > 0 || d.getDay() === 0) {
             realStreak++; 
         } else if(i>0) {
