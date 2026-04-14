@@ -1,6 +1,10 @@
+// 🧠 Main Controller (데이터 보호 완벽 복구 버전)
+
 import { docRef } from './js/config.js';
 import { onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { BIBLE_DATA, USER_SLOTS } from './js/data.js';
+
+// 기존 UI 연결
 import * as UI from './js/ui.js?v=range_fix';
 
 let appData = {};
@@ -28,6 +32,7 @@ function startApp() {
     });
 }
 
+// 💡 [핵심] { merge: true }가 있어서 절대 기존 데이터를 날리지 않고 덮어쓰기만 합니다!
 async function saveData() {
     if(!isDataLoaded) return;
     try { await setDoc(docRef, appData, { merge: true }); updateMainUI(); } 
@@ -37,7 +42,7 @@ async function saveData() {
 function updateMainUI() {
     if(!myName || !appData.auth[myName]) return;
     
-    // [추가] 일요일 보너스 배너 처리 (기존 코드 안전하게 유지)
+    // [일요일 안식일 보너스 배너]
     const isSunday = new Date().getDay() === 0;
     const pageRes = document.getElementById('page-resolution');
     let banner = document.getElementById('sunday-banner');
@@ -105,16 +110,8 @@ function checkLoginStatus() {
     }
 }
 
-// 기존 윈도우 함수들 원상 복구 (탭, 아코디언, 수정 삭제 등 완벽 동작)
-window.goTab = (t, el) => {
-    document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
-    if(el) el.classList.add('active');
-    document.querySelectorAll('.page').forEach(e => e.classList.add('hidden'));
-    const target = document.getElementById('page-' + t);
-    if(target) target.classList.remove('hidden');
-    updateMainUI();
-};
-
+// 기존 기능 원상 복구
+window.goTab = (t, el) => { document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active')); if(el) el.classList.add('active'); document.querySelectorAll('.page').forEach(e => e.classList.add('hidden')); const target = document.getElementById('page-' + t); if(target) target.classList.remove('hidden'); updateMainUI(); };
 window.toggleAccordion = (id, icon) => { const content = document.getElementById(id); if(content) content.classList.toggle('hidden'); if(icon) icon.classList.toggle('open'); };
 window.toggleFamilyList = (id) => { const list = document.getElementById(id); if(list) list.classList.toggle('hidden'); };
 window.addItem = function() { const input = document.getElementById('input-resolution'); const val = input.value.trim(); if(!val) return; if(!appData[myName].resolution) appData[myName].resolution = []; appData[myName].resolution.push({ text: val, steps: ["완료"], done: [false], counts: [0] }); input.value = ""; saveData(); };
@@ -133,5 +130,7 @@ window.toggleRangeMode = () => { const btn = document.getElementById('btn-range'
 window.toggleChapter = (chap, k, check) => { const today = UI.getTodayDate(); if(!appData[myName].bible) appData[myName].bible={}; if(!appData[myName].bibleLog) appData[myName].bibleLog=[]; if(rangeStart !== null) { if(rangeStart === -1) { rangeStart = chap; UI.renderChaptersGrid(appData, myName, bibleState, rangeStart); } else { const s = Math.min(rangeStart, chap), e = Math.max(rangeStart, chap); for(let i=s; i<=e; i++) { const key = `${bibleState.currentBook}-${i}`; if(!appData[myName].bible[key]) { appData[myName].bible[key]=today; appData[myName].bibleLog.push({date:today, key:key}); } } rangeStart = null; const btn = document.getElementById('btn-range'); if(btn) { btn.style.fontWeight="600"; btn.innerText="⚡️범위선택"; } saveData(); } return; } if(check) { appData[myName].bible[k]=today; appData[myName].bibleLog.push({date:today, key:k}); } else { delete appData[myName].bible[k]; } saveData(); };
 window.showBibleMain = () => { document.getElementById('bible-books-view').classList.add('hidden-view'); document.getElementById('bible-main-view').classList.remove('hidden-view'); bibleState.currentTestament = null; };
 window.backToBooks = () => { document.getElementById('bible-chapters-view').classList.add('hidden-view'); document.getElementById('bible-books-view').classList.remove('hidden-view'); bibleState.currentBook = null; };
+window.finishBookAndReset = () => { const b = bibleState.currentBook; if(!b) return; if(!appData[myName].bibleRounds) appData[myName].bibleRounds = {}; appData[myName].bibleRounds[b] = (appData[myName].bibleRounds[b]||0)+1; const bookObj = BIBLE_DATA.books.find(x => x.name === b); for(let i=1; i<=bookObj.chapters; i++) { delete appData[myName].bible[`${b}-${i}`]; } saveData().then(()=> { alert(`🎉 [${b}] ${appData[myName].bibleRounds[b]}독 완료! 다음 독을 시작하세요.`); UI.renderChaptersGrid(appData, myName, bibleState, null); }); };
+window.undoFinishBook = () => { const b = bibleState.currentBook; if(!b) return; const cur = (appData[myName].bibleRounds && appData[myName].bibleRounds[b]) || 0; if(cur <= 0) return; if(!confirm(`'${b}' 완독을 취소하시겠습니까?`)) return; appData[myName].bibleRounds[b] = cur - 1; if(appData[myName].bibleRounds[b]===0) delete appData[myName].bibleRounds[b]; const bookObj = BIBLE_DATA.books.find(x => x.name === b); const today = UI.getTodayDate(); for(let i=1; i<=bookObj.chapters; i++) { appData[myName].bible[`${b}-${i}`] = today; } saveData().then(()=> { alert("완독이 취소되었습니다."); UI.renderChaptersGrid(appData, myName, bibleState, null); }); };
 
 startApp();
