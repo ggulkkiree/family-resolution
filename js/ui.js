@@ -47,7 +47,10 @@ export function renderResolutionList(appData, myName) {
                 const isDone = goal.done && goal.done.includes(`${gIndex}-${sIndex}`);
                 span.className = isDone ? 'step-item done' : 'step-item';
                 span.innerText = step;
-                span.onclick = () => {
+                
+                // [수정] 클릭 시 즉각적으로 색상이 변하도록 로직 추가!
+                span.onclick = (e) => {
+                    e.currentTarget.classList.toggle('done'); // 클릭 즉시 시각적 반응
                     if (typeof window.toggleStep === 'function') window.toggleStep(gIndex, sIndex);
                 };
                 stepsDiv.appendChild(span);
@@ -83,6 +86,9 @@ export function renderFamilyGoals(appData, myName) {
         const userData = appData[userName];
         const goals = userData.resolution || [];
         if (goals.length === 0) return; 
+        
+        // [수정] user_1 대신 저장된 진짜 닉네임을 가져옵니다!
+        const displayName = userData.name || userData.nickname || userName;
 
         const card = document.createElement('div');
         card.className = 'family-card'; 
@@ -96,7 +102,7 @@ export function renderFamilyGoals(appData, myName) {
         nameTag.style.fontWeight = "800";
         nameTag.style.marginBottom = "10px";
         nameTag.style.color = "#6366f1";
-        nameTag.innerText = `👤 ${userName}`;
+        nameTag.innerText = `👤 ${displayName}`; // 닉네임 적용
         card.appendChild(nameTag);
 
         const goalList = document.createElement('ul');
@@ -223,7 +229,9 @@ export function renderTodayTasksAccordion(myGoals, today, todayDone, todayTotal)
             <div class="task-icon-box"><i class="fas fa-check"></i></div>
         `;
         
-        taskDiv.onclick = () => {
+        // [수정] 오늘 할 일 목록 클릭 시 즉시 밑줄 쫙! 체크! 되도록 추가
+        taskDiv.onclick = (e) => {
+            e.currentTarget.classList.toggle('active'); // 즉시 상태 변경
             if (typeof window.toggleTodayTask === 'function') window.toggleTodayTask(idx, today);
         };
         taskList.appendChild(taskDiv);
@@ -242,7 +250,6 @@ export function updateBibleStats(myBibleLog) {
     yearCountEl.innerText = `${myBibleLog.length}장`;
 }
 
-// 👑 [진짜 데이터 반영됨!] 랭킹 렌더링 함수
 export function renderRankings(appData, period) {
     const rankRes = document.getElementById('rank-resolution');
     const rankBible = document.getElementById('rank-bible');
@@ -263,12 +270,15 @@ export function renderRankings(appData, period) {
     Object.keys(appData).forEach(userName => {
         if (['period', 'messages', 'verse', 'hallOfFame'].includes(userName)) return;
         const userData = appData[userName];
+        
+        // [수정] 랭킹에도 user_1 대신 진짜 닉네임 반영!
+        const displayName = userData.name || userData.nickname || userName;
 
         let resScore = 0;
         if (userData.history) {
             Object.values(userData.history).forEach(val => resScore += Number(val));
         }
-        resScores.push({ name: userName, score: resScore });
+        resScores.push({ name: displayName, score: resScore });
 
         let bibleScore = 0;
         if (userData.bibleLog) {
@@ -279,7 +289,7 @@ export function renderRankings(appData, period) {
                 }
             });
         }
-        bibleScores.push({ name: userName, score: bibleScore });
+        bibleScores.push({ name: displayName, score: bibleScore });
     });
 
     resScores.sort((a, b) => b.score - a.score);
