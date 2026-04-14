@@ -1,22 +1,25 @@
-/* 🎨 2026 Family Goals - Jelly & Cute Premium Theme */
+/* 🎨 2026 Family Goals - Premium Design Update (원본 복구) */
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css");
 
 :root {
-    --primary: #FF7F50;       /* 코랄 핑크 */
-    --secondary: #FFD700;     /* 망고 옐로우 */
-    --bg-color: #FFFDF5;      /* 따뜻하고 부드러운 아이보리 */
+    --primary: #6366f1;       /* 세련된 인디고 블루 */
+    --primary-light: #eff6ff; 
+    --secondary: #f59e0b;     /* 포인트 앰버 컬러 */
+    --bg-color: #f8fafc;      /* 깔끔한 쿨그레이 배경 */
     --surface: #ffffff;
-    --text-main: #5D4037;     /* 따뜻한 브라운 (가독성 UP) */
-    --text-sub: #8D6E63;
-    --success: #FF7F50;       /* 성공 컬러도 테마에 맞춤 */
-    --radius-jelly: 25px;     /* 아주 둥글둥글한 모서리 */
-    --shadow-jelly: 0 10px 20px rgba(255, 127, 80, 0.12);
+    --text-main: #1e293b;     
+    --text-sub: #64748b; 
+    --text-light: #94a3b8;
+    --success: #10b981; 
+    --success-light: #d1fae5;
+    --radius-lg: 20px; 
+    --radius-md: 12px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.03);
 }
 
 * { 
     box-sizing: border-box; 
     -webkit-tap-highlight-color: transparent; 
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 모든 움직임을 쫀득하게 */
 }
 
 body {
@@ -24,104 +27,117 @@ body {
     font-family: 'Pretendard', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-main);
-    height: 100vh; height: 100dvh; 
-    overflow: hidden;
+    height: 100vh; height: 100dvh;
+    overflow: hidden; /* 앱처럼 보이게 바깥 화면은 고정 */
+    font-size: 16px;
 }
 
 #app-container { 
     display: flex; flex-direction: column; height: 100%; 
     max-width: 600px; margin: 0 auto; background: var(--bg-color); 
+    position: relative;
 }
 
-/* 헤더: 투명하고 깔끔하게 */
-.glass-header { 
-    padding: 20px; 
-    background: rgba(255, 255, 255, 0.8); 
-    backdrop-filter: blur(10px); 
-    border-bottom: 2px solid #F0EBE3;
-}
-
-/* 모든 카드를 젤리처럼 포동포동하게 */
-.verse-card, .dash-card, .chat-card, .ranking-card, .family-card, .resolution-item, .task-card {
+/* 헤더 */
+header, .glass-header {
+    padding: 20px;
     background: var(--surface);
-    border-radius: var(--radius-jelly);
-    padding: 22px; 
-    margin-bottom: 18px;
-    border: 3px solid #FFF5E1; /* 부드러운 테두리 */
-    box-shadow: var(--shadow-jelly);
+    border-bottom: 1px solid #e2e8f0;
 }
 
-/* 말씀 카드: 코랄 핑크 그라데이션 */
-.verse-card { 
-    background: linear-gradient(135deg, var(--primary), #FFAB91); 
-    color: white; 
-    border: none; 
+/* 👇 스크롤을 담당하는 핵심 영역입니다! */
+main, #main-content, .tab-content {
+    flex: 1;
+    overflow-y: auto; /* 내용이 길어지면 아래로 스크롤 허용 */
+    padding: 15px;
+    padding-bottom: 100px; /* 네비게이션 바에 가려지지 않게 여백 확보 */
 }
-.verse-badge { background: rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 20px; font-weight: 700; }
 
-/* 버튼 및 입력창: 망고 옐로우 포인트 */
-.add-circle-btn, .send-btn {
-    background: var(--secondary);
-    color: #5D4037;
-    border: none; width: 45px; height: 45px;
-    border-radius: 18px;
-    font-size: 1.2rem;
-    box-shadow: 0 4px 0 #E6C200; /* 입체감 버튼 */
+/* 카드 기본 스타일 */
+.verse-card, .dash-card, .chat-card, .ranking-card, .family-card, .task-card, .resolution-item {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid #e2e8f0;
 }
-.add-circle-btn:active { transform: translateY(3px); box-shadow: none; }
 
-/* 체크박스 애니메이션 (통통 튀는 효과) */
+/* 말씀 카드 */
+.verse-card {
+    background: linear-gradient(135deg, var(--primary), #818cf8);
+    color: white;
+    border: none;
+}
+.verse-badge { 
+    background: rgba(255,255,255,0.2); 
+    padding: 4px 12px; 
+    border-radius: 12px; 
+    font-size: 0.8rem; 
+}
+
+/* 체크박스 애니메이션 및 스타일 */
+.task-card {
+    display: flex; justify-content: space-between; align-items: center;
+    transition: all 0.2s;
+}
 .task-card.active {
-    background: #FFF9E6;
-    border-color: var(--secondary);
-    transform: scale(0.98);
+    background: var(--primary-light);
+    border-color: var(--primary);
 }
 .task-icon-box {
-    width: 35px; height: 35px; border-radius: 50%;
-    background: #F0F0F0;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #f1f5f9; display: flex; align-items: center; justify-content: center;
 }
-.task-card.active .task-icon-box {
-    background: var(--primary);
-    animation: jelly-pop 0.4s ease;
-}
+.task-card.active .task-icon-box { background: var(--primary); color: white; }
 
-@keyframes jelly-pop {
-    0% { transform: scale(1); }
-    40% { transform: scale(1.3); }
-    100% { transform: scale(1); }
-}
-
-/* 일요일 보너스 배너 */
-.sunday-banner {
-    background: var(--secondary);
-    color: #5D4037;
-    padding: 15px;
-    border-radius: var(--radius-jelly);
-    text-align: center;
-    font-weight: 800;
-    margin-bottom: 20px;
-    border: 3px dashed var(--primary);
-    animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-}
-
-/* 하단 네비게이션: 둥근 플로팅 스타일 */
-.bottom-nav { 
-    position: absolute; bottom: 25px; left: 50%; 
-    transform: translateX(-50%); width: 90%; 
-    background: rgba(255, 255, 255, 0.95); 
-    border-radius: 35px; 
-    padding: 12px; 
+/* 하단 네비게이션 바 */
+.bottom-nav {
+    position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 600px;
+    background: var(--surface);
     display: flex; justify-content: space-around;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-    border: 2px solid var(--primary);
+    padding: 12px 0; 
+    border-top: 1px solid #e2e8f0;
 }
-.nav-item { color: #D7CCC8; }
-.nav-item.active { color: var(--primary); font-weight: 800; }
 
-/* 스크롤바 숨기기 */
-#main-content::-webkit-scrollbar { display: none; }
+.nav-item {
+    background: none; border: none; color: var(--text-light);
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    font-size: 0.8rem; cursor: pointer;
+}
+.nav-item.active { 
+    color: var(--primary); 
+    font-weight: 700;
+    transform: translateY(-2px); 
+}
+
+/* 대시보드 그래프 영역 */
+.weekly-graph { display: flex; height: 100px; align-items: flex-end; gap: 6px; }
+.graph-col { flex: 1; display: flex; flex-direction: column; height: 100%; }
+.bar-area { flex: 1; display: flex; align-items: flex-end; justify-content: center; }
+.week-bar { width: 70%; background: #f1f5f9; border-radius: 4px; transition: height 0.3s; }
+.week-bar.high { background: var(--primary); }
+.day-label { text-align: center; font-size: 0.75rem; color: var(--text-light); margin-top: 5px; }
+.day-label.active { color: var(--primary); font-weight: 700; }
+
+/* 성실도 분석 트래커 */
+.habit-row { display: flex; flex-direction: column; margin-bottom: 12px; }
+.habit-info { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px; }
+.habit-name { color: var(--text-main); font-weight: 600; }
+.habit-count { font-weight: 700; }
+.habit-track { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+.habit-bar { height: 100%; }
+
+/* 성경 버튼 */
+.bible-btn {
+    background: var(--surface); border: 1px solid #e2e8f0;
+    border-radius: var(--radius-md); padding: 10px;
+    text-align: center; font-weight: 600; cursor: pointer;
+}
+.bible-btn.completed { background: var(--success-light); border-color: var(--success); color: var(--success); }
+
+/* 유틸리티 */
+.hidden { display: none !important; }
+.empty-state { text-align: center; color: var(--text-light); padding: 30px; }
+.empty-icon { font-size: 3rem; margin-bottom: 10px; display: block; }
